@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\UsuarioRequest;
 use Inertia\Inertia;
 
 use App\Models\Usuario;
@@ -17,18 +18,10 @@ class Userarios extends Controller
         return response()->json($usuarios);
     }
 
-    public function create(Request $request)
+    public function create(UsuarioRequest $request)
     {
         try {
-            $validateRequest = $request->validate([
-                'nome' => 'required|string|min:5',
-                'email' => 'required|email|unique:usuarios,email',
-                'telefone' => 'required|string',
-                'descricao' => 'nullable|string',
-                'user_id' => 'required',
-            ]);
-
-            Usuario::create($validateRequest);
+            Usuario::create($request->validated());
 
             return response()->json(['message' => 'Usuário cadastrado com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -49,27 +42,20 @@ class Userarios extends Controller
         return response()->json($usuario);
     }
 
-    public function update(Request $request, $id)
+    public function update(UsuarioRequest $request, $id)
     {
         try {
             $usuario = Usuario::findOrFail($id);
-            
-            $validateRequest = $request->validate([
-                'nome' => 'required|string|min:5',
-                'email' => 'required|email|unique:usuarios,email,' . $id,
-                'telefone' => 'required|string|min:7',
-                'descricao' => 'nullable|string',
-            ]);
 
-            $usuario->update($validateRequest);
+            $usuario->update($request->validated());
 
-            return response()->json(['message' => 'Usuário atualizado com sucesso'], 201);
+            return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
                 'erros' => $error->errors()
             ], 422);
         } catch (\Exception $error) {
-            return response()->json(['error' => 'Usuário não encontrado'], 201);
+            return response()->json(['error' => 'Usuário não encontrado'], 404);
         }
     }
 
