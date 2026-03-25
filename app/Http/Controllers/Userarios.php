@@ -31,10 +31,6 @@ class Userarios extends Controller
         }
     }
 
-    public function perfilUsuario(){
-        return Inertia::render('Usuario/Perfil');
-    }
-
     public function viewUsuario($id)
     {
         $usuario = Usuario::where('id', $id)->get();
