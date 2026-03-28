@@ -51,6 +51,17 @@ class arquivo extends Controller
 
     public function destroy(string $id)
     {
-        //
+        try {
+            $usuario = ArquivoModel::findOrFail($id);
+            $usuario->delete();
+
+            return response()->json(['message' => 'Usuário deletado com sucesso'], 201);
+        } catch (\Illuminate\Validation\ValidationException $error) {
+            return response()->json([
+                'erros' => $error->errors()
+            ], 422);
+        } catch (\Exception $error) {
+            return response()->json(['error' => 'Usuário não encontrado'], 201);
+        }
     }
 }
