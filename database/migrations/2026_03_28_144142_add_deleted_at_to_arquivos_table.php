@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('arquivos', function (Blueprint $table) {
-            $table->string('deleted_at')->after('updated_at')->nullable();
+            $table->timestamp('deleted_at')->after('updated_at')->nullable();
         });
     }
 
