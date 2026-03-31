@@ -19,7 +19,7 @@ class arquivo extends Controller
 
     public function index(Request $request)
     {
-        $arquivos = ArquivoModel::where('usuario_id', $request->user_id)->get();
+        $arquivos = ArquivoModel::where('usuario_id', $request->user_id)->where('deleted_at', null)->get();
 
         return response()->json($arquivos);
     }
