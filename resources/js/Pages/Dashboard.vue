@@ -19,38 +19,65 @@
     });
 
     const filteredUsuarios = computed(() => {
-        if (!search.value.trim()) return usuarios.value;
-        const q = search.value.toLowerCase();
-        return usuarios.value.filter(u =>
-            u.nome?.toLowerCase().includes(q) ||
-            u.email?.toLowerCase().includes(q) ||
-            u.telefone?.includes(q)
-        );
+        if (!search.value || !search.value.trim()) {
+            return usuarios.value;
+        }
+
+        const q = search.value.toLowerCase().trim();
+
+        return usuarios.value.filter(u => {
+            const telefoneStr = String(u.telefone || '').trim();
+
+            return (
+                u.nome?.toLowerCase().includes(q) ||
+                u.email?.toLowerCase().includes(q) ||
+                telefoneStr.includes(q) ||
+                u.descricao?.toLowerCase().includes(q)
+            );
+        });
     });
 
     const buscarUsuarios = async () => {
         isLoading.value = true;
         try {
-            const resposta = await axios.post('/api/pegarUsuarios', { user_id: user.value.id });
-            usuarios.value = resposta.data;
+            const resposta = await axios.post('/api/pegarUsuarios', { 
+                user_id: user.value.id 
+            });
+
+            usuarios.value = resposta.data.map(usuario => ({
+                ...usuario,
+                telefone: String(usuario.telefone || '')
+            }));
+            
+        } catch (error) {
+            console.error('Erro ao buscar leads:', error);
         } finally {
             isLoading.value = false;
         }
     };
 
     const addUsuario = async () => {
-        const payload = { ...form.value, user_id: user.value.id };
+        const payload = { 
+            ...form.value, 
+            user_id: user.value.id 
+        };
+
         payload.telefone = payload.telefone.replace(/\D/g, '');
+
         try {
-            await axios.post('api/usuarios', payload);
+            await axios.post('/api/usuarios', payload);
+            
             await buscarUsuarios();
             closeModal();
+            search.value = '';
         } catch (error) {
-            console.error(error);
+            console.error('Erro ao adicionar lead:', error);
         }
     };
 
-    const openModal = () => { isModalOpen.value = true; };
+    const openModal = () => { 
+        isModalOpen.value = true; 
+    };
 
     const closeModal = () => {
         form.value = { nome: '', email: '', telefone: '', descricao: '' };
@@ -155,7 +182,7 @@
                             <input
                                 v-model="search"
                                 type="text"
-                                placeholder="Buscar por nome, e-mail..."
+                                placeholder="Buscar por nome, e-mail ou telefone..."
                                 class="search-input"
                             />
                         </div>
@@ -165,7 +192,7 @@
                         <span class="col-lead">Lead</span>
                         <span class="col-contact">Contato</span>
                         <span class="col-desc">Descrição</span>
-                        <span class="col-action"></span>
+                        <span class="col-action">Ação</span>
                     </div>
 
                     <div v-if="isLoading" class="state-center">
@@ -257,7 +284,15 @@
                             <div class="field-row">
                                 <div class="field">
                                     <label class="field-label">Telefone*</label>
-                                    <input type="tel" v-model="form.telefone" placeholder="(00) 00000-0000" v-maska data-maska="(##) #####-####" class="field-input" required />
+                                    <input 
+                                        type="tel" 
+                                        v-model="form.telefone" 
+                                        placeholder="(00) 00000-0000" 
+                                        v-maska 
+                                        data-maska="(##) #####-####" 
+                                        class="field-input" 
+                                        required 
+                                    />
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Descrição*</label>
