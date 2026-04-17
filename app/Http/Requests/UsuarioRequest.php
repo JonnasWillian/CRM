@@ -31,6 +31,7 @@ class UsuarioRequest extends FormRequest
             'email' => 'required|email|unique:usuarios,email',
             'telefone' => 'required|string',
             'descricao' => 'nullable|string',
+            'tag_id' => 'nullable',
             'user_id' => 'required',
         ];
     }
@@ -44,6 +45,7 @@ class UsuarioRequest extends FormRequest
             'email' => 'required|email|unique:usuarios,email,' . $id,
             'telefone' => 'required|string|min:7',
             'descricao' => 'nullable|string',
+            'tag_id' => 'nullable',
         ];
     }
 

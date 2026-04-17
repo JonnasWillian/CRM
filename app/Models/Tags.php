@@ -6,21 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 
-class Usuario extends Model
+class Tags extends Model
 {
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'nome',
-        'email',
+        'id',
         'descricao',
-        'telefone',
-        'user_id',
-        'tag_id'
+        'ordem'
     ];
-
-    public function tag()
-    {
-        return $this->belongsTo(Tags::class, 'tag_id');
-    }
 }
