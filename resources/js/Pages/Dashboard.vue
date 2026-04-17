@@ -63,6 +63,7 @@
         };
 
         payload.telefone = payload.telefone.replace(/\D/g, '');
+        payload.tag_id = 1;
 
         try {
             await axios.post('/api/usuarios', payload);
@@ -228,6 +229,7 @@
                                 <div class="lead-name-block">
                                     <p class="lead-name">{{ usuario.nome }}</p>
                                     <p class="lead-email">{{ usuario.email }}</p>
+                                    <p class="lead-email">{{ usuario?.tag?.descricao }}</p>
                                 </div>
                             </div>
 
