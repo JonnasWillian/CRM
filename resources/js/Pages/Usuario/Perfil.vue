@@ -12,6 +12,8 @@
     const usuario = ref(null);
     const anotacoes = ref([]);
     const arquivos = ref([]);
+    const tags = ref([]);
+    const tagSelecionada = ref(null);
     const editingNoteId = ref(null);
     const showAddNote = ref(false);
     const isUploading = ref(false);
@@ -38,6 +40,7 @@
         try {
             const response = await axios.get(`/api/usuarioPerfil/${id}`);
             usuario.value = response.data[0];
+            tagSelecionada.value = usuario.value?.tag_id ?? null;
         } catch {
             messageError('Erro ao buscar usuário!');
         }
@@ -47,13 +50,26 @@
         isSavingUser.value = true;
         usuario.value.telefone = usuario.value.telefone?.replace(/\D/g, '');
         try {
-            await axios.put(`api/usuarios/${usuario.value.id}`, { ...usuario.value });
+            await axios.put(`api/usuarios/${usuario.value.id}`, {
+                ...usuario.value,
+                tag_id: tagSelecionada.value,
+            });
             await buscarUsuario(idPerfil);
             showToast('Dados do lead salvos com sucesso!');
         } catch {
             messageError('Erro ao atualizar usuário!');
         } finally {
             isSavingUser.value = false;
+        }
+    };
+
+    // ── Tags ──
+    const buscarTags = async () => {
+        try {
+            const response = await axios.post('/api/tags');
+            tags.value = response.data;
+        } catch {
+            messageError('Erro ao buscar tags!');
         }
     };
 
@@ -218,6 +234,7 @@
             buscarUsuario(idPerfil);
             buscarAnotacao(idPerfil);
             buscarAnexo(idPerfil);
+            buscarTags();
         } else {
             router.visit(route('dashboard'));
         }
@@ -275,6 +292,9 @@
                                 <span class="meta-badge meta-badge--note">
                                     {{ anotacoes.length }} anotaç{{ anotacoes.length !== 1 ? 'ões' : 'ão' }}
                                 </span>
+                                <span v-if="usuario.tag_id" class="meta-badge meta-badge--tag">
+                                    {{ tags.find(t => t.id === usuario.tag_id)?.descricao }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -320,6 +340,22 @@
                                         rows="3"
                                         placeholder="Observações gerais..."
                                     />
+                                </div>
+                                <div class="edit-field">
+                                    <label class="edit-label">Tag</label>
+                                    <div class="select-wrapper">
+                                        <select v-model="tagSelecionada" class="edit-input edit-select">
+                                            <option :value="null">Sem tag</option>
+                                            <option
+                                                v-for="tag in tags"
+                                                :key="tag.id"
+                                                :value="tag.id"
+                                            >
+                                                {{ tag.descricao }}
+                                            </option>
+                                        </select>
+                                        <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -566,6 +602,8 @@
         --red-bg:   rgba(240, 98, 146, 0.1);
         --purple:   #a78bfa;
         --purple-bg: rgba(167, 139, 250, 0.1);
+        --yellow:   #f5c542;
+        --yellow-bg: rgba(245, 197, 66, 0.12);
         --t1:       #eaedf5;
         --t2:       #8892ab;
         --t3:       #4a5470;
@@ -698,6 +736,11 @@
         border-color: rgba(167,139,250,0.2);
         color: var(--purple);
     }
+    .meta-badge--tag {
+        background: var(--yellow-bg);
+        border-color: rgba(245,197,66,0.25);
+        color: var(--yellow);
+    }
 
     /* ── 3-col layout ── */
     .three-col {
@@ -796,6 +839,30 @@
     }
     .edit-input::placeholder { color: var(--t3); }
     .edit-textarea { resize: vertical; min-height: 72px; }
+
+    /* ── Select ── */
+    .select-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .edit-select {
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        padding-right: 2.25rem;
+    }
+    .edit-select option {
+        background: #0b0f1a;
+        color: #eaedf5;
+    }
+    .select-arrow {
+        position: absolute;
+        right: 0.85rem;
+        pointer-events: none;
+        color: var(--t3);
+        flex-shrink: 0;
+    }
 
     /* ── Save button ── */
     .btn-save-full {

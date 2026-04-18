@@ -11,6 +11,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/pegarUsuarios', [Userarios::class, 'view']);
+Route::post('/tags', [Userarios::class, 'tags']);
 Route::post('/usuarios', [Userarios::class, 'create']);
 Route::get('/usuarioPerfil/{id}', [Userarios::class, 'viewUsuario']);
 Route::put('/usuarios/{id}', [Userarios::class, 'update']);
