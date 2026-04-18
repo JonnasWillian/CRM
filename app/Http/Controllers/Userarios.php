@@ -7,16 +7,25 @@ use App\Http\Requests\UsuarioRequest;
 use Inertia\Inertia;
 
 use App\Models\Usuario;
+use App\Models\Tags;
 use App\Models\Anotacao;
 
 class Userarios extends Controller
 {
     public function view(Request $request)
     {
-        $usuarios = Usuario::where('user_id', $request->user_id)->get();
+        $usuarios = Usuario::where('user_id', $request->user_id)->with('tag')->get();
         
         return response()->json($usuarios);
     }
+
+    public function tags()
+    {
+        $tags = Tags::get();
+        
+        return response()->json($tags);
+    }
+
 
     public function create(UsuarioRequest $request)
     {
