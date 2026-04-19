@@ -18,6 +18,18 @@
         descricao: '',
     });
 
+    const getTagColorClass = (tagId) => {
+        switch (Number(tagId)) {
+            case 1: return 'tag-captacao';
+            case 2: return 'tag-desenvolvimento';
+            case 3: return 'tag-concluido';
+            case 4: return 'tag-cancelado';
+            case 5: return 'tag-pausado';
+            case 6: return 'tag-negociacao';
+            default: return 'tag-default';
+        }
+    };
+
     const filteredUsuarios = computed(() => {
         if (!search.value || !search.value.trim()) {
             return usuarios.value;
@@ -229,7 +241,7 @@
                                 <div class="lead-name-block">
                                     <p class="lead-name">{{ usuario.nome }}</p>
                                     <p class="lead-email">{{ usuario.email }}</p>
-                                    <p class="lead-email">{{ usuario?.tag?.descricao }}</p>
+                                    <p class="lead-email tag" :class="getTagColorClass(usuario?.tag?.id)">{{ usuario?.tag?.descricao }}</p>
                                 </div>
                             </div>
 
@@ -337,6 +349,52 @@
         min-height: 100vh;
         position: relative;
         overflow-x: hidden;
+    }
+
+    /* Cores das Tags */
+    .tag {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-top: 4px;
+        width: fit-content;
+    }
+
+    .tag-captacao {
+        color: #60a5fa;        /* Azul */
+        background: rgba(96, 165, 250, 0.12);
+    }
+
+    .tag-desenvolvimento {
+        color: #f59e0b;        /* Laranja/Amarelo */
+        background: rgba(245, 158, 11, 0.12);
+    }
+
+    .tag-concluido {
+        color: #34d399;        /* Verde */
+        background: rgba(52, 211, 153, 0.12);
+    }
+
+    .tag-cancelado {
+        color: #ef4444;        /* Vermelho */
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    .tag-pausado {
+        color: #8b5cf6;        /* Roxo */
+        background: rgba(139, 92, 246, 0.12);
+    }
+
+    .tag-negociacao {
+        color: #ec4899;        /* Rosa */
+        background: rgba(236, 72, 153, 0.12);
+    }
+
+    .tag-default {
+        color: #94a3b8;
+        background: rgba(148, 163, 184, 0.12);
     }
 
     .dot-grid {

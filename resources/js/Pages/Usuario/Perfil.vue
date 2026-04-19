@@ -35,6 +35,18 @@
 
     const messageError = (msg) => showToast(msg, 'error');
 
+    const getTagColorClass = (tagId) => {
+        switch (Number(tagId)) {
+            case 1: return 'tag-captacao';
+            case 2: return 'tag-desenvolvimento';
+            case 3: return 'tag-concluido';
+            case 4: return 'tag-cancelado';
+            case 5: return 'tag-pausado';
+            case 6: return 'tag-negociacao';
+            default: return 'tag-default';
+        }
+    };
+
     // ── Usuário ──
     const buscarUsuario = async (id) => {
         try {
@@ -292,7 +304,7 @@
                                 <span class="meta-badge meta-badge--note">
                                     {{ anotacoes.length }} anotaç{{ anotacoes.length !== 1 ? 'ões' : 'ão' }}
                                 </span>
-                                <span v-if="usuario.tag_id" class="meta-badge meta-badge--tag">
+                                <span v-if="usuario.tag_id" class="meta-badge tag" :class="getTagColorClass(usuario.tag_id)">
                                     {{ tags.find(t => t.id === usuario.tag_id)?.descricao }}
                                 </span>
                             </div>
@@ -1147,5 +1159,51 @@
         .three-col { grid-template-columns: 1fr; }
         .three-col > .panel:first-child { grid-column: auto; }
         .profile-hero { padding: 1.1rem 1.25rem; }
+    }
+
+    /* Cores das Tags */
+    .tag {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-top: 4px;
+        width: fit-content;
+    }
+
+    .tag-captacao {
+        color: #60a5fa;        /* Azul */
+        background: rgba(96, 165, 250, 0.12);
+    }
+
+    .tag-desenvolvimento {
+        color: #f59e0b;        /* Laranja/Amarelo */
+        background: rgba(245, 158, 11, 0.12);
+    }
+
+    .tag-concluido {
+        color: #34d399;        /* Verde */
+        background: rgba(52, 211, 153, 0.12);
+    }
+
+    .tag-cancelado {
+        color: #ef4444;        /* Vermelho */
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    .tag-pausado {
+        color: #8b5cf6;        /* Roxo */
+        background: rgba(139, 92, 246, 0.12);
+    }
+
+    .tag-negociacao {
+        color: #ec4899;        /* Rosa */
+        background: rgba(236, 72, 153, 0.12);
+    }
+
+    .tag-default {
+        color: #94a3b8;
+        background: rgba(148, 163, 184, 0.12);
     }
 </style>
