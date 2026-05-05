@@ -34,7 +34,7 @@
         { key: 'projetos',   label: 'Projetos',   icon: 'layers' },
     ];
 
-    const noteForm = useForm({ descricao: '', usuario_id: user.value.id });
+    const noteForm = useForm({ descricao: '', usuario_id: idPerfil });
     const editNoteForm = useForm({ id: '', descricao: '', usuario_id: user.value.id });
 
     let toastTimer = null;
