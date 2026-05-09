@@ -29,6 +29,11 @@ class ProjetoRequest extends FormRequest
         return [
             'nome' => 'required|string|min:5',
             'descricao' => 'nullable|string',
+            'preco' => 'nullable|numeric',
+            'data_inicial' => 'nullable|date',
+            'data_final' => 'nullable|date',
+            'parcelas' => 'nullable|boolean',
+            'qtd_parcelas' => 'nullable|numeric',
             'status_id' => 'required',
             'usuario_id' => 'required',
         ];
@@ -39,6 +44,11 @@ class ProjetoRequest extends FormRequest
         return [
             'nome' => 'required|string|min:5',
             'descricao' => 'nullable|string',
+            'preco' => 'nullable|numeric',
+            'data_inicial' => 'nullable|date',
+            'data_final' => 'nullable|date',
+            'parcelas' => 'nullable|boolean',
+            'qtd_parcelas' => 'nullable|numeric',
             'status_id' => 'required',
         ];
     }
