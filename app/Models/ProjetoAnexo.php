@@ -6,13 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class arquivo extends Model
+class ProjetoAnexo extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'projetoAnexos';
+
     protected $fillable = [
-        'local',
         'nome',
-        'usuario_id',
+        'local',
+        'projeto_id',
     ];
+
+    public function projeto()
+    {
+        return $this->belongsTo(Projeto::class, 'projeto_id');
+    }
 }

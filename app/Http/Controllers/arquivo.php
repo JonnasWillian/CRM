@@ -7,8 +7,6 @@ use App\Http\Requests\ArquivoRequest;
 use App\Service\ArquivoService;
 use App\Models\arquivo AS ArquivoModel;
 
-use function Symfony\Component\Clock\now;
-
 class arquivo extends Controller
 {
     protected $arquivoService;
@@ -19,7 +17,7 @@ class arquivo extends Controller
 
     public function index(Request $request)
     {
-        $arquivos = ArquivoModel::where('usuario_id', $request->user_id)->where('deleted_at', null)->get();
+        $arquivos = ArquivoModel::where('usuario_id', $request->user_id)->get();
 
         return response()->json($arquivos);
     }
@@ -55,14 +53,11 @@ class arquivo extends Controller
     {
         try {
             $arquivo = ArquivoModel::findOrFail($id);
-            $arquivo->deleted_at = now()->format('Y-m-d H:i:s');
-            $arquivo->save();
+            $arquivo->delete();
 
-            return response()->json(['message' => 'Usuário deletado com sucesso'], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors()
-            ], 422);
+            return response()->json(['message' => 'Arquivo deletado com sucesso'], 200);
+        } catch (\Exception $error) {
+            return response()->json(['error' => 'Arquivo não encontrado'], 404);
         }
     }
 }
