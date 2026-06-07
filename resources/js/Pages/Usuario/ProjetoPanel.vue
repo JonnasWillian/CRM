@@ -603,7 +603,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="proj-file-actions">
-                                                    <a :href="`/storage/${anexo.local}`" download class="proj-icon-btn proj-icon-btn--download" title="Baixar"><Download :size="11" /></a>
+                                                    <a :href="`/storage/${anexo.local}`" :download="anexo.nome" class="proj-icon-btn proj-icon-btn--download" title="Baixar"><Download :size="11" /></a>
                                                     <button @click.stop="excluirAnexo(anexo.id, projeto.id)" class="proj-icon-btn proj-icon-btn--delete" title="Excluir"><Trash2 :size="11" /></button>
                                                 </div>
                                             </div>
