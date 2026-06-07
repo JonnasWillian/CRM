@@ -483,7 +483,7 @@
                                         </div>
                                     </div>
                                     <div class="file-item-actions">
-                                        <a :href="`/storage/${arquivo.local}`" download class="icon-btn icon-btn--download"><Download :size="13" /></a>
+                                        <a :href="`/storage/${arquivo.local}`" :download="arquivo.nome" class="icon-btn icon-btn--download"><Download :size="13" /></a>
                                         <button @click="excluirArquivo(arquivo.id)" class="icon-btn icon-btn--delete"><Trash2 :size="13" /></button>
                                     </div>
                                 </div>
