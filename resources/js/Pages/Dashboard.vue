@@ -18,6 +18,8 @@
         descricao: '',
     });
 
+    const formErrors = ref({});
+
     const getTagColorClass = (tagId) => {
         switch (Number(tagId)) {
             case 1: return 'tag-captacao';
@@ -69,9 +71,11 @@
     };
 
     const addUsuario = async () => {
-        const payload = { 
-            ...form.value, 
-            user_id: user.value.id 
+        formErrors.value = {};
+
+        const payload = {
+            ...form.value,
+            user_id: user.value.id
         };
 
         payload.telefone = payload.telefone.replace(/\D/g, '');
@@ -79,21 +83,27 @@
 
         try {
             await axios.post('/api/usuarios', payload);
-            
             await buscarUsuarios();
             closeModal();
             search.value = '';
         } catch (error) {
-            console.error('Erro ao adicionar lead:', error);
+            const data = error?.response?.data;
+            const erros = data?.errors ?? data?.erros ?? {};
+            if (Object.keys(erros).length) {
+                formErrors.value = erros;
+            } else {
+                formErrors.value = { _geral: ['Erro ao cadastrar lead. Verifique os dados e tente novamente.'] };
+            }
         }
     };
 
-    const openModal = () => { 
-        isModalOpen.value = true; 
+    const openModal = () => {
+        isModalOpen.value = true;
     };
 
     const closeModal = () => {
         form.value = { nome: '', email: '', telefone: '', descricao: '' };
+        formErrors.value = {};
         isModalOpen.value = false;
     };
 
@@ -235,6 +245,7 @@
                             :key="usuario.id"
                             class="table-row"
                             :style="{ animationDelay: `${i * 0.04}s` }"
+                            @click="usuarioPerfil(usuario.id)"
                         >
                             <div class="col-lead">
                                 <div class="lead-avatar">{{ getInitials(usuario.nome) }}</div>
@@ -259,7 +270,7 @@
                             </div>
 
                             <div class="col-action">
-                                <button class="row-action" @click="usuarioPerfil(usuario.id)" title="Ver perfil">
+                                <button class="row-action" @click.stop="usuarioPerfil(usuario.id)" title="Ver perfil">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                                     </svg>
@@ -289,30 +300,60 @@
                         <form @submit.prevent="addUsuario" class="modal-form">
                             <div class="field">
                                 <label class="field-label">Nome completo*</label>
-                                <input type="text" v-model="form.nome" placeholder="Ex: João Silva" class="field-input" minlength="6" required />
+                                <input
+                                    type="text"
+                                    v-model="form.nome"
+                                    placeholder="Ex: João Silva"
+                                    class="field-input"
+                                    :class="{ 'field-input--error': formErrors.nome }"
+                                    minlength="5"
+                                    required
+                                />
+                                <p v-if="formErrors.nome" class="field-error">{{ formErrors.nome[0] }}</p>
                             </div>
+
                             <div class="field">
                                 <label class="field-label">E-mail*</label>
-                                <input type="email" v-model="form.email" placeholder="email@exemplo.com" class="field-input" required />
+                                <input
+                                    type="email"
+                                    v-model="form.email"
+                                    placeholder="email@exemplo.com"
+                                    class="field-input"
+                                    :class="{ 'field-input--error': formErrors.email }"
+                                    required
+                                />
+                                <p v-if="formErrors.email" class="field-error">{{ formErrors.email[0] }}</p>
                             </div>
+
                             <div class="field-row">
                                 <div class="field">
                                     <label class="field-label">Telefone*</label>
-                                    <input 
-                                        type="tel" 
-                                        v-model="form.telefone" 
-                                        placeholder="(00) 00000-0000" 
-                                        v-maska 
-                                        data-maska="(##) #####-####" 
-                                        class="field-input" 
-                                        required 
+                                    <input
+                                        type="tel"
+                                        v-model="form.telefone"
+                                        placeholder="(00) 00000-0000"
+                                        v-maska
+                                        data-maska="(##) #####-####"
+                                        class="field-input"
+                                        :class="{ 'field-input--error': formErrors.telefone }"
+                                        required
                                     />
+                                    <p v-if="formErrors.telefone" class="field-error">{{ formErrors.telefone[0] }}</p>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Descrição*</label>
-                                    <input type="text" v-model="form.descricao" placeholder="Observação rápida" class="field-input" minlength="6" required />
+                                    <label class="field-label">Descrição</label>
+                                    <input
+                                        type="text"
+                                        v-model="form.descricao"
+                                        placeholder="Observação rápida"
+                                        class="field-input"
+                                        :class="{ 'field-input--error': formErrors.descricao }"
+                                    />
+                                    <p v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao[0] }}</p>
                                 </div>
                             </div>
+
+                            <p v-if="formErrors._geral" class="field-error field-error--geral">{{ formErrors._geral[0] }}</p>
 
                             <div class="modal-footer">
                                 <button type="button" class="btn-ghost" @click="closeModal">Cancelar</button>
@@ -634,6 +675,7 @@
         animation: fadeRow 0.35s cubic-bezier(0.22,1,0.36,1) both;
     }
     .table-row:last-child { border-bottom: none; }
+    .table-row { cursor: pointer; }
     .table-row:hover { background: rgba(109,93,252,0.05); }
 
     @keyframes fadeRow {
@@ -832,6 +874,21 @@
 
     .field-input::placeholder { color: var(--t3); }
     .field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+    .field-input--error { border-color: #f06292 !important; }
+    .field-input--error:focus { box-shadow: 0 0 0 3px rgba(240,98,146,0.15) !important; }
+
+    .field-error {
+        font-size: 0.72rem;
+        color: #f06292;
+        margin-top: 0.2rem;
+    }
+    .field-error--geral {
+        text-align: center;
+        padding: 0.5rem 0.75rem;
+        background: rgba(240,98,146,0.08);
+        border: 1px solid rgba(240,98,146,0.25);
+        border-radius: 8px;
+    }
 
     .modal-footer {
         display: flex;
