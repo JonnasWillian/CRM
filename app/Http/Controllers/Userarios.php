@@ -9,6 +9,11 @@ use Inertia\Inertia;
 use App\Models\Usuario;
 use App\Models\Tags;
 use App\Models\Anotacao;
+use App\Models\arquivo AS ArquivoModel;
+use App\Models\Projeto;
+use App\Models\ProjetoAnotacao;
+use App\Models\ProjetoAnexo;
+use App\Models\UsuarioTagHistorico;
 
 class Userarios extends Controller
 {
@@ -52,7 +57,16 @@ class Userarios extends Controller
         try {
             $usuario = Usuario::findOrFail($id);
 
+            $tagAnterior = $usuario->tag_id;
             $usuario->update($request->validated());
+
+            if ($tagAnterior !== $usuario->tag_id) {
+                UsuarioTagHistorico::create([
+                    'usuario_id'      => $id,
+                    'tag_id_anterior' => $tagAnterior,
+                    'tag_id_novo'     => $usuario->tag_id,
+                ]);
+            }
 
             return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -61,6 +75,77 @@ class Userarios extends Controller
             ], 422);
         } catch (\Exception $error) {
             return response()->json(['error' => 'Usuário não encontrado'], 404);
+        }
+    }
+
+    public function timeline($id)
+    {
+        try {
+            $usuario = Usuario::findOrFail($id);
+            $events = [];
+
+            $events[] = [
+                'tipo'      => 'lead_criado',
+                'descricao' => 'Lead cadastrado no sistema',
+                'data'      => $usuario->created_at,
+            ];
+
+            foreach (Anotacao::where('usuario_id', $id)->get() as $a) {
+                $events[] = [
+                    'tipo'     => 'anotacao',
+                    'descricao' => $a->descricao,
+                    'data'     => $a->created_at,
+                ];
+            }
+
+            foreach (ArquivoModel::where('usuario_id', $id)->get() as $f) {
+                $events[] = [
+                    'tipo' => 'arquivo',
+                    'nome' => $f->nome ?: 'Arquivo sem nome',
+                    'data' => $f->created_at,
+                ];
+            }
+
+            foreach (Projeto::where('usuario_id', $id)->get() as $p) {
+                $events[] = [
+                    'tipo' => 'projeto',
+                    'nome' => $p->nome,
+                    'data' => $p->created_at,
+                ];
+
+                foreach (ProjetoAnotacao::where('projeto_id', $p->id)->get() as $pa) {
+                    $events[] = [
+                        'tipo'         => 'projeto_anotacao',
+                        'descricao'    => $pa->descricao,
+                        'projeto_nome' => $p->nome,
+                        'data'         => $pa->created_at,
+                    ];
+                }
+
+                foreach (ProjetoAnexo::where('projeto_id', $p->id)->get() as $pf) {
+                    $events[] = [
+                        'tipo'         => 'projeto_anexo',
+                        'nome'         => $pf->nome ?: 'Arquivo sem nome',
+                        'projeto_nome' => $p->nome,
+                        'data'         => $pf->created_at,
+                    ];
+                }
+            }
+
+            foreach (UsuarioTagHistorico::with(['tagAnterior', 'tagNovo'])->where('usuario_id', $id)->get() as $h) {
+                $events[] = [
+                    'tipo'          => 'status_alterado',
+                    'tag_anterior'  => $h->tagAnterior->descricao ?? '—',
+                    'tag_novo'      => $h->tagNovo->descricao ?? '—',
+                    'data'          => $h->created_at,
+                ];
+            }
+
+            usort($events, fn($a, $b) => $b['data'] <=> $a['data']);
+
+            return response()->json($events);
+        } catch (\Exception $error) {
+            return response()->json(['error' => 'Lead não encontrado'], 404);
         }
     }
 
