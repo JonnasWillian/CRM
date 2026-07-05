@@ -20,6 +20,35 @@
 
     const formErrors = ref({});
 
+    const metricas = ref(null);
+    const isLoadingMetricas = ref(false);
+
+    const tagPaletteMap = {
+        1: { color: '#60a5fa', bg: 'rgba(96,165,250,0.18)'  },
+        2: { color: '#f59e0b', bg: 'rgba(245,158,11,0.18)'  },
+        3: { color: '#34d399', bg: 'rgba(52,211,153,0.18)'  },
+        4: { color: '#ef4444', bg: 'rgba(239,68,68,0.18)'   },
+        5: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.18)'  },
+        6: { color: '#ec4899', bg: 'rgba(236,72,153,0.18)'  },
+    };
+    const getTagPalette = (id) => tagPaletteMap[id] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.18)' };
+
+    const formatBRL = (v) =>
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+    const maxLeadsTag = computed(() =>
+        Math.max(1, ...(metricas.value?.leads_por_tag?.map(t => t.total) ?? [1]))
+    );
+
+    const buscarMetricas = async () => {
+        isLoadingMetricas.value = true;
+        try {
+            const res = await axios.post('/api/metricas', { user_id: user.value.id });
+            metricas.value = res.data;
+        } catch {  }
+        finally { isLoadingMetricas.value = false; }
+    };
+
     const getTagColorClass = (tagId) => {
         switch (Number(tagId)) {
             case 1: return 'tag-captacao';
@@ -115,7 +144,10 @@
     const getInitials = (nome) =>
         nome?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '?';
 
-    onMounted(buscarUsuarios);
+    onMounted(() => {
+        buscarUsuarios();
+        buscarMetricas();
+    });
 </script>
 
 <template>
@@ -141,54 +173,146 @@
                     </button>
                 </div>
 
-                <div class="summary-row">
-                    <div class="summary-card summary-card--accent">
-                        <div class="summary-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="summary-value">{{ usuarios.length }}</p>
-                            <p class="summary-label">Total de Leads</p>
-                        </div>
-                    </div>
-                    <!-- TO DO: analisar indicadores para adicionar -->
-                    <!-- <div class="summary-card">
-                        <div class="summary-icon summary-icon--green">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="summary-value">99.9%</p>
-                            <p class="summary-label">Uptime Garantido</p>
-                        </div>
-                    </div>
+                <!-- ── Métricas ── -->
+                <div class="metrics-section">
 
-                    <div class="summary-card">
-                        <div class="summary-icon summary-icon--blue">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
+                    <!-- Skeleton enquanto carrega -->
+                    <template v-if="isLoadingMetricas">
+                        <div class="summary-row">
+                            <div v-for="i in 4" :key="i" class="summary-card skel-card" />
                         </div>
-                        <div>
-                            <p class="summary-value">24/7</p>
-                            <p class="summary-label">Suporte Dedicado</p>
+                        <div class="metrics-row2">
+                            <div class="skel-block skel-chart" />
+                            <div class="skel-block skel-donut" />
                         </div>
-                    </div>
+                    </template>
 
-                    <div class="summary-card">
-                        <div class="summary-icon summary-icon--orange">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                            </svg>
+                    <template v-else-if="metricas">
+                        <!-- Row 1: 4 stat cards -->
+                        <div class="summary-row">
+
+                            <!-- Leads Ativos -->
+                            <div class="summary-card">
+                                <div class="summary-icon summary-icon--green">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </div>
+                                <div>
+                                    <p class="summary-value" style="color:#3ecf8e">{{ metricas.leads_ativos }}</p>
+                                    <p class="summary-label">Leads Ativos</p>
+                                    <p class="summary-sub">{{ metricas.leads_arquivados }} arquivados</p>
+                                </div>
+                            </div>
+
+                            <!-- Novos 30 dias -->
+                            <div class="summary-card">
+                                <div class="summary-icon summary-icon--blue">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"/></svg>
+                                </div>
+                                <div>
+                                    <p class="summary-value" style="color:#38bdf8">{{ metricas.leads_30_dias }}</p>
+                                    <p class="summary-label">Novos (30 dias)</p>
+                                    <p class="summary-sub">de {{ metricas.total_leads }} total</p>
+                                </div>
+                            </div>
+
+                            <!-- Valor em aberto -->
+                            <div class="summary-card">
+                                <div class="summary-icon summary-icon--orange">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                </div>
+                                <div class="summary-text-overflow">
+                                    <p class="summary-value summary-value--sm" style="color:#fb923c">{{ formatBRL(metricas.valor_projetos_abertos) }}</p>
+                                    <p class="summary-label">Em aberto</p>
+                                    <p class="summary-sub">projetos ativos</p>
+                                </div>
+                            </div>
+
+                            <!-- Fechado no mês -->
+                            <div class="summary-card">
+                                <div class="summary-icon" style="background:rgba(167,139,250,0.15);color:#a78bfa">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </div>
+                                <div class="summary-text-overflow">
+                                    <p class="summary-value summary-value--sm" style="color:#a78bfa">{{ formatBRL(metricas.valor_fechado_mes) }}</p>
+                                    <p class="summary-label">Fechado no mês</p>
+                                    <p class="summary-sub">status concluído</p>
+                                </div>
+                            </div>
+
                         </div>
-                        <div>
-                            <p class="summary-value">+10k</p>
-                            <p class="summary-label">Usuários Gerenciados</p>
+
+                        <!-- Row 2: gráfico de barras + taxa de conversão -->
+                        <div class="metrics-row2">
+
+                            <!-- Leads por estágio -->
+                            <div class="metric-card chart-card">
+                                <p class="metric-card-title">Leads por Estágio</p>
+                                <div v-if="metricas.leads_por_tag.length" class="bar-list">
+                                    <div v-for="tag in metricas.leads_por_tag" :key="tag.id" class="bar-row">
+                                        <span class="bar-label">{{ tag.descricao }}</span>
+                                        <div class="bar-track">
+                                            <div
+                                                class="bar-fill"
+                                                :style="{
+                                                    width: (tag.total / maxLeadsTag * 100) + '%',
+                                                    background: getTagPalette(tag.id).color,
+                                                    boxShadow: `0 0 8px ${getTagPalette(tag.id).color}55`
+                                                }"
+                                            />
+                                        </div>
+                                        <span class="bar-count" :style="{ color: getTagPalette(tag.id).color }">{{ tag.total }}</span>
+                                    </div>
+                                </div>
+                                <p v-else class="metric-empty">Nenhum lead com tag definida.</p>
+                            </div>
+
+                            <!-- Taxa de conversão -->
+                            <div class="metric-card conv-card">
+                                <p class="metric-card-title">Taxa de Conversão</p>
+                                <div class="donut-wrap">
+                                    <svg viewBox="0 0 100 100" class="donut-svg" aria-hidden="true">
+                                        <!-- Track -->
+                                        <circle cx="50" cy="50" r="35" fill="none" stroke="#1e2840" stroke-width="8" />
+                                        <!-- Fill -->
+                                        <circle
+                                            cx="50" cy="50" r="35" fill="none"
+                                            :stroke="metricas.taxa_conversao >= 50 ? '#3ecf8e' : '#6d5dfc'"
+                                            stroke-width="8"
+                                            stroke-linecap="round"
+                                            :stroke-dasharray="`${metricas.taxa_conversao * 2.199} 220`"
+                                            transform="rotate(-90 50 50)"
+                                            style="transition: stroke-dasharray 0.8s ease"
+                                        />
+                                        <text x="50" y="47" text-anchor="middle" font-size="17" font-weight="700" font-family="Syne,sans-serif" fill="#eaedf5">{{ metricas.taxa_conversao }}%</text>
+                                        <text x="50" y="60" text-anchor="middle" font-size="6.5" fill="#4a5470">conversão</text>
+                                    </svg>
+                                </div>
+                                <p class="conv-legend">
+                                    <span class="conv-highlight">{{ metricas.total_com_projeto }}</span>
+                                    de
+                                    <span class="conv-highlight">{{ metricas.total_leads }}</span>
+                                    leads têm projeto
+                                </p>
+                            </div>
+
                         </div>
-                    </div> -->
+                    </template>
+
+                    <!-- Fallback se metricas falhar -->
+                    <template v-else>
+                        <div class="summary-row">
+                            <div class="summary-card summary-card--accent">
+                                <div class="summary-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </div>
+                                <div>
+                                    <p class="summary-value">{{ usuarios.length }}</p>
+                                    <p class="summary-label">Total de Leads</p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
                 </div>
 
                 <div class="leads-panel">
@@ -902,9 +1026,125 @@
     .modal-enter-from, .modal-leave-to { opacity: 0; }
     .modal-enter-from .modal, .modal-leave-to .modal { transform: scale(0.95) translateY(12px); opacity: 0; }
 
+    /* ── Métricas ── */
+    .metrics-section { margin-bottom: 2rem; }
+
+    .summary-sub {
+        font-size: 0.68rem;
+        color: var(--t3);
+        margin-top: 0.1rem;
+    }
+    .summary-text-overflow { min-width: 0; overflow: hidden; }
+    .summary-value--sm {
+        font-size: 1.05rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Skeleton */
+    .skel-card { min-height: 82px; animation: skel-pulse 1.4s ease-in-out infinite; }
+    .skel-block {
+        background: rgba(255,255,255,0.04);
+        border-radius: 14px;
+        animation: skel-pulse 1.4s ease-in-out infinite;
+        border: 1px solid var(--border);
+    }
+    .skel-chart { flex: 1; height: 180px; }
+    .skel-donut { width: 240px; height: 180px; flex-shrink: 0; }
+    @keyframes skel-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.45; }
+    }
+
+    /* Row 2 */
+    .metrics-row2 {
+        display: flex;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    /* Cards de gráfico */
+    .metric-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        transition: border-color 0.2s;
+    }
+    .metric-card:hover { border-color: rgba(109,93,252,0.28); }
+    .metric-card-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--t2);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+    .metric-empty { font-size: 0.8rem; color: var(--t3); }
+
+    /* Barras */
+    .chart-card { flex: 1; }
+    .bar-list { display: flex; flex-direction: column; gap: 0.7rem; }
+    .bar-row { display: flex; align-items: center; gap: 0.65rem; }
+    .bar-label {
+        font-size: 0.75rem;
+        color: var(--t2);
+        width: 130px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .bar-track {
+        flex: 1;
+        height: 8px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 100px;
+        overflow: hidden;
+    }
+    .bar-fill {
+        height: 100%;
+        border-radius: 100px;
+        transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        min-width: 4px;
+    }
+    .bar-count {
+        font-size: 0.75rem;
+        font-weight: 600;
+        width: 20px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    /* Donut */
+    .conv-card {
+        width: 220px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .donut-wrap { width: 130px; height: 130px; margin: 0 auto 0.75rem; }
+    .donut-svg { width: 100%; height: 100%; overflow: visible; }
+    .conv-legend {
+        font-size: 0.78rem;
+        color: var(--t3);
+        text-align: center;
+        line-height: 1.5;
+    }
+    .conv-highlight {
+        font-weight: 600;
+        color: var(--t2);
+    }
+
     @media (max-width: 900px) {
         .content { padding: 1.75rem 1.5rem; }
         .summary-row { grid-template-columns: repeat(2, 1fr); }
+        .metrics-row2 { flex-direction: column; }
+        .conv-card { width: 100%; }
+        .skel-donut { width: 100%; }
         .table-head, .table-row { grid-template-columns: 1fr 1fr 36px; }
         .col-desc { display: none; }
         .table-head span:nth-child(3) { display: none; }
@@ -916,6 +1156,7 @@
         .btn-primary { width: 100%; justify-content: center; }
         .topbar-title { font-size: 1.5rem; }
         .summary-row { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .bar-label { width: 90px; }
         .panel-header { flex-direction: column; align-items: stretch; }
         .search-box { min-width: unset; }
         .table-head, .table-row { grid-template-columns: 1fr 36px; }
