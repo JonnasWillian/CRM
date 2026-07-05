@@ -7,6 +7,7 @@
     import { PlusCircle, FileText, Paperclip, Trash2, Edit, Save, X, Download, Upload, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-vue-next';
     import Swal from 'sweetalert2';
     import ProjetoPanel from './ProjetoPanel.vue';
+    import TimelinePanel from './TimelinePanel.vue';
 
     const user = computed(() => usePage().props.auth.user);
 
@@ -32,6 +33,7 @@
         { key: 'documentos', label: 'Documentos', icon: 'paperclip' },
         { key: 'anotacoes',  label: 'Anotações',  icon: 'file' },
         { key: 'projetos',   label: 'Projetos',   icon: 'layers' },
+        { key: 'timeline',   label: 'Timeline',   icon: 'clock' },
     ];
 
     const noteForm = useForm({ descricao: '', usuario_id: idPerfil });
@@ -349,6 +351,7 @@
                         <svg v-else-if="tab.icon === 'paperclip'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                         <svg v-else-if="tab.icon === 'file'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <svg v-else-if="tab.icon === 'layers'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        <svg v-else-if="tab.icon === 'clock'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 
                         {{ tab.label }}
                     </button>
@@ -563,6 +566,20 @@
                     <div v-else-if="activeTab === 'projetos'" key="projetos">
                         <ProjetoPanel :usuario-id="idPerfil" @update:total="totalProjetos = $event" />
                     </div>
+
+                    <section v-else-if="activeTab === 'timeline'" key="timeline" class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title-group">
+                                <span class="panel-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </span>
+                                <h2 class="panel-title">Timeline</h2>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <TimelinePanel :usuario-id="idPerfil" />
+                        </div>
+                    </section>
 
                 </Transition>
 
