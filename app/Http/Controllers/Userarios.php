@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\UsuarioRequest;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 use App\Models\Usuario;
@@ -227,5 +228,39 @@ class Userarios extends Controller
         } catch (\Exception $error) {
             return response()->json(['error' => 'Anotação não encontrada'], 201);
         }
+    }
+
+    public function metricas(Request $request)
+    {
+        $userId = $request->user_id;
+        $leadIds = Usuario::where('user_id', $userId)->pluck('id');
+        $leadsAtivos     = Usuario::where('user_id', $userId)->whereIn('tag_id', [1, 2, 6])->count();
+        $leadsArquivados = Usuario::where('user_id', $userId)->whereIn('tag_id', [3, 4, 5])->count();
+        $leads30Dias     = Usuario::where('user_id', $userId)->where('created_at', '>=', now()->subDays(30))->count();
+        $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereNotIn('status_id', [5, 6])->sum('preco') ?? 0;
+        $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->where('status_id', 5)->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
+        $leadsPorTag = Usuario::where('user_id', $userId)->select('tag_id', DB::raw('count(*) as total'))->with('tag')->groupBy('tag_id')->get()
+            ->map(fn($row) => [
+                'id'        => $row->tag_id,
+                'descricao' => $row->tag->descricao ?? 'Sem tag',
+                'total'     => (int) $row->total,
+            ]);
+        $totalLeads      = $leadIds->count();
+        $leadsComProjeto = $leadIds->isNotEmpty()
+            ? Projeto::whereIn('usuario_id', $leadIds)->distinct('usuario_id')->count('usuario_id')
+            : 0;
+        $taxaConversao   = $totalLeads > 0 ? round($leadsComProjeto / $totalLeads * 100, 1) : 0;
+
+        return response()->json([
+            'leads_ativos'           => $leadsAtivos,
+            'leads_arquivados'       => $leadsArquivados,
+            'leads_30_dias'          => $leads30Dias,
+            'valor_projetos_abertos' => (float) $valorAberto,
+            'valor_fechado_mes'      => (float) $valorFechadoMes,
+            'leads_por_tag'          => $leadsPorTag,
+            'taxa_conversao'         => $taxaConversao,
+            'total_com_projeto'      => $leadsComProjeto,
+            'total_leads'            => $totalLeads,
+        ]);
     }
 }

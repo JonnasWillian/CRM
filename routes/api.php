@@ -21,6 +21,7 @@ Route::get('/usuarioPerfil/{id}', [Userarios::class, 'viewUsuario']);
 Route::put('/usuarios/{id}', [Userarios::class, 'update']);
 Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
 Route::get('/timeline/{id}', [Userarios::class, 'timeline']);
+Route::post('/metricas', [Userarios::class, 'metricas']);
 
 // Anotações de Lead
 Route::get('/anotacao/{id}', [Userarios::class, 'viewAnotacao']);
