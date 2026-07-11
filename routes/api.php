@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Userarios;
 use App\Http\Controllers\ProjetoController;
 use App\Http\Controllers\arquivo;
+use App\Http\Controllers\TarefaController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -49,3 +50,10 @@ Route::delete('/projetoAnotacao/{id}', [ProjetoController::class, 'destroyAnotac
 Route::get('/projetoAnexo/{id}', [ProjetoController::class, 'viewAnexo']);
 Route::post('/projetoAnexo', [ProjetoController::class, 'createAnexo']);
 Route::delete('/projetoAnexo/{id}', [ProjetoController::class, 'destroyAnexo']);
+
+// Tarefas de Lead
+Route::get('/tarefas/{usuarioId}', [TarefaController::class, 'index']);
+Route::post('/tarefas', [TarefaController::class, 'store']);
+Route::put('/tarefas/{id}', [TarefaController::class, 'update']);
+Route::delete('/tarefas/{id}', [TarefaController::class, 'destroy']);
+Route::post('/tarefasPendentes', [TarefaController::class, 'pendentes']);

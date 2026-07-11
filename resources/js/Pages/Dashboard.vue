@@ -49,6 +49,15 @@
         finally { isLoadingMetricas.value = false; }
     };
 
+    const tarefasPendentes = ref({ hoje: [], atrasadas: [] });
+
+    const buscarTarefasPendentes = async () => {
+        try {
+            const res = await axios.post('/api/tarefasPendentes', { user_id: user.value.id });
+            tarefasPendentes.value = res.data;
+        } catch {  }
+    };
+
     const getTagColorClass = (tagId) => {
         switch (Number(tagId)) {
             case 1: return 'tag-captacao';
@@ -147,6 +156,7 @@
     onMounted(() => {
         buscarUsuarios();
         buscarMetricas();
+        buscarTarefasPendentes();
     });
 </script>
 
@@ -312,6 +322,47 @@
                             </div>
                         </div>
                     </template>
+
+                </div>
+
+                <!-- ── Widget de Tarefas ── -->
+                <div v-if="tarefasPendentes.atrasadas.length || tarefasPendentes.hoje.length" class="tasks-widget">
+
+                    <div v-if="tarefasPendentes.atrasadas.length" class="tasks-alert tasks-alert--danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span class="tasks-alert-label">{{ tarefasPendentes.atrasadas.length }} tarefa{{ tarefasPendentes.atrasadas.length !== 1 ? 's' : '' }} em atraso</span>
+                        <div class="tasks-chip-list">
+                            <span
+                                v-for="t in tarefasPendentes.atrasadas.slice(0, 3)"
+                                :key="t.id"
+                                class="task-chip task-chip--danger"
+                                @click="usuarioPerfil(t.usuario_id)"
+                            >
+                                {{ t.lead.nome }} · {{ t.titulo }}
+                            </span>
+                            <span v-if="tarefasPendentes.atrasadas.length > 3" class="task-chip-more">
+                                +{{ tarefasPendentes.atrasadas.length - 3 }} mais
+                            </span>
+                        </div>
+                    </div>
+
+                    <div v-if="tarefasPendentes.hoje.length" class="tasks-alert tasks-alert--today">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="tasks-alert-label">{{ tarefasPendentes.hoje.length }} tarefa{{ tarefasPendentes.hoje.length !== 1 ? 's' : '' }} para hoje</span>
+                        <div class="tasks-chip-list">
+                            <span
+                                v-for="t in tarefasPendentes.hoje.slice(0, 3)"
+                                :key="t.id"
+                                class="task-chip task-chip--today"
+                                @click="usuarioPerfil(t.usuario_id)"
+                            >
+                                {{ t.lead.nome }} · {{ t.titulo }}
+                            </span>
+                            <span v-if="tarefasPendentes.hoje.length > 3" class="task-chip-more">
+                                +{{ tarefasPendentes.hoje.length - 3 }} mais
+                            </span>
+                        </div>
+                    </div>
 
                 </div>
 
@@ -1137,6 +1188,82 @@
     .conv-highlight {
         font-weight: 600;
         color: var(--t2);
+    }
+
+    /* ── Widget de Tarefas ── */
+    .tasks-widget {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .tasks-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        padding: 0.85rem 1.1rem;
+        border-radius: 12px;
+        border: 1px solid;
+        flex-wrap: wrap;
+    }
+    .tasks-alert svg { flex-shrink: 0; margin-top: 1px; }
+
+    .tasks-alert--danger {
+        background: rgba(239,68,68,0.07);
+        border-color: rgba(239,68,68,0.25);
+        color: #ef4444;
+    }
+    .tasks-alert--today {
+        background: rgba(245,158,11,0.07);
+        border-color: rgba(245,158,11,0.25);
+        color: #f59e0b;
+    }
+
+    .tasks-alert-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        white-space: nowrap;
+        padding-top: 1px;
+    }
+
+    .tasks-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        flex: 1;
+    }
+
+    .task-chip {
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.65rem;
+        border-radius: 100px;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.15s;
+        white-space: nowrap;
+        max-width: 260px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .task-chip:hover { opacity: 0.8; transform: translateY(-1px); }
+
+    .task-chip--danger {
+        background: rgba(239,68,68,0.12);
+        border: 1px solid rgba(239,68,68,0.3);
+        color: #ef4444;
+    }
+    .task-chip--today {
+        background: rgba(245,158,11,0.12);
+        border: 1px solid rgba(245,158,11,0.3);
+        color: #f59e0b;
+    }
+
+    .task-chip-more {
+        font-size: 0.7rem;
+        color: var(--t3);
+        padding: 0.2rem 0.4rem;
+        align-self: center;
     }
 
     @media (max-width: 900px) {
