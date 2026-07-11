@@ -7,6 +7,7 @@ use App\Http\Controllers\Userarios;
 use App\Http\Controllers\ProjetoController;
 use App\Http\Controllers\arquivo;
 use App\Http\Controllers\TarefaController;
+use App\Http\Controllers\TarefaPadraoController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -57,3 +58,10 @@ Route::post('/tarefas', [TarefaController::class, 'store']);
 Route::put('/tarefas/{id}', [TarefaController::class, 'update']);
 Route::delete('/tarefas/{id}', [TarefaController::class, 'destroy']);
 Route::post('/tarefasPendentes', [TarefaController::class, 'pendentes']);
+
+// Modelos de Tarefa
+Route::get('/tarefa-padroes',          [TarefaPadraoController::class, 'index']);
+Route::post('/tarefa-padroes',         [TarefaPadraoController::class, 'store']);
+Route::post('/tarefa-padroes/aplicar', [TarefaPadraoController::class, 'aplicar']);
+Route::put('/tarefa-padroes/{id}',     [TarefaPadraoController::class, 'update']);
+Route::delete('/tarefa-padroes/{id}',  [TarefaPadraoController::class, 'destroy']);
