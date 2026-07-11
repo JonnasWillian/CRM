@@ -1,7 +1,7 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
     import axios from 'axios';
-    import { UserPlus, MessageSquare, Paperclip, Briefcase, FileText, Upload, Tag, Clock } from 'lucide-vue-next';
+    import { UserPlus, MessageSquare, Paperclip, Briefcase, FileText, Upload, Tag, Clock, CalendarClock, CheckCircle2 } from 'lucide-vue-next';
 
     const props = defineProps({ usuarioId: { type: [Number, String], required: true } });
 
@@ -14,16 +14,17 @@
         { key: 'anotacao',        label: 'Anotações' },
         { key: 'arquivo',         label: 'Arquivos' },
         { key: 'projeto',         label: 'Projetos' },
+        { key: 'tarefa',          label: 'Tarefas' },
         { key: 'status_alterado', label: 'Status' },
     ];
 
     const gruposProjeto = new Set(['projeto', 'projeto_anotacao', 'projeto_anexo']);
+    const gruposTarefa  = new Set(['tarefa_criada', 'tarefa_concluida']);
 
     const eventosFiltrados = computed(() => {
         if (filtroAtivo.value === 'todos') return eventos.value;
-        if (filtroAtivo.value === 'projeto') {
-            return eventos.value.filter(e => gruposProjeto.has(e.tipo));
-        }
+        if (filtroAtivo.value === 'projeto') return eventos.value.filter(e => gruposProjeto.has(e.tipo));
+        if (filtroAtivo.value === 'tarefa')  return eventos.value.filter(e => gruposTarefa.has(e.tipo));
         return eventos.value.filter(e => e.tipo === filtroAtivo.value);
     });
 
@@ -41,6 +42,8 @@
         projeto_anotacao: { cor: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  label: 'Anotação no projeto' },
         projeto_anexo:    { cor: '#34d399', bg: 'rgba(52,211,153,0.12)',  label: 'Anexo no projeto' },
         status_alterado:  { cor: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  label: 'Status alterado' },
+        tarefa_criada:    { cor: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  label: 'Tarefa criada' },
+        tarefa_concluida: { cor: '#34d399', bg: 'rgba(52,211,153,0.12)',  label: 'Tarefa concluída' },
     };
 
     const getConfig = (tipo) => tipoConfig[tipo] || tipoConfig.lead_criado;
@@ -54,6 +57,8 @@
             case 'projeto_anotacao': return `Anotação em "${evento.projeto_nome}"`;
             case 'projeto_anexo':    return `Arquivo em "${evento.projeto_nome}"`;
             case 'status_alterado':  return `Status: ${evento.tag_anterior} → ${evento.tag_novo}`;
+            case 'tarefa_criada':    return `Tarefa criada: "${evento.titulo}"`;
+            case 'tarefa_concluida': return `Tarefa concluída: "${evento.titulo}"`;
             default: return '';
         }
     };
@@ -130,6 +135,8 @@
                         <FileText      v-else-if="evento.tipo === 'projeto_anotacao'" :size="11" />
                         <Upload        v-else-if="evento.tipo === 'projeto_anexo'"    :size="11" />
                         <Tag           v-else-if="evento.tipo === 'status_alterado'"  :size="11" />
+                        <CalendarClock v-else-if="evento.tipo === 'tarefa_criada'"    :size="11" />
+                        <CheckCircle2  v-else-if="evento.tipo === 'tarefa_concluida'" :size="11" />
                     </div>
                     <div class="tl-line" />
                 </div>

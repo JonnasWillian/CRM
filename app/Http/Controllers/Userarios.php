@@ -15,6 +15,7 @@ use App\Models\Projeto;
 use App\Models\ProjetoAnotacao;
 use App\Models\ProjetoAnexo;
 use App\Models\UsuarioTagHistorico;
+use App\Models\Tarefa;
 
 class Userarios extends Controller
 {
@@ -140,6 +141,21 @@ class Userarios extends Controller
                     'tag_novo'      => $h->tagNovo->descricao ?? '—',
                     'data'          => $h->created_at,
                 ];
+            }
+
+            foreach (Tarefa::where('usuario_id', $id)->get() as $t) {
+                $events[] = [
+                    'tipo'   => 'tarefa_criada',
+                    'titulo' => $t->titulo,
+                    'data'   => $t->created_at,
+                ];
+                if ($t->concluido && $t->concluido_em) {
+                    $events[] = [
+                        'tipo'   => 'tarefa_concluida',
+                        'titulo' => $t->titulo,
+                        'data'   => $t->concluido_em,
+                    ];
+                }
             }
 
             usort($events, fn($a, $b) => $b['data'] <=> $a['data']);

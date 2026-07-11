@@ -1,10 +1,13 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
+    import { usePage } from '@inertiajs/vue3';
     import axios from 'axios';
-    import { PlusCircle, X, Save, Edit, Trash2, CheckCircle2, Circle, CalendarClock } from 'lucide-vue-next';
+    import { PlusCircle, X, Save, Edit, Trash2, CheckCircle2, Circle, CalendarClock, LayoutTemplate } from 'lucide-vue-next';
     import Swal from 'sweetalert2';
 
     const props = defineProps({ usuarioId: { type: [Number, String], required: true } });
+
+    const userId = computed(() => usePage().props.auth.user.id);
 
     const tarefas   = ref([]);
     const isLoading = ref(false);
@@ -13,7 +16,12 @@
     const editingId = ref(null);
     const editForm  = ref({ titulo: '', data_limite: '', anotacao: '' });
 
-    // Parse date string as local date (avoid UTC midnight timezone shift)
+    // ── Modelos ──
+    const showModelos  = ref(false);
+    const padroesList  = ref([]);
+    const selecionados = ref([]);
+    const aplicando    = ref(false);
+
     const parseLocalDate = (iso) => {
         if (!iso) return null;
         const [y, m, d] = String(iso).substring(0, 10).split('-').map(Number);
@@ -82,13 +90,30 @@
     };
 
     const toggleConcluido = async (tarefa) => {
-        const novo = !tarefa.concluido;
-        tarefa.concluido    = novo;
-        tarefa.concluido_em = novo ? new Date().toISOString() : null;
+        if (tarefa.concluido) return;
+
+        const result = await Swal.fire({
+            title: 'Confirmar conclusão',
+            text: 'Marcar esta tarefa como concluída? Esta ação não pode ser desfeita.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, concluir',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true,
+            background: '#13192a',
+            color: '#eaedf5',
+            confirmButtonColor: '#34d399',
+            cancelButtonColor: '#1e2840',
+        });
+
+        if (!result.isConfirmed) return;
+
+        tarefa.concluido    = true;
+        tarefa.concluido_em = new Date().toISOString();
         try {
-            await axios.put(`/api/tarefas/${tarefa.id}`, { concluido: novo });
+            await axios.put(`/api/tarefas/${tarefa.id}`, { concluido: true });
         } catch {
-            tarefa.concluido    = !novo;
+            tarefa.concluido    = false;
             tarefa.concluido_em = null;
         }
     };
@@ -134,6 +159,39 @@
         }
     };
 
+    // ── Modelos ──
+    const abrirModelos = async () => {
+        selecionados.value = [];
+        showModelos.value  = true;
+        try {
+            const res = await axios.get(`/api/tarefa-padroes?user_id=${userId.value}`);
+            padroesList.value = res.data;
+        } catch {
+            padroesList.value = [];
+        }
+    };
+
+    const togglePadrao = (id) => {
+        const idx = selecionados.value.indexOf(id);
+        if (idx === -1) selecionados.value.push(id);
+        else selecionados.value.splice(idx, 1);
+    };
+
+    const aplicarModelos = async () => {
+        if (!selecionados.value.length) return;
+        aplicando.value = true;
+        try {
+            await axios.post('/api/tarefa-padroes/aplicar', {
+                usuario_id: props.usuarioId,
+                user_id:    userId.value,
+                padroes:    selecionados.value,
+            });
+            showModelos.value = false;
+            await buscarTarefas();
+        } catch { /* silencioso */ }
+        finally { aplicando.value = false; }
+    };
+
     onMounted(buscarTarefas);
 </script>
 
@@ -146,12 +204,17 @@
                 <span class="tp-count tp-count--pending" v-if="pendentes.length">{{ pendentes.length }} pendente{{ pendentes.length !== 1 ? 's' : '' }}</span>
                 <span class="tp-count tp-count--done"    v-if="concluidas.length">{{ concluidas.length }} concluída{{ concluidas.length !== 1 ? 's' : '' }}</span>
             </div>
-            <button v-if="!showForm" @click="showForm = true" class="tp-btn-add" title="Nova tarefa">
-                <PlusCircle :size="14" /> Nova tarefa
-            </button>
-            <button v-else @click="showForm = false; form = { titulo:'', data_limite:'', anotacao:'' }" class="tp-btn-ghost">
-                <X :size="14" /> Cancelar
-            </button>
+            <div class="tp-header-right">
+                <button @click="abrirModelos" class="tp-btn-modelos" title="Usar modelos de tarefa">
+                    <LayoutTemplate :size="13" /> Modelos
+                </button>
+                <button v-if="!showForm" @click="showForm = true" class="tp-btn-add" title="Nova tarefa">
+                    <PlusCircle :size="14" /> Nova tarefa
+                </button>
+                <button v-else @click="showForm = false; form = { titulo:'', data_limite:'', anotacao:'' }" class="tp-btn-ghost">
+                    <X :size="14" /> Cancelar
+                </button>
+            </div>
         </div>
 
         <!-- Form inline -->
@@ -199,7 +262,7 @@
         <div v-else-if="!pendentes.length && !concluidas.length && !showForm" class="tp-empty">
             <CalendarClock :size="28" />
             <p class="tp-empty-title">Nenhuma tarefa registrada</p>
-            <p class="tp-empty-sub">Clique em "Nova tarefa" para adicionar um follow-up.</p>
+            <p class="tp-empty-sub">Clique em "Nova tarefa" ou use "Modelos" para adicionar um follow-up.</p>
         </div>
 
         <!-- Lista de pendentes -->
@@ -212,7 +275,7 @@
             >
                 <!-- Modo visualização -->
                 <template v-if="editingId !== tarefa.id">
-                    <button class="tp-checkbox" @click="toggleConcluido(tarefa)" :title="'Marcar como concluída'">
+                    <button class="tp-checkbox" @click="toggleConcluido(tarefa)" title="Marcar como concluída">
                         <Circle :size="18" />
                     </button>
                     <div class="tp-item-body">
@@ -257,9 +320,9 @@
                     :key="tarefa.id"
                     class="tp-item tp-item--done"
                 >
-                    <button class="tp-checkbox tp-checkbox--done" @click="toggleConcluido(tarefa)" title="Desmarcar">
+                    <span class="tp-checkbox tp-checkbox--done tp-checkbox--static" title="Tarefa concluída">
                         <CheckCircle2 :size="18" />
-                    </button>
+                    </span>
                     <div class="tp-item-body">
                         <p class="tp-item-title tp-item-title--done">{{ tarefa.titulo }}</p>
                         <p v-if="tarefa.concluido_em" class="tp-item-note">Concluída em {{ formatarDataHora(tarefa.concluido_em) }}</p>
@@ -268,6 +331,59 @@
                 </div>
             </template>
         </div>
+
+        <!-- ── Modal de Modelos ── -->
+        <Transition name="tp-fade-modal">
+            <div v-if="showModelos" class="tp-modal-overlay" @click.self="showModelos = false">
+                <div class="tp-modal">
+                    <div class="tp-modal-header">
+                        <h3 class="tp-modal-title"><LayoutTemplate :size="15" /> Modelos de Tarefa</h3>
+                        <button @click="showModelos = false" class="tp-modal-close"><X :size="16" /></button>
+                    </div>
+
+                    <div v-if="!padroesList.length" class="tp-modal-empty">
+                        <p>Nenhum modelo cadastrado.</p>
+                        <p class="tp-modal-empty-sub">Acesse "Modelos" no menu lateral para criar templates de tarefas.</p>
+                    </div>
+
+                    <div v-else class="tp-modal-list">
+                        <label
+                            v-for="p in padroesList"
+                            :key="p.id"
+                            class="tp-modelo-item"
+                            :class="{ 'tp-modelo-item--selected': selecionados.includes(p.id) }"
+                        >
+                            <input
+                                type="checkbox"
+                                class="tp-modelo-check"
+                                :value="p.id"
+                                :checked="selecionados.includes(p.id)"
+                                @change="togglePadrao(p.id)"
+                            />
+                            <div class="tp-modelo-body">
+                                <span class="tp-modelo-titulo">{{ p.titulo }}</span>
+                                <span v-if="p.anotacao" class="tp-modelo-nota">{{ p.anotacao }}</span>
+                            </div>
+                            <span class="tp-modelo-prazo">
+                                {{ p.prazo_dias === 0 ? 'Hoje' : `+${p.prazo_dias}d` }}
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="tp-modal-footer">
+                        <button @click="showModelos = false" class="tp-btn-ghost tp-btn-sm"><X :size="12" /> Fechar</button>
+                        <button
+                            @click="aplicarModelos"
+                            class="tp-btn-primary tp-btn-sm"
+                            :disabled="!selecionados.length || aplicando"
+                        >
+                            <Save :size="12" />
+                            {{ aplicando ? 'Aplicando…' : `Aplicar (${selecionados.length})` }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
 
     </div>
 </template>
@@ -289,6 +405,7 @@
         --t3: #4a5470;
         --inp-bg: #0b0f1a;
         font-family: 'DM Sans', sans-serif;
+        position: relative;
     }
 
     /* ── Header ── */
@@ -300,7 +417,8 @@
         margin-bottom: 1rem;
         flex-wrap: wrap;
     }
-    .tp-header-left { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .tp-header-left  { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .tp-header-right { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
 
     .tp-count {
         font-size: 0.68rem; font-weight: 600;
@@ -318,6 +436,15 @@
         transition: background 0.18s, border-color 0.18s;
     }
     .tp-btn-add:hover { background: rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.5); }
+
+    .tp-btn-modelos {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+        padding: 0.4rem 0.85rem; border-radius: 8px; cursor: pointer;
+        background: rgba(109,93,252,0.08); border: 1px solid rgba(109,93,252,0.25); color: var(--purple);
+        transition: background 0.18s, border-color 0.18s;
+    }
+    .tp-btn-modelos:hover { background: rgba(109,93,252,0.16); border-color: rgba(109,93,252,0.45); }
 
     .tp-btn-ghost {
         display: inline-flex; align-items: center; gap: 0.4rem;
@@ -411,7 +538,8 @@
     }
     .tp-checkbox:hover { color: var(--amber); transform: scale(1.15); }
     .tp-checkbox--done { color: var(--green); }
-    .tp-checkbox--done:hover { color: #6ee7b7; }
+    .tp-checkbox--static { cursor: default; }
+    .tp-checkbox--static:hover { transform: none; color: var(--green); }
 
     /* Item body */
     .tp-item-body { flex: 1; min-width: 0; }
@@ -455,9 +583,81 @@
         content: ''; flex: 1; height: 1px; background: var(--border);
     }
 
+    /* ── Modal de Modelos ── */
+    .tp-modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.6);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 9999;
+        padding: 1rem;
+    }
+    .tp-modal {
+        background: #13192a;
+        border: 1px solid #1e2840;
+        border-radius: 16px;
+        width: 100%; max-width: 440px;
+        display: flex; flex-direction: column;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .tp-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1rem 1.1rem 0.8rem;
+        border-bottom: 1px solid #1e2840;
+    }
+    .tp-modal-title {
+        font-size: 0.9rem; font-weight: 600; color: #eaedf5;
+        display: flex; align-items: center; gap: 0.5rem; margin: 0;
+    }
+    .tp-modal-close {
+        background: transparent; border: none; cursor: pointer;
+        color: #4a5470; padding: 0; line-height: 1;
+        transition: color 0.15s;
+    }
+    .tp-modal-close:hover { color: #8892ab; }
+
+    .tp-modal-empty {
+        padding: 2rem 1.25rem; text-align: center;
+        color: #4a5470; font-size: 0.82rem;
+    }
+    .tp-modal-empty-sub { font-size: 0.75rem; color: #4a5470; margin-top: 0.35rem; }
+
+    .tp-modal-list {
+        overflow-y: auto; flex: 1;
+        padding: 0.5rem 0;
+    }
+    .tp-modelo-item {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.65rem 1.1rem; cursor: pointer;
+        transition: background 0.12s;
+        border-bottom: 1px solid rgba(30,40,64,0.5);
+    }
+    .tp-modelo-item:last-child { border-bottom: none; }
+    .tp-modelo-item:hover { background: rgba(109,93,252,0.05); }
+    .tp-modelo-item--selected { background: rgba(109,93,252,0.08); }
+
+    .tp-modelo-check {
+        width: 15px; height: 15px; flex-shrink: 0;
+        accent-color: #6d5dfc; cursor: pointer;
+    }
+    .tp-modelo-body { flex: 1; min-width: 0; }
+    .tp-modelo-titulo { font-size: 0.84rem; font-weight: 500; color: #eaedf5; display: block; }
+    .tp-modelo-nota   { font-size: 0.74rem; color: #4a5470; display: block; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tp-modelo-prazo  { font-size: 0.72rem; font-weight: 600; color: #6d5dfc; white-space: nowrap; flex-shrink: 0; }
+
+    .tp-modal-footer {
+        display: flex; justify-content: flex-end; gap: 0.4rem;
+        padding: 0.85rem 1.1rem;
+        border-top: 1px solid #1e2840;
+    }
+
     /* Transitions */
     .tp-slide-enter-active, .tp-slide-leave-active { transition: opacity 0.2s, transform 0.2s; }
     .tp-slide-enter-from, .tp-slide-leave-to { opacity: 0; transform: translateY(-6px); }
+
+    .tp-fade-modal-enter-active, .tp-fade-modal-leave-active { transition: opacity 0.2s; }
+    .tp-fade-modal-enter-from, .tp-fade-modal-leave-to { opacity: 0; }
 
     /* Responsive */
     @media (max-width: 520px) {
