@@ -246,6 +246,71 @@ class Userarios extends Controller
         }
     }
 
+    public function kanban(Request $request)
+    {
+        $userId = $request->user_id;
+        $tags   = Tags::orderBy('ordem')->get();
+
+        $leads = Usuario::where('user_id', $userId)
+            ->addSelect([
+                '*',
+                'ultimo_contato' => Anotacao::whereColumn('usuario_id', 'usuarios.id')
+                    ->orderByDesc('created_at')
+                    ->select('created_at')
+                    ->limit(1),
+                'valor_projetos' => Projeto::whereColumn('usuario_id', 'usuarios.id')
+                    ->whereNotIn('status_id', [5, 6])
+                    ->selectRaw('COALESCE(SUM(preco), 0)'),
+            ])
+            ->get()
+            ->map(fn($u) => [
+                'id'             => $u->id,
+                'nome'           => $u->nome,
+                'email'          => $u->email,
+                'telefone'       => $u->telefone,
+                'descricao'      => $u->descricao,
+                'tag_id'         => $u->tag_id,
+                'ultimo_contato' => $u->ultimo_contato ?? $u->updated_at,
+                'valor_projetos' => (float) ($u->valor_projetos ?? 0),
+            ]);
+
+        return response()->json(['tags' => $tags, 'leads' => $leads]);
+    }
+
+    public function patchTag(Request $request, $id)
+    {
+        try {
+            $usuario = Usuario::findOrFail($id);
+            $tagAnterior = $usuario->tag_id;
+
+            $validated = $request->validate(['tag_id' => 'required|exists:tags,id']);
+            $usuario->update($validated);
+
+            if ($tagAnterior !== $usuario->tag_id) {
+                UsuarioTagHistorico::create([
+                    'usuario_id'      => $id,
+                    'tag_id_anterior' => $tagAnterior,
+                    'tag_id_novo'     => $usuario->tag_id,
+                ]);
+            }
+
+            return response()->json(['message' => 'Tag atualizada']);
+        } catch (\Exception $error) {
+            return response()->json(['error' => 'Lead não encontrado'], 404);
+        }
+    }
+
+    public function kanbanSettings(Request $request)
+    {
+        try {
+            $user = \App\Models\User::findOrFail($request->user_id);
+            $user->update(['kanban_default_tag_id' => $request->default_tag_id]);
+            return response()->json(['message' => 'Preferência salva']);
+        } catch (\Exception $error) {
+            return response()->json(['error' => 'Usuário não encontrado'], 404);
+        }
+    }
+
     public function metricas(Request $request)
     {
         $userId = $request->user_id;

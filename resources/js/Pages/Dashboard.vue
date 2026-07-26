@@ -1,7 +1,7 @@
 <script setup>
     import { ref, onMounted, computed } from 'vue';
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { Head, router, usePage } from '@inertiajs/vue3';
+    import { Head, Link, router, usePage } from '@inertiajs/vue3';
     import axios from 'axios';
     import { vMaska } from 'maska/vue';
 
@@ -174,6 +174,16 @@
                     <div>
                         <p class="topbar-greeting font-bold">Olá, {{ user.name.split(' ')[0] }} 👋</p>
                         <h1 class="topbar-title">Lista de <span class="accent">Leads</span></h1>
+                    </div>
+                    <div class="view-toggle">
+                        <button class="vt-btn vt-btn--active">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                            Lista
+                        </button>
+                        <Link :href="route('kanban')" class="vt-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                            Pipeline
+                        </Link>
                     </div>
                     <button @click="openModal" class="btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -647,6 +657,26 @@
         justify-content: space-between;
         margin-bottom: 2rem;
     }
+
+    .view-toggle {
+        display: flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        padding: 3px;
+        gap: 2px;
+    }
+    .vt-btn {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+        padding: 0.35rem 0.8rem; border-radius: 7px; cursor: pointer;
+        background: transparent; border: none; color: var(--t3);
+        text-decoration: none;
+        transition: color 0.15s, background 0.15s;
+    }
+    .vt-btn:hover:not(.vt-btn--active) { color: var(--t2); background: rgba(255,255,255,0.04); }
+    .vt-btn--active { background: rgba(109,93,252,0.2); color: var(--t1); }
 
     .topbar-greeting {
         font-size: 0.82rem;
