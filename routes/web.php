@@ -27,6 +27,10 @@ Route::get('/modelos-tarefa', function () {
     return Inertia::render('ModelosTarefa');
 })->middleware(['auth', 'verified'])->name('modelosTarefa');
 
+Route::get('/kanban', function () {
+    return Inertia::render('Kanban');
+})->middleware(['auth', 'verified'])->name('kanban');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

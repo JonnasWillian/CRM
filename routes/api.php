@@ -24,6 +24,9 @@ Route::put('/usuarios/{id}', [Userarios::class, 'update']);
 Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
 Route::get('/timeline/{id}', [Userarios::class, 'timeline']);
 Route::post('/metricas', [Userarios::class, 'metricas']);
+Route::post('/kanban', [Userarios::class, 'kanban']);
+Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
+Route::patch('/usuarios/{id}/tag', [Userarios::class, 'patchTag']);
 
 // Anotações de Lead
 Route::get('/anotacao/{id}', [Userarios::class, 'viewAnotacao']);
