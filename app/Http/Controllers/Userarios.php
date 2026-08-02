@@ -21,8 +21,18 @@ class Userarios extends Controller
 {
     public function view(Request $request)
     {
-        $usuarios = Usuario::where('user_id', $request->user_id)->with('tag')->get();
-        
+        $usuarios = Usuario::where('user_id', $request->user_id)
+            ->with('tag')
+            ->addSelect([
+                '*',
+                'tem_projeto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
+                    ->selectRaw('COUNT(*) > 0'),
+                'tem_projeto_aberto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
+                    ->whereNotIn('status_id', [5, 6])
+                    ->selectRaw('COUNT(*) > 0'),
+            ])
+            ->get();
+
         return response()->json($usuarios);
     }
 

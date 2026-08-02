@@ -70,22 +70,69 @@
         }
     };
 
+    const tags             = ref([]);
+    const filterTags       = ref([]);
+    const filterStatus     = ref('todos');
+    const filterDatePreset = ref('todos');
+    const filterDateFrom   = ref('');
+    const filterDateTo     = ref('');
+
+    const buscarTags = async () => {
+        try {
+            const res = await axios.post('/api/tags');
+            tags.value = res.data;
+        } catch { /* silencioso */ }
+    };
+
+    const dateFromComputed = computed(() => {
+        if (filterDatePreset.value === '7d')  return new Date(Date.now() - 7 * 86400000);
+        if (filterDatePreset.value === '30d') return new Date(Date.now() - 30 * 86400000);
+        if (filterDatePreset.value === 'custom' && filterDateFrom.value) return new Date(filterDateFrom.value + 'T00:00:00');
+        return null;
+    });
+
+    const dateToComputed = computed(() => {
+        if (filterDatePreset.value === 'custom' && filterDateTo.value) return new Date(filterDateTo.value + 'T23:59:59');
+        return null;
+    });
+
+    const activeFiltersCount = computed(() =>
+        (filterTags.value.length > 0 ? 1 : 0) +
+        (filterStatus.value !== 'todos' ? 1 : 0) +
+        (filterDatePreset.value !== 'todos' ? 1 : 0)
+    );
+
+    const clearFilters = () => {
+        filterTags.value       = [];
+        filterStatus.value     = 'todos';
+        filterDatePreset.value = 'todos';
+        filterDateFrom.value   = '';
+        filterDateTo.value     = '';
+    };
+
+    const toggleFilterTag = (id) => {
+        const idx = filterTags.value.indexOf(id);
+        if (idx === -1) filterTags.value.push(id);
+        else filterTags.value.splice(idx, 1);
+    };
+
     const filteredUsuarios = computed(() => {
-        if (!search.value || !search.value.trim()) {
-            return usuarios.value;
-        }
-
-        const q = search.value.toLowerCase().trim();
-
+        const q = search.value?.toLowerCase().trim();
         return usuarios.value.filter(u => {
-            const telefoneStr = String(u.telefone || '').trim();
-
-            return (
-                u.nome?.toLowerCase().includes(q) ||
-                u.email?.toLowerCase().includes(q) ||
-                telefoneStr.includes(q) ||
-                u.descricao?.toLowerCase().includes(q)
-            );
+            if (q) {
+                const pass = u.nome?.toLowerCase().includes(q)
+                    || u.email?.toLowerCase().includes(q)
+                    || String(u.telefone || '').includes(q)
+                    || u.descricao?.toLowerCase().includes(q);
+                if (!pass) return false;
+            }
+            if (filterTags.value.length && !filterTags.value.includes(u.tag?.id)) return false;
+            if (dateFromComputed.value && new Date(u.created_at) < dateFromComputed.value) return false;
+            if (dateToComputed.value   && new Date(u.created_at) > dateToComputed.value)   return false;
+            if (filterStatus.value === 'arquivado'   && ![3,4,5].includes(u.tag?.id))  return false;
+            if (filterStatus.value === 'aberto'      && !u.tem_projeto_aberto)          return false;
+            if (filterStatus.value === 'sem_projeto' && !!u.tem_projeto)                return false;
+            return true;
         });
     });
 
@@ -157,6 +204,7 @@
         buscarUsuarios();
         buscarMetricas();
         buscarTarefasPendentes();
+        buscarTags();
     });
 </script>
 
@@ -393,6 +441,79 @@
                                 placeholder="Buscar por nome, e-mail ou telefone..."
                                 class="search-input"
                             />
+                        </div>
+
+                        <!-- ── Barra de Filtros ── -->
+                        <div class="filter-bar" v-if="!isLoading">
+
+                            <!-- Linha 1: Estágio -->
+                            <div class="fb-row">
+                                <span class="fb-label">Estágio</span>
+                                <div class="fb-chips">
+                                    <button
+                                        v-for="tag in tags"
+                                        :key="tag.id"
+                                        class="fb-chip fb-chip--tag"
+                                        :class="{ 'fb-chip--active': filterTags.includes(tag.id) }"
+                                        :style="filterTags.includes(tag.id)
+                                            ? { background: getTagPalette(tag.id).bg, borderColor: getTagPalette(tag.id).color, color: getTagPalette(tag.id).color }
+                                            : {}"
+                                        @click="toggleFilterTag(tag.id)"
+                                    >{{ tag.descricao }}</button>
+                                </div>
+                            </div>
+
+                            <!-- Linha 2: Período -->
+                            <div class="fb-row">
+                                <span class="fb-label">Período</span>
+                                <div class="fb-chips">
+                                    <button v-for="p in [
+                                        { key: 'todos',  label: 'Todos' },
+                                        { key: '7d',     label: 'Últimos 7d' },
+                                        { key: '30d',    label: 'Últimos 30d' },
+                                        { key: 'custom', label: 'Personalizado' },
+                                    ]" :key="p.key"
+                                        class="fb-chip"
+                                        :class="{ 'fb-chip--active': filterDatePreset === p.key }"
+                                        @click="filterDatePreset = p.key"
+                                    >{{ p.label }}</button>
+                                </div>
+                                <Transition name="fb-slide">
+                                    <div v-if="filterDatePreset === 'custom'" class="fb-date-range">
+                                        <input v-model="filterDateFrom" type="date" class="fb-date-input" />
+                                        <span class="fb-date-sep">→</span>
+                                        <input v-model="filterDateTo" type="date" class="fb-date-input" />
+                                    </div>
+                                </Transition>
+                            </div>
+
+                            <!-- Linha 3: Status de projeto -->
+                            <div class="fb-row">
+                                <span class="fb-label">Status</span>
+                                <div class="fb-chips">
+                                    <button v-for="s in [
+                                        { key: 'todos',       label: 'Todos' },
+                                        { key: 'aberto',      label: 'Com projeto aberto' },
+                                        { key: 'sem_projeto', label: 'Sem projeto' },
+                                        { key: 'arquivado',   label: 'Arquivado' },
+                                    ]" :key="s.key"
+                                        class="fb-chip"
+                                        :class="{ 'fb-chip--active': filterStatus === s.key }"
+                                        @click="filterStatus = s.key"
+                                    >{{ s.label }}</button>
+                                </div>
+                            </div>
+
+                            <!-- Limpar filtros -->
+                            <Transition name="fb-slide">
+                                <div v-if="activeFiltersCount > 0" class="fb-clear-row">
+                                    <button @click="clearFilters" class="fb-clear-btn">
+                                        ✕ Limpar filtros ({{ activeFiltersCount }})
+                                    </button>
+                                    <span class="fb-result-count">{{ filteredUsuarios.length }} resultado{{ filteredUsuarios.length !== 1 ? 's' : '' }}</span>
+                                </div>
+                            </Transition>
+
                         </div>
                     </div>
 
@@ -1295,6 +1416,80 @@
         padding: 0.2rem 0.4rem;
         align-self: center;
     }
+
+    /* ── Barra de Filtros ── */
+    .filter-bar {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        padding: 0.85rem 0 0;
+        border-top: 1px solid var(--border);
+        margin-top: 0.75rem;
+    }
+
+    .fb-row {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+    }
+
+    .fb-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--t3);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+        min-width: 52px;
+    }
+
+    .fb-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+    .fb-chip {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.74rem; font-weight: 500;
+        padding: 0.25rem 0.7rem; border-radius: 100px;
+        border: 1px solid var(--border);
+        background: transparent; color: var(--t3);
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .fb-chip:hover { color: var(--t2); border-color: #2a3860; }
+    .fb-chip--active {
+        background: rgba(109,93,252,0.12);
+        border-color: rgba(109,93,252,0.35);
+        color: var(--accent);
+    }
+
+    .fb-date-range {
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+    .fb-date-input {
+        background: var(--inp-bg); border: 1px solid var(--border); border-radius: 8px;
+        color: var(--t1); font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+        padding: 0.28rem 0.55rem; outline: none; color-scheme: dark;
+        transition: border-color 0.15s;
+    }
+    .fb-date-input:focus { border-color: var(--accent); }
+    .fb-date-sep { font-size: 0.72rem; color: var(--t3); }
+
+    .fb-clear-row {
+        display: flex; align-items: center; gap: 0.75rem; margin-top: 0.1rem;
+    }
+    .fb-clear-btn {
+        font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 500;
+        padding: 0.2rem 0.65rem; border-radius: 100px;
+        border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08);
+        color: #ef4444; cursor: pointer;
+        transition: background 0.15s;
+    }
+    .fb-clear-btn:hover { background: rgba(239,68,68,0.15); }
+    .fb-result-count { font-size: 0.72rem; color: var(--t3); }
+
+    .fb-slide-enter-active, .fb-slide-leave-active { transition: opacity 0.18s, transform 0.18s; }
+    .fb-slide-enter-from, .fb-slide-leave-to { opacity: 0; transform: translateY(-4px); }
 
     @media (max-width: 900px) {
         .content { padding: 1.75rem 1.5rem; }
