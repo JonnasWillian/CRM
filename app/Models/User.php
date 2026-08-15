@@ -22,6 +22,8 @@ class User extends Authenticatable
         'email',
         'password',
         'kanban_default_tag_id',
+        // tenant_id: sempre definido pelo backend (RegisteredUserController), nunca a partir de input do cliente.
+        'tenant_id',
     ];
 
     /**

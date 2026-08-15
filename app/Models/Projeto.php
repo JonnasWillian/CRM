@@ -8,6 +8,8 @@ use Illuminate\Notifications\Notifiable;
 
 class Projeto extends Model
 {
+    use HasFactory, Notifiable;
+
     protected $fillable = [
         'nome',
         'descricao',
@@ -17,11 +19,12 @@ class Projeto extends Model
         'parcelas',
         'qtd_parcelas',
         'usuario_id',
-        'status_id'
+        'status_id',
+        'tenant_id'
     ];
 
     public function status()
     {
-        return $this->belongsTo(Statu::class, 'status_id');
+        return $this->belongsTo(Statu::class, 'status_id')->withTrashed();
     }
 }

@@ -16,11 +16,12 @@ class Usuario extends Model
         'descricao',
         'telefone',
         'user_id',
-        'tag_id'
+        'tag_id',
+        'tenant_id'
     ];
 
     public function tag()
     {
-        return $this->belongsTo(Tags::class, 'tag_id');
+        return $this->belongsTo(Tags::class, 'tag_id')->withTrashed();
     }
 }

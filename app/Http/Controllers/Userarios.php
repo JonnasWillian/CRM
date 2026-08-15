@@ -269,7 +269,7 @@ class Userarios extends Controller
                     ->select('created_at')
                     ->limit(1),
                 'valor_projetos' => Projeto::whereColumn('usuario_id', 'usuarios.id')
-                    ->whereNotIn('status_id', [5, 6])
+                    ->whereHas('status', fn ($q) => $q->where('is_won', false)->where('is_lost', false))
                     ->selectRaw('COALESCE(SUM(preco), 0)'),
             ])
             ->get()
@@ -325,11 +325,11 @@ class Userarios extends Controller
     {
         $userId = $request->user_id;
         $leadIds = Usuario::where('user_id', $userId)->pluck('id');
-        $leadsAtivos     = Usuario::where('user_id', $userId)->whereIn('tag_id', [1, 2, 6])->count();
-        $leadsArquivados = Usuario::where('user_id', $userId)->whereIn('tag_id', [3, 4, 5])->count();
+        $leadsAtivos     = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', true))->count();
+        $leadsArquivados = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', false))->count();
         $leads30Dias     = Usuario::where('user_id', $userId)->where('created_at', '>=', now()->subDays(30))->count();
-        $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereNotIn('status_id', [5, 6])->sum('preco') ?? 0;
-        $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->where('status_id', 5)->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
+        $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', false)->where('is_lost', false))->sum('preco') ?? 0;
+        $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
         $leadsPorTag = Usuario::where('user_id', $userId)->select('tag_id', DB::raw('count(*) as total'))->with('tag')->groupBy('tag_id')->get()
             ->map(fn($row) => [
                 'id'        => $row->tag_id,
