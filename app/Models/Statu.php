@@ -14,6 +14,7 @@ class Statu extends Model
     protected $fillable = [
         'id',
         'descricao',
-        'ordem'
+        'ordem',
+        'tenant_id'
     ];
 }
