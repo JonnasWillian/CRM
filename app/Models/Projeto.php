@@ -22,6 +22,6 @@ class Projeto extends Model
 
     public function status()
     {
-        return $this->belongsTo(Statu::class, 'status_id');
+        return $this->belongsTo(Statu::class, 'status_id')->withTrashed();
     }
 }

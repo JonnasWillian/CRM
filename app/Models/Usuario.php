@@ -21,6 +21,6 @@ class Usuario extends Model
 
     public function tag()
     {
-        return $this->belongsTo(Tags::class, 'tag_id');
+        return $this->belongsTo(Tags::class, 'tag_id')->withTrashed();
     }
 }
