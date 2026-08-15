@@ -19,12 +19,14 @@ class ProjetoFactory extends Factory
      */
     public function definition(): array
     {
+        $tenant = Tenant::factory()->create();
+
         return [
             'nome' => fake()->sentence(3),
             'descricao' => fake()->optional()->paragraph(),
-            'usuario_id' => Usuario::factory(),
-            'status_id' => Statu::factory(),
-            'tenant_id' => Tenant::factory(),
+            'usuario_id' => Usuario::factory()->create(['tenant_id' => $tenant->id])->id,
+            'status_id' => Statu::factory()->create(['tenant_id' => $tenant->id])->id,
+            'tenant_id' => $tenant->id,
         ];
     }
 }
