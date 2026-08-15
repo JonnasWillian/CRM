@@ -5,7 +5,9 @@ namespace Tests\Feature\DataIntegrity;
 use App\Models\Projeto;
 use App\Models\Statu;
 use App\Models\Tags;
+use App\Models\Tenant;
 use App\Models\Usuario;
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +17,11 @@ class TagStatusIntegrityTest extends TestCase
 
     public function test_soft_deleting_a_tag_in_use_keeps_the_lead_accessible(): void
     {
-        $tag = Tags::factory()->create();
-        $usuario = Usuario::factory()->create(['tag_id' => $tag->id]);
+        $tenant = Tenant::factory()->create();
+        $tag = Tags::factory()->create(['tenant_id' => $tenant->id]);
+        $usuario = Usuario::factory()->create(['tenant_id' => $tenant->id, 'tag_id' => $tag->id]);
+
+        app(CurrentTenant::class)->set($tenant);
 
         $tag->delete(); // soft delete
 
