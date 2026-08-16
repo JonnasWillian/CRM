@@ -18,7 +18,6 @@ class Usuario extends Model
         'telefone',
         'user_id',
         'tag_id',
-        'tenant_id'
     ];
 
     public function tag()

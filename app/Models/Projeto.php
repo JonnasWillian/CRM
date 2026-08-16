@@ -21,7 +21,6 @@ class Projeto extends Model
         'qtd_parcelas',
         'usuario_id',
         'status_id',
-        'tenant_id'
     ];
 
     public function status()

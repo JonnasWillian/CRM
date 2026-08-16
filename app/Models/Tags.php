@@ -16,6 +16,5 @@ class Tags extends Model
         'id',
         'descricao',
         'ordem',
-        'tenant_id'
     ];
 }

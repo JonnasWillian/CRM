@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Usuario>
@@ -47,5 +48,19 @@ class UsuarioFactory extends Factory
                 ->where('tenant_id', '!=', $usuario->tenant_id)
                 ->update(['tenant_id' => $usuario->tenant_id]);
         });
+    }
+
+    /**
+     * tenant_id não está em $fillable (Global Constraint da task de
+     * multi-tenancy — o único jeito de setá-lo é atribuição direta de
+     * propriedade ou a trait BelongsToTenant). Model::unguarded() é a mesma
+     * técnica que o próprio Factory::createChildren() do framework usa para
+     * popular atributos sem respeitar $fillable, e preserva tanto o default
+     * de definition() quanto overrides explícitos via
+     * ->create(['tenant_id' => ...]) usados nos testes.
+     */
+    public function newModel(array $attributes = [])
+    {
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 }
