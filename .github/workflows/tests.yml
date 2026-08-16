@@ -45,7 +45,7 @@ jobs:
       - name: Cache dependências do Composer
         uses: actions/cache@v4
         with:
-          path: ~/.composer/cache
+          path: ~/.cache/composer
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
