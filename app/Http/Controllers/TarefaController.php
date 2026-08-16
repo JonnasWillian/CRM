@@ -76,7 +76,7 @@ class TarefaController extends Controller
 
     public function pendentes(Request $request)
     {
-        $leadIds = Usuario::where('user_id', $request->user_id)->pluck('id');
+        $leadIds = Usuario::where('user_id', auth()->id())->pluck('id');
 
         if ($leadIds->isEmpty()) {
             return response()->json(['hoje' => [], 'atrasadas' => []]);

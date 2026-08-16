@@ -21,7 +21,7 @@ class Userarios extends Controller
 {
     public function view(Request $request)
     {
-        $usuarios = Usuario::where('user_id', $request->user_id)
+        $usuarios = Usuario::where('user_id', auth()->id())
             ->with('tag')
             ->addSelect([
                 '*',
@@ -258,7 +258,7 @@ class Userarios extends Controller
 
     public function kanban(Request $request)
     {
-        $userId = $request->user_id;
+        $userId = auth()->id();
         $tags   = Tags::orderBy('ordem')->get();
 
         $leads = Usuario::where('user_id', $userId)
@@ -313,8 +313,7 @@ class Userarios extends Controller
     public function kanbanSettings(Request $request)
     {
         try {
-            $user = \App\Models\User::findOrFail($request->user_id);
-            $user->update(['kanban_default_tag_id' => $request->default_tag_id]);
+            auth()->user()->update(['kanban_default_tag_id' => $request->default_tag_id]);
             return response()->json(['message' => 'Preferência salva']);
         } catch (\Exception $error) {
             return response()->json(['error' => 'Usuário não encontrado'], 404);
@@ -323,7 +322,7 @@ class Userarios extends Controller
 
     public function metricas(Request $request)
     {
-        $userId = $request->user_id;
+        $userId = auth()->id();
         $leadIds = Usuario::where('user_id', $userId)->pluck('id');
         $leadsAtivos     = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', true))->count();
         $leadsArquivados = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', false))->count();

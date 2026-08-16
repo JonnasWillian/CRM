@@ -11,7 +11,7 @@ class TarefaPadraoController extends Controller
 {
     public function index(Request $request)
     {
-        $padroes = TarefaPadrao::where('user_id', $request->user_id)
+        $padroes = TarefaPadrao::where('user_id', auth()->id())
             ->orderBy('titulo')
             ->get();
 
@@ -22,11 +22,12 @@ class TarefaPadraoController extends Controller
     {
         try {
             $validated = $request->validate([
-                'user_id'   => 'required|exists:users,id',
                 'titulo'    => 'required|string|max:255',
                 'anotacao'  => 'nullable|string',
                 'prazo_dias' => 'required|integer|min:0',
             ]);
+
+            $validated['user_id'] = auth()->id();
 
             $padrao = TarefaPadrao::create($validated);
 
@@ -74,13 +75,12 @@ class TarefaPadraoController extends Controller
         try {
             $validated = $request->validate([
                 'usuario_id' => 'required|exists:usuarios,id',
-                'user_id'    => 'required|exists:users,id',
                 'padroes'    => 'required|array|min:1',
                 'padroes.*'  => 'integer|exists:tarefa_padroes,id',
             ]);
 
             $padroes = TarefaPadrao::whereIn('id', $validated['padroes'])
-                ->where('user_id', $validated['user_id'])
+                ->where('user_id', auth()->id())
                 ->get();
 
             $criadas = [];
