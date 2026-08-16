@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\TarefaPadrao;
 use App\Models\Tarefa;
+use App\Support\Tenancy\CurrentTenant;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 
 class TarefaPadraoController extends Controller
 {
@@ -74,7 +76,10 @@ class TarefaPadraoController extends Controller
     {
         try {
             $validated = $request->validate([
-                'usuario_id' => 'required|exists:usuarios,id',
+                'usuario_id' => [
+                    'required',
+                    Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                ],
                 'padroes'    => 'required|array|min:1',
                 'padroes.*'  => 'integer|exists:tarefa_padroes,id',
             ]);

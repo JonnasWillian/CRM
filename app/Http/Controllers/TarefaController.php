@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Tarefa;
 use App\Models\Usuario;
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Validation\Rule;
 
 class TarefaController extends Controller
 {
@@ -22,7 +24,10 @@ class TarefaController extends Controller
     {
         try {
             $validated = $request->validate([
-                'usuario_id' => 'required|exists:usuarios,id',
+                'usuario_id' => [
+                    'required',
+                    Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                ],
                 'titulo'     => 'required|string|max:255',
                 'data_limite' => 'required|date',
                 'anotacao'   => 'nullable|string',
