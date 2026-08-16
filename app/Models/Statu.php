@@ -16,6 +16,15 @@ class Statu extends Model
         'id',
         'descricao',
         'ordem',
-        'tenant_id'
     ];
+
+    /**
+     * Status "em aberto" (nem ganho, nem perdido). Reutilizado nos 3 pontos de
+     * Userarios.php (view(), kanban(), metricas()) que precisam filtrar
+     * projetos por status ainda ativo.
+     */
+    public function scopeOpen($query)
+    {
+        return $query->where('is_won', false)->where('is_lost', false);
+    }
 }
