@@ -28,8 +28,10 @@
             cairia no DB_DATABASE=CRMLeader do .env padrão (banco de dev
             compartilhado) e RefreshDatabase apagaria/recriaria esse banco
             real. Estes valores garantem o banco de teste isolado mesmo sem
-            .env.testing; .env.testing (quando presente) ainda sobrescreve
-            estes via php artisan test/APP_ENV=testing normalmente.
+            .env.testing. Atenção: valores fixados aqui têm precedência
+            sobre .env.testing (o PHPUnit carrega este arquivo como
+            imutável) — se algum dia precisar apontar os testes para um
+            banco de teste diferente via .env.testing, ajuste aqui também.
         -->
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="CRMLeader_test"/>
