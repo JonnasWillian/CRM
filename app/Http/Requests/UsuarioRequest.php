@@ -32,7 +32,6 @@ class UsuarioRequest extends FormRequest
             'telefone' => 'required|string',
             'descricao' => 'nullable|string',
             'tag_id' => 'nullable',
-            'user_id' => 'required',
         ];
     }
 
@@ -65,8 +64,6 @@ class UsuarioRequest extends FormRequest
             'telefone.string' => 'O telefone deve ser um texto válido.',
 
             'descricao.string' => 'A descrição deve ser um texto válido.',
-
-            'user_id.required' => 'O usuário responsável é obrigatório.',
         ];
     }
 

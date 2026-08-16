@@ -13,58 +13,60 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/tags', [Userarios::class, 'tags']);
-Route::post('/status', [ProjetoController::class, 'getStatus']);
+Route::middleware(['auth', 'tenant'])->group(function () {
+    Route::post('/tags', [Userarios::class, 'tags']);
+    Route::post('/status', [ProjetoController::class, 'getStatus']);
 
-// Leads (usuarios)
-Route::post('/pegarUsuarios', [Userarios::class, 'view']);
-Route::post('/usuarios', [Userarios::class, 'create']);
-Route::get('/usuarioPerfil/{id}', [Userarios::class, 'viewUsuario']);
-Route::put('/usuarios/{id}', [Userarios::class, 'update']);
-Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
-Route::get('/timeline/{id}', [Userarios::class, 'timeline']);
-Route::post('/metricas', [Userarios::class, 'metricas']);
-Route::post('/kanban', [Userarios::class, 'kanban']);
-Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
-Route::patch('/usuarios/{id}/tag', [Userarios::class, 'patchTag']);
+    // Leads (usuarios)
+    Route::post('/pegarUsuarios', [Userarios::class, 'view']);
+    Route::post('/usuarios', [Userarios::class, 'create']);
+    Route::get('/usuarioPerfil/{id}', [Userarios::class, 'viewUsuario']);
+    Route::put('/usuarios/{id}', [Userarios::class, 'update']);
+    Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
+    Route::get('/timeline/{id}', [Userarios::class, 'timeline']);
+    Route::post('/metricas', [Userarios::class, 'metricas']);
+    Route::post('/kanban', [Userarios::class, 'kanban']);
+    Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
+    Route::patch('/usuarios/{id}/tag', [Userarios::class, 'patchTag']);
 
-// Anotações de Lead
-Route::get('/anotacao/{id}', [Userarios::class, 'viewAnotacao']);
-Route::post('/anotacao', [Userarios::class, 'createAnotacao']);
-Route::put('/anotacao/{id}', [Userarios::class, 'updateAnotacao']);
-Route::delete('/anotacao/{id}', [Userarios::class, 'destroyAnotacao']);
+    // Anotações de Lead
+    Route::get('/anotacao/{id}', [Userarios::class, 'viewAnotacao']);
+    Route::post('/anotacao', [Userarios::class, 'createAnotacao']);
+    Route::put('/anotacao/{id}', [Userarios::class, 'updateAnotacao']);
+    Route::delete('/anotacao/{id}', [Userarios::class, 'destroyAnotacao']);
 
-// Anexos de Lead
-Route::apiResource('arquivos', arquivo::class);
-Route::post('buscarArquivo', [arquivo::class, 'index']);
+    // Anexos de Lead
+    Route::apiResource('arquivos', arquivo::class);
+    Route::post('buscarArquivo', [arquivo::class, 'index']);
 
-// Projetos
-Route::post('/projetos', [ProjetoController::class, 'view']);
-Route::post('/projeto', [ProjetoController::class, 'create']);
-Route::get('/projeto/{id}', [ProjetoController::class, 'viewProjeto']);
-Route::put('/projeto/{id}', [ProjetoController::class, 'update']);
+    // Projetos
+    Route::post('/projetos', [ProjetoController::class, 'view']);
+    Route::post('/projeto', [ProjetoController::class, 'create']);
+    Route::get('/projeto/{id}', [ProjetoController::class, 'viewProjeto']);
+    Route::put('/projeto/{id}', [ProjetoController::class, 'update']);
 
-// Anotações de Projeto
-Route::get('/projetoAnotacao/{id}', [ProjetoController::class, 'viewAnotacao']);
-Route::post('/projetoAnotacao', [ProjetoController::class, 'createAnotacao']);
-Route::put('/projetoAnotacao/{id}', [ProjetoController::class, 'updateAnotacao']);
-Route::delete('/projetoAnotacao/{id}', [ProjetoController::class, 'destroyAnotacao']);
+    // Anotações de Projeto
+    Route::get('/projetoAnotacao/{id}', [ProjetoController::class, 'viewAnotacao']);
+    Route::post('/projetoAnotacao', [ProjetoController::class, 'createAnotacao']);
+    Route::put('/projetoAnotacao/{id}', [ProjetoController::class, 'updateAnotacao']);
+    Route::delete('/projetoAnotacao/{id}', [ProjetoController::class, 'destroyAnotacao']);
 
-// Anexos de Projeto
-Route::get('/projetoAnexo/{id}', [ProjetoController::class, 'viewAnexo']);
-Route::post('/projetoAnexo', [ProjetoController::class, 'createAnexo']);
-Route::delete('/projetoAnexo/{id}', [ProjetoController::class, 'destroyAnexo']);
+    // Anexos de Projeto
+    Route::get('/projetoAnexo/{id}', [ProjetoController::class, 'viewAnexo']);
+    Route::post('/projetoAnexo', [ProjetoController::class, 'createAnexo']);
+    Route::delete('/projetoAnexo/{id}', [ProjetoController::class, 'destroyAnexo']);
 
-// Tarefas de Lead
-Route::get('/tarefas/{usuarioId}', [TarefaController::class, 'index']);
-Route::post('/tarefas', [TarefaController::class, 'store']);
-Route::put('/tarefas/{id}', [TarefaController::class, 'update']);
-Route::delete('/tarefas/{id}', [TarefaController::class, 'destroy']);
-Route::post('/tarefasPendentes', [TarefaController::class, 'pendentes']);
+    // Tarefas de Lead
+    Route::get('/tarefas/{usuarioId}', [TarefaController::class, 'index']);
+    Route::post('/tarefas', [TarefaController::class, 'store']);
+    Route::put('/tarefas/{id}', [TarefaController::class, 'update']);
+    Route::delete('/tarefas/{id}', [TarefaController::class, 'destroy']);
+    Route::post('/tarefasPendentes', [TarefaController::class, 'pendentes']);
 
-// Modelos de Tarefa
-Route::get('/tarefa-padroes',          [TarefaPadraoController::class, 'index']);
-Route::post('/tarefa-padroes',         [TarefaPadraoController::class, 'store']);
-Route::post('/tarefa-padroes/aplicar', [TarefaPadraoController::class, 'aplicar']);
-Route::put('/tarefa-padroes/{id}',     [TarefaPadraoController::class, 'update']);
-Route::delete('/tarefa-padroes/{id}',  [TarefaPadraoController::class, 'destroy']);
+    // Modelos de Tarefa
+    Route::get('/tarefa-padroes',          [TarefaPadraoController::class, 'index']);
+    Route::post('/tarefa-padroes',         [TarefaPadraoController::class, 'store']);
+    Route::post('/tarefa-padroes/aplicar', [TarefaPadraoController::class, 'aplicar']);
+    Route::put('/tarefa-padroes/{id}',     [TarefaPadraoController::class, 'update']);
+    Route::delete('/tarefa-padroes/{id}',  [TarefaPadraoController::class, 'destroy']);
+});

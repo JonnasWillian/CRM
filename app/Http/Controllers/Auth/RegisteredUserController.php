@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantBootstrapper;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
@@ -38,17 +40,24 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $tenant = Tenant::create([
-            'nome' => $request->name,
-            'slug' => Str::slug($request->name).'-'.Str::random(6),
-        ]);
+        // Todo o registro (tenant + seed de tags/status + user) roda numa única
+        // transação: se a semeadura de tags/status falhar, o tenant recém-criado
+        // não fica "pela metade" (sem tags/status, inutilizável) no banco.
+        $user = DB::transaction(function () use ($request) {
+            $tenant = Tenant::create([
+                'nome' => $request->name,
+                'slug' => Str::slug($request->name).'-'.Str::random(6),
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'tenant_id' => $tenant->id,
-        ]);
+            TenantBootstrapper::bootstrap($tenant);
+
+            return User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'tenant_id' => $tenant->id,
+            ]);
+        });
 
         event(new Registered($user));
 

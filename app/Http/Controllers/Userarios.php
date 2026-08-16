@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\UsuarioRequest;
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 use App\Models\Usuario;
@@ -21,14 +23,14 @@ class Userarios extends Controller
 {
     public function view(Request $request)
     {
-        $usuarios = Usuario::where('user_id', $request->user_id)
+        $usuarios = Usuario::where('user_id', auth()->id())
             ->with('tag')
             ->addSelect([
                 '*',
                 'tem_projeto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
                     ->selectRaw('COUNT(*) > 0'),
                 'tem_projeto_aberto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
-                    ->whereNotIn('status_id', [5, 6])
+                    ->whereHas('status', fn ($q) => $q->open())
                     ->selectRaw('COUNT(*) > 0'),
             ])
             ->get();
@@ -47,7 +49,10 @@ class Userarios extends Controller
     public function create(UsuarioRequest $request)
     {
         try {
-            Usuario::create($request->validated());
+            $validated = $request->validated();
+            $validated['user_id'] = auth()->id();
+
+            Usuario::create($validated);
 
             return response()->json(['message' => 'Usuário cadastrado com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -258,7 +263,7 @@ class Userarios extends Controller
 
     public function kanban(Request $request)
     {
-        $userId = $request->user_id;
+        $userId = auth()->id();
         $tags   = Tags::orderBy('ordem')->get();
 
         $leads = Usuario::where('user_id', $userId)
@@ -269,7 +274,7 @@ class Userarios extends Controller
                     ->select('created_at')
                     ->limit(1),
                 'valor_projetos' => Projeto::whereColumn('usuario_id', 'usuarios.id')
-                    ->whereHas('status', fn ($q) => $q->where('is_won', false)->where('is_lost', false))
+                    ->whereHas('status', fn ($q) => $q->open())
                     ->selectRaw('COALESCE(SUM(preco), 0)'),
             ])
             ->get()
@@ -293,7 +298,12 @@ class Userarios extends Controller
             $usuario = Usuario::findOrFail($id);
             $tagAnterior = $usuario->tag_id;
 
-            $validated = $request->validate(['tag_id' => 'required|exists:tags,id']);
+            $validated = $request->validate([
+                'tag_id' => [
+                    'required',
+                    Rule::exists('tags', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                ],
+            ]);
             $usuario->update($validated);
 
             if ($tagAnterior !== $usuario->tag_id) {
@@ -313,8 +323,7 @@ class Userarios extends Controller
     public function kanbanSettings(Request $request)
     {
         try {
-            $user = \App\Models\User::findOrFail($request->user_id);
-            $user->update(['kanban_default_tag_id' => $request->default_tag_id]);
+            auth()->user()->update(['kanban_default_tag_id' => $request->default_tag_id]);
             return response()->json(['message' => 'Preferência salva']);
         } catch (\Exception $error) {
             return response()->json(['error' => 'Usuário não encontrado'], 404);
@@ -323,12 +332,12 @@ class Userarios extends Controller
 
     public function metricas(Request $request)
     {
-        $userId = $request->user_id;
+        $userId = auth()->id();
         $leadIds = Usuario::where('user_id', $userId)->pluck('id');
         $leadsAtivos     = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', true))->count();
         $leadsArquivados = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', false))->count();
         $leads30Dias     = Usuario::where('user_id', $userId)->where('created_at', '>=', now()->subDays(30))->count();
-        $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', false)->where('is_lost', false))->sum('preco') ?? 0;
+        $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
         $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
         $leadsPorTag = Usuario::where('user_id', $userId)->select('tag_id', DB::raw('count(*) as total'))->with('tag')->groupBy('tag_id')->get()
             ->map(fn($row) => [

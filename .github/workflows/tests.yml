@@ -1,0 +1,82 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: CRMLeader_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, pdo_mysql, intl
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Cache dependências do Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Instalar dependências PHP
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Instalar dependências Node
+        run: npm ci
+
+      - name: Configurar .env para CI
+        run: |
+          cp .env.example .env
+          sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
+          sed -i "s/^# DB_HOST=.*/DB_HOST=127.0.0.1/" .env
+          sed -i "s/^# DB_PORT=.*/DB_PORT=3306/" .env
+          sed -i "s/^# DB_DATABASE=.*/DB_DATABASE=CRMLeader_test/" .env
+          sed -i "s/^# DB_USERNAME=.*/DB_USERNAME=root/" .env
+          sed -i "s/^# DB_PASSWORD=.*/DB_PASSWORD=root/" .env
+
+      - name: Gerar APP_KEY
+        run: php artisan key:generate
+
+      - name: Build dos assets (Vite)
+        run: npm run build
+
+      - name: Aguardar MySQL responder
+        run: |
+          for i in $(seq 1 30); do
+            mysqladmin ping -h127.0.0.1 -P3306 -uroot -proot --silent && break
+            sleep 2
+          done
+
+      - name: Rodar suíte de testes
+        run: php artisan test

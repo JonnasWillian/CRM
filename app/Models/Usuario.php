@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Concerns\BelongsToTenant;
 
 class Usuario extends Model
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, BelongsToTenant;
 
     protected $fillable = [
         'nome',
@@ -17,7 +18,6 @@ class Usuario extends Model
         'telefone',
         'user_id',
         'tag_id',
-        'tenant_id'
     ];
 
     public function tag()

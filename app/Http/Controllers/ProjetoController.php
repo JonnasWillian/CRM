@@ -12,6 +12,8 @@ use App\Models\Statu;
 use App\Models\Projeto;
 use App\Models\ProjetoAnotacao;
 use App\Models\ProjetoAnexo;
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Validation\Rule;
 
 class ProjetoController extends Controller
 {
@@ -91,7 +93,10 @@ class ProjetoController extends Controller
         try {
             $validateRequest = $request->validate([
                 'descricao' => 'required|string',
-                'projeto_id' => 'required|exists:projetos,id',
+                'projeto_id' => [
+                    'required',
+                    Rule::exists('projetos', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                ],
             ]);
 
             ProjetoAnotacao::create($validateRequest);

@@ -4,7 +4,9 @@ namespace Database\Factories;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Usuario>
@@ -18,13 +20,47 @@ class UsuarioFactory extends Factory
      */
     public function definition(): array
     {
+        $tenant = Tenant::factory()->create();
+
         return [
             'nome' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'descricao' => fake()->optional()->sentence(),
             'telefone' => fake()->numberBetween(1000000000, 9999999999),
-            'user_id' => User::factory(),
-            'tenant_id' => Tenant::factory(),
+            'user_id' => User::factory()->create(['tenant_id' => $tenant->id])->id,
+            'tenant_id' => $tenant->id,
         ];
+    }
+
+    /**
+     * Reconcile the nested User's tenant with the final Usuario tenant.
+     *
+     * definition() cannot see attribute overrides passed to create()/state(),
+     * so when a caller (e.g. ProjetoFactory) overrides 'tenant_id' to share a
+     * single tenant across a fixture graph, the User created above still
+     * carries the tenant that was generated internally. This hook re-syncs
+     * the User to whatever tenant_id the Usuario actually ended up with.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Usuario $usuario) {
+            User::whereKey($usuario->user_id)
+                ->where('tenant_id', '!=', $usuario->tenant_id)
+                ->update(['tenant_id' => $usuario->tenant_id]);
+        });
+    }
+
+    /**
+     * tenant_id não está em $fillable (Global Constraint da task de
+     * multi-tenancy — o único jeito de setá-lo é atribuição direta de
+     * propriedade ou a trait BelongsToTenant). Model::unguarded() é a mesma
+     * técnica que o próprio Factory::createChildren() do framework usa para
+     * popular atributos sem respeitar $fillable, e preserva tanto o default
+     * de definition() quanto overrides explícitos via
+     * ->create(['tenant_id' => ...]) usados nos testes.
+     */
+    public function newModel(array $attributes = [])
+    {
+        return Model::unguarded(fn () => parent::newModel($attributes));
     }
 }
