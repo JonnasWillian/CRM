@@ -264,7 +264,6 @@ class Userarios extends Controller
     public function kanban(Request $request)
     {
         $userId = auth()->id();
-        $tags   = Tags::orderBy('ordem')->get();
 
         $leads = Usuario::where('user_id', $userId)
             ->addSelect([
@@ -288,6 +287,26 @@ class Userarios extends Controller
                 'ultimo_contato' => $u->ultimo_contato ?? $u->updated_at,
                 'valor_projetos' => (float) ($u->valor_projetos ?? 0),
             ]);
+
+        // Um estágio arquivado (soft delete) continua vindo enquanto ainda
+        // restar lead nele. O quadro distribui os leads comparando tag_id com
+        // o id de cada coluna: sem a coluna, o lead não renderiza em lugar
+        // nenhum e some em silêncio. Marcada como `arquivada`, a UI a mostra
+        // como somente-saída; esvaziada, ela para de vir e a coluna desaparece.
+        $estagiosArquivadosEmUso = $leads->pluck('tag_id')->filter()->unique();
+
+        $tags = Tags::withTrashed()
+            ->where(fn ($q) => $q->whereNull('deleted_at')
+                ->orWhereIn('id', $estagiosArquivadosEmUso))
+            ->orderBy('ordem')
+            ->get()
+            ->map(fn ($tag) => [
+                'id'        => $tag->id,
+                'descricao' => $tag->descricao,
+                'ordem'     => $tag->ordem,
+                'arquivada' => $tag->trashed(),
+            ])
+            ->values();
 
         return response()->json(['tags' => $tags, 'leads' => $leads]);
     }

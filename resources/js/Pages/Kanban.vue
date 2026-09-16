@@ -39,6 +39,10 @@
 
     const columnLeads = (tagId) => leads.value.filter(l => l.tag_id === tagId);
 
+    // Estágios arquivados ainda aparecem no quadro enquanto seguram leads, mas
+    // não são destino válido: não recebem lead novo nem servem de coluna padrão.
+    const tagsAtivas = computed(() => tags.value.filter(t => !t.arquivada));
+
     // ── Fetch ──
     const buscarKanban = async () => {
         isLoading.value = true;
@@ -46,7 +50,8 @@
             const res = await axios.post('/api/kanban', { user_id: user.value.id });
             tags.value  = res.data.tags;
             leads.value = res.data.leads;
-            defaultTagId.value = user.value.kanban_default_tag_id ?? (res.data.tags[0]?.id ?? null);
+            defaultTagId.value = user.value.kanban_default_tag_id
+                ?? (res.data.tags.find(t => !t.arquivada)?.id ?? null);
         } catch {
             tags.value  = [];
             leads.value = [];
@@ -67,18 +72,24 @@
         dragOverTagId.value = null;
     };
 
-    const onDrop = async (evt, newTagId) => {
+    const onDragOver = (tag) => {
+        if (tag.arquivada) return;
+        dragOverTagId.value = tag.id;
+    };
+
+    const onDrop = async (evt, tag) => {
         evt.preventDefault();
         dragOverTagId.value = null;
         const lead = draggingLead.value;
         draggingLead.value = null;
-        if (!lead || lead.tag_id === newTagId) return;
+        // Estágio arquivado é somente-saída: aceita perder leads, nunca recebê-los.
+        if (!lead || tag.arquivada || lead.tag_id === tag.id) return;
 
         const oldTagId = lead.tag_id;
-        lead.tag_id = newTagId;
+        lead.tag_id = tag.id;
 
         try {
-            await axios.patch(`/api/usuarios/${lead.id}/tag`, { tag_id: newTagId });
+            await axios.patch(`/api/usuarios/${lead.id}/tag`, { tag_id: tag.id });
         } catch {
             lead.tag_id = oldTagId;
         }
@@ -186,7 +197,7 @@
                         <div class="kb-settings-body">
                             <label class="kb-settings-label">Coluna padrão para novos leads</label>
                             <select v-model="defaultTagId" class="kb-select">
-                                <option v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.descricao }}</option>
+                                <option v-for="tag in tagsAtivas" :key="tag.id" :value="tag.id">{{ tag.descricao }}</option>
                             </select>
                         </div>
                         <div class="kb-settings-footer">
@@ -211,20 +222,26 @@
                     v-for="tag in tags"
                     :key="tag.id"
                     class="kb-column"
-                    :class="{ 'kb-column--over': dragOverTagId === tag.id }"
+                    :class="{ 'kb-column--over': dragOverTagId === tag.id, 'kb-column--arquivada': tag.arquivada }"
                     :style="{ '--col-color': getPalette(tag.id).color, '--col-bg': getPalette(tag.id).bg, '--col-border': getPalette(tag.id).border }"
-                    @dragover.prevent="dragOverTagId = tag.id"
+                    @dragover.prevent="onDragOver(tag)"
                     @dragleave.self="dragOverTagId = null"
-                    @drop="onDrop($event, tag.id)"
+                    @drop="onDrop($event, tag)"
                 >
                     <!-- Header da coluna -->
                     <div class="kb-col-header">
                         <div class="kb-col-header-left">
                             <span class="kb-col-dot" />
                             <span class="kb-col-name">{{ tag.descricao }}</span>
+                            <span
+                                v-if="tag.arquivada"
+                                class="kb-col-arquivada"
+                                title="Estágio arquivado. Arraste os leads para outra coluna; quando esvaziar, ele some do quadro."
+                            >Arquivado</span>
                             <span class="kb-col-count">{{ columnLeads(tag.id).length }}</span>
                         </div>
                         <button
+                            v-if="!tag.arquivada"
                             @click="abrirQuickAdd(tag.id)"
                             class="kb-col-add"
                             title="Adicionar lead nesta coluna"
@@ -505,6 +522,12 @@
         border-color: var(--col-color) !important;
         background: var(--col-bg) !important;
     }
+    /* Estágio arquivado: presente só até esvaziar, e não aceita lead novo. */
+    .kb-column--arquivada {
+        border-style: dashed;
+        opacity: 0.72;
+    }
+    .kb-column--arquivada .kb-col-dot { background: var(--t3); }
 
     /* Column header */
     .kb-col-header {
@@ -521,6 +544,12 @@
         background: var(--col-color); flex-shrink: 0;
     }
     .kb-col-name { font-size: 0.82rem; font-weight: 600; color: var(--t1); }
+    .kb-col-arquivada {
+        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.04em;
+        text-transform: uppercase; white-space: nowrap;
+        padding: 0.1rem 0.4rem; border-radius: 4px;
+        color: var(--t3); border: 1px dashed var(--border);
+    }
     .kb-col-count {
         font-size: 0.68rem; font-weight: 600;
         padding: 0.1rem 0.45rem; border-radius: 100px;

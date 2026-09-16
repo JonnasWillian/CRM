@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class UsuarioRequest extends FormRequest
 {
@@ -28,7 +31,7 @@ class UsuarioRequest extends FormRequest
     {
         return [
             'nome' => 'required|string|min:5',
-            'email' => 'required|email|unique:usuarios,email',
+            'email' => ['required', 'email', $this->emailUnicoNoTenant()],
             'telefone' => 'required|string',
             'descricao' => 'nullable|string',
             'tag_id' => 'nullable',
@@ -37,15 +40,32 @@ class UsuarioRequest extends FormRequest
 
     private function updateRules()
     {
-        $id = $this->request->get('id');
-
         return [
             'nome' => 'required|string|min:5',
-            'email' => 'required|email|unique:usuarios,email,' . $id,
+            'email' => [
+                'required',
+                'email',
+                // O id vem da rota, não do corpo: é o mesmo identificador que o
+                // controller usa no findOrFail(), e não depende do cliente
+                // reenviar 'id' no payload.
+                $this->emailUnicoNoTenant()->ignore($this->route('id')),
+            ],
             'telefone' => 'required|string|min:7',
             'descricao' => 'nullable|string',
             'tag_id' => 'nullable',
         ];
+    }
+
+    /**
+     * Regras `unique:` consultam o banco diretamente e não passam pelo
+     * Eloquent, portanto o TenantScope não se aplica a elas. O filtro por
+     * tenant precisa ser explícito, ou um lead de outro tenant bloquearia
+     * o cadastro aqui (e a mensagem de erro denunciaria sua existência).
+     */
+    private function emailUnicoNoTenant(): Unique
+    {
+        return Rule::unique('usuarios', 'email')
+            ->where('tenant_id', app(CurrentTenant::class)->id());
     }
 
     public function messages(): array
