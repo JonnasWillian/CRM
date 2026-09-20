@@ -74,16 +74,9 @@ class Userarios extends Controller
         try {
             $usuario = Usuario::findOrFail($id);
 
-            $tagAnterior = $usuario->tag_id;
+            // O histórico de estágio é gravado pelo UsuarioObserver, que
+            // observa a mudança de tag_id em qualquer caminho de escrita.
             $usuario->update($request->validated());
-
-            if ($tagAnterior !== $usuario->tag_id) {
-                UsuarioTagHistorico::create([
-                    'usuario_id'      => $id,
-                    'tag_id_anterior' => $tagAnterior,
-                    'tag_id_novo'     => $usuario->tag_id,
-                ]);
-            }
 
             return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -315,7 +308,6 @@ class Userarios extends Controller
     {
         try {
             $usuario = Usuario::findOrFail($id);
-            $tagAnterior = $usuario->tag_id;
 
             $validated = $request->validate([
                 'tag_id' => [
@@ -323,15 +315,9 @@ class Userarios extends Controller
                     Rule::exists('tags', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
                 ],
             ]);
-            $usuario->update($validated);
 
-            if ($tagAnterior !== $usuario->tag_id) {
-                UsuarioTagHistorico::create([
-                    'usuario_id'      => $id,
-                    'tag_id_anterior' => $tagAnterior,
-                    'tag_id_novo'     => $usuario->tag_id,
-                ]);
-            }
+            // Histórico de estágio e activity log ficam a cargo do UsuarioObserver.
+            $usuario->update($validated);
 
             return response()->json(['message' => 'Tag atualizada']);
         } catch (\Exception $error) {
