@@ -8,6 +8,7 @@ use App\Http\Controllers\ProjetoController;
 use App\Http\Controllers\arquivo;
 use App\Http\Controllers\TarefaController;
 use App\Http\Controllers\TarefaPadraoController;
+use App\Http\Controllers\LeadAtividadeController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -23,7 +24,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/usuarioPerfil/{id}', [Userarios::class, 'viewUsuario']);
     Route::put('/usuarios/{id}', [Userarios::class, 'update']);
     Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
+    // Timeline montada em runtime. Substituída pelo activity log abaixo;
+    // mantida durante a transição, até o frontend trocar.
     Route::get('/timeline/{id}', [Userarios::class, 'timeline']);
+    Route::get('/leads/{usuario}/atividades', [LeadAtividadeController::class, 'index']);
     Route::post('/metricas', [Userarios::class, 'metricas']);
     Route::post('/kanban', [Userarios::class, 'kanban']);
     Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
