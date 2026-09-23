@@ -110,7 +110,7 @@ isolamento aplicado por Global Scope do Eloquent. Sem pacote externo.
 | `App\Models\Scopes\TenantScope` | Global Scope que filtra toda query por `tenant_id` |
 | `App\Models\Concerns\BelongsToTenant` | Registra o scope e preenche `tenant_id` ao criar |
 | `App\Http\Middleware\IdentifyTenant` | Alias `tenant`; resolve o tenant a partir do usuário logado |
-| `App\Services\TenantBootstrapper` | Semeia tags e status padrão para um tenant novo |
+| `App\Services\TenantBootstrapper` | Semeia o funil padrão, seus estágios e os status para um tenant novo |
 
 O `TenantScope` é **fail-closed**: sem tenant ativo ele lança `RuntimeException`
 em vez de devolver tudo sem filtro. Por isso jobs e commands, que rodam fora do
@@ -124,22 +124,58 @@ As rotas de `/api` ficam sob `middleware(['auth', 'tenant'])`. `IdentifyTenant`
 roda depois do `auth` e responde 401 sem sessão, ou 403 se o usuário não tiver
 tenant (inclusive quando o tenant foi soft-deleted).
 
-### Estágios do funil e status de projeto
+### Funis, estágios e status de projeto
 
-`tags` são os estágios do Kanban; `status` são os estados de um projeto. Ambos
-são por tenant e usam **colunas semânticas**, não IDs fixos:
+Cada tenant cria seus próprios **funis** (`funis`), e cada funil tem seus
+**estágios** (`estagios`) — as colunas do Kanban. `status` continua sendo outro
+eixo: os estados de um *projeto*, não do lead.
 
-- `tags.is_active` — estágio ativo (em andamento) ou arquivado
+Um lead vive em **um funil por vez**: `usuarios.funil_id` mais
+`usuarios.estagio_id`, e o estágio tem de pertencer ao funil. Trocar de funil é
+uma ação explícita (`PATCH /api/usuarios/{id}/funil`); arrastar o card no Kanban
+move o lead apenas dentro do quadro atual.
+
+Todos usam **colunas semânticas**, não IDs fixos:
+
+- `estagios.tipo` — `aberto`, `ganho` ou `perdido`. É o que as métricas leem;
+  com nomes livres por tenant, "Fechado", "Assinado" e "Ganhamos" são o mesmo
+  conceito e nenhum deles é reconhecível por string.
 - `status.is_won` / `status.is_lost` — projeto ganho ou perdido; nenhum dos dois
   significa em aberto, que é o que o query scope `Statu::scopeOpen()` filtra
 
-Ambos usam soft delete, e as FKs `usuarios.tag_id` e `projetos.status_id` são
-`restrict` — apagar um estágio em uso é impedido pelo banco, em vez de arrastar
-leads e projetos junto. Arquivar um estágio que ainda tem leads mantém a coluna
-visível no Kanban, marcada como somente-saída, até que o último lead seja movido.
+Invariantes protegidas por `App\Services\Funis\*`, que devolvem 422 com a
+mensagem pronta:
+
+- todo funil mantém ao menos um estágio `aberto` — sem ele, o cadastro de lead
+  falharia longe da causa;
+- o funil padrão não é arquivável, e funil com leads também não;
+- o estágio de um lead é sempre do funil desse lead.
+
+Todos usam soft delete, e as FKs `usuarios.estagio_id`, `estagios.funil_id` e
+`projetos.status_id` são `restrict` — apagar algo em uso é impedido pelo banco,
+em vez de arrastar leads e projetos junto. Arquivar um estágio que ainda tem
+leads mantém a coluna visível no Kanban, marcada como somente-saída, até que o
+último lead seja movido.
+
+A tela de configuração fica em `/configuracoes/funis`, protegida pela permission
+`configuracoes.manage`.
 
 Unicidade de email de lead é **por tenant** (`UNIQUE(tenant_id, email)`): o mesmo
 contato pode ser lead de duas empresas diferentes.
+
+### Autorização
+
+`spatie/laravel-permission` em modo **teams**, com `tenant_id` como chave do
+team: papéis e permissões são definidos globalmente uma vez, e o que é por
+empresa é a *atribuição* (`model_has_roles.tenant_id`). `IdentifyTenant` chama
+`setPermissionsTeamId()` e limpa as relações de papel em cache do model.
+
+Papéis: `admin`, `gestor`, `vendedor`. Quem registra a empresa vira `admin`.
+
+Desta base, **só `configuracoes.manage` é aplicada** hoje — ela protege a tela de
+funis. As policies de lead, projeto e tarefa (e o fechamento do IDOR interno)
+seguem pendentes, especificadas em
+`docs/superpowers/specs/2026-09-15-autorizacao-rbac-design.md`.
 
 ## Documentação de design
 

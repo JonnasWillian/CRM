@@ -5,6 +5,11 @@
     const showingMobileMenu = ref(false);
     const user = computed(() => usePage().props.auth.user);
 
+    // Espelha `configuracoes.manage` do backend. Esconder o link é conveniência
+    // de navegação, não autorização: a rota e as chamadas de API são barradas de
+    // qualquer jeito pelo middleware `can:` e pelos FormRequests.
+    const podeConfigurar = computed(() => usePage().props.auth.permissions?.['configuracoes.manage'] === true);
+
     const getInitials = (name) => {
         return name?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '?';
     };
@@ -32,6 +37,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                     </svg>
                     <span>Modelos</span>
+                </Link>
+
+                <Link v-if="podeConfigurar" :href="route('configuracoes.funis')" class="nav-item" :class="{ active: route().current('configuracoes.funis') }">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h10M4 12h7M4 18h4M17 4v6m0 0l-2.5-2.5M17 10l2.5-2.5"/>
+                    </svg>
+                    <span>Funis</span>
                 </Link>
 
                 <Link :href="route('profile.edit')" class="nav-item" :class="{ active: route().current('profile.edit') }">
@@ -83,6 +95,10 @@
                         <Link :href="route('modelosTarefa')" class="nav-item" :class="{ active: route().current('modelosTarefa') }" @click="showingMobileMenu = false">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                             <span>Modelos</span>
+                        </Link>
+                        <Link v-if="podeConfigurar" :href="route('configuracoes.funis')" class="nav-item" :class="{ active: route().current('configuracoes.funis') }" @click="showingMobileMenu = false">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h10M4 12h7M4 18h4M17 4v6m0 0l-2.5-2.5M17 10l2.5-2.5"/></svg>
+                            <span>Funis</span>
                         </Link>
                         <Link :href="route('profile.edit')" class="nav-item" @click="showingMobileMenu = false">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>

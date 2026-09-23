@@ -40,9 +40,9 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Todo o registro (tenant + seed de tags/status + user) roda numa única
-        // transação: se a semeadura de tags/status falhar, o tenant recém-criado
-        // não fica "pela metade" (sem tags/status, inutilizável) no banco.
+        // Todo o registro (tenant + seed de estágios/status + user) roda numa única
+        // transação: se a semeadura de estágios/status falhar, o tenant recém-criado
+        // não fica "pela metade" (sem estágios/status, inutilizável) no banco.
         $user = DB::transaction(function () use ($request) {
             $tenant = Tenant::create([
                 'nome' => $request->name,
@@ -51,12 +51,24 @@ class RegisteredUserController extends Controller
 
             TenantBootstrapper::bootstrap($tenant);
 
-            return User::create([
+            $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'tenant_id' => $tenant->id,
             ]);
+
+            // Quem registra a empresa é o administrador dela. Sem isto ninguém
+            // no tenant teria `configuracoes.manage` e a tela de funis nasceria
+            // inacessível para a própria pessoa que acabou de criar a conta.
+            //
+            // setPermissionsTeamId precisa vir antes: o registro não passa pelo
+            // middleware `tenant`, então o team ativo ainda não foi definido e
+            // a atribuição cairia em `tenant_id = null`.
+            setPermissionsTeamId($tenant->id);
+            $user->assignRole('admin');
+
+            return $user;
         });
 
         event(new Registered($user));

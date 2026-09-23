@@ -3,61 +3,97 @@
     import { Head, Link, router, usePage } from '@inertiajs/vue3';
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import axios from 'axios';
-    import { Settings, X, Save, Plus, LayoutList, Columns } from 'lucide-vue-next';
+    import { Settings, X, Save, Plus, LayoutList, Columns, ArrowRightLeft } from 'lucide-vue-next';
 
     const user = computed(() => usePage().props.auth.user);
 
     // ── Board state ──
-    const tags    = ref([]);
+    const estagios = ref([]);
     const leads   = ref([]);
     const isLoading = ref(false);
 
+    // ── Funis ──
+    // O quadro mostra um funil por vez. `funilId` null significa "o padrão do
+    // tenant", que é o backend quem resolve — o cliente não deve adivinhar.
+    const funis      = ref([]);
+    const funilAtual = ref(null);
+    const funilId    = ref(null);
+
+    // ── Mover de funil ──
+    const moverAlvo       = ref(null);   // lead escolhido
+    const moverFunilId    = ref(null);
+    const moverEstagioId  = ref(null);
+    const moverEstagios   = ref([]);
+    const movendo         = ref(false);
+    const moverErro       = ref('');
+
     // ── DnD state ──
     const draggingLead  = ref(null);
-    const dragOverTagId = ref(null);
+    const dragOverEstagioId = ref(null);
 
     // ── Quick-add ──
-    const quickAddTagId = ref(null);
+    const quickAddEstagioId = ref(null);
     const quickAddForm  = ref({ nome: '', email: '', telefone: '' });
     const quickAdding   = ref(false);
 
     // ── Settings ──
     const showSettings   = ref(false);
-    const defaultTagId   = ref(null);
+    const defaultEstagioId   = ref(null);
     const savingSettings = ref(false);
 
-    // ── Paleta (igual ao Dashboard.vue) ──
-    const palette = {
-        1: { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)',  border: 'rgba(96,165,250,0.3)'  },
-        2: { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.3)'  },
-        3: { color: '#34d399', bg: 'rgba(52,211,153,0.15)',  border: 'rgba(52,211,153,0.3)'  },
-        4: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.3)'   },
-        5: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)',  border: 'rgba(139,92,246,0.3)'  },
-        6: { color: '#ec4899', bg: 'rgba(236,72,153,0.15)',  border: 'rgba(236,72,153,0.3)'  },
+    // ── Paleta ──
+    // Antes era um mapa fixo de id 1..6, o que só funcionava enquanto o conjunto
+    // de estágios era o mesmo para todos os tenants. Com estágios criados por
+    // cada empresa, a cor é um atributo do próprio estágio; ids não significam
+    // nada entre tenants. O cinza é o fallback de quem ainda não escolheu cor.
+    const hexParaRgba = (hex, alpha) => {
+        const n = parseInt((hex || '').replace('#', ''), 16);
+        if (Number.isNaN(n)) return `rgba(148,163,184,${alpha})`;
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
     };
-    const getPalette = (id) => palette[id] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.25)' };
 
-    const columnLeads = (tagId) => leads.value.filter(l => l.tag_id === tagId);
+    const getPalette = (estagio) => {
+        const cor = estagio?.cor || '#94a3b8';
+        return { color: cor, bg: hexParaRgba(cor, 0.15), border: hexParaRgba(cor, 0.3) };
+    };
+
+    const columnLeads = (estagioId) => leads.value.filter(l => l.estagio_id === estagioId);
 
     // Estágios arquivados ainda aparecem no quadro enquanto seguram leads, mas
     // não são destino válido: não recebem lead novo nem servem de coluna padrão.
-    const tagsAtivas = computed(() => tags.value.filter(t => !t.arquivada));
+    const estagiosAtivos = computed(() => estagios.value.filter(t => !t.arquivada));
 
     // ── Fetch ──
     const buscarKanban = async () => {
         isLoading.value = true;
         try {
-            const res = await axios.post('/api/kanban', { user_id: user.value.id });
-            tags.value  = res.data.tags;
+            const payload = { user_id: user.value.id };
+            if (funilId.value) payload.funil_id = funilId.value;
+
+            const res = await axios.post('/api/kanban', payload);
+            estagios.value = res.data.estagios;
             leads.value = res.data.leads;
-            defaultTagId.value = user.value.kanban_default_tag_id
-                ?? (res.data.tags.find(t => !t.arquivada)?.id ?? null);
+            funis.value = res.data.funis ?? [];
+            funilAtual.value = res.data.funil;
+            funilId.value = res.data.funil?.id ?? null;
+
+            // A coluna padrão do usuário é de um funil específico. Ao trocar de
+            // funil ela não existe mais aqui, e cair no primeiro estágio ativo
+            // evita um select apontando para uma opção inexistente.
+            const daPreferencia = estagios.value.find(e => e.id === user.value.kanban_default_estagio_id);
+            defaultEstagioId.value = daPreferencia?.id
+                ?? (estagios.value.find(e => !e.arquivada)?.id ?? null);
         } catch {
-            tags.value  = [];
+            estagios.value = [];
             leads.value = [];
         } finally {
             isLoading.value = false;
         }
+    };
+
+    const trocarFunil = async (id) => {
+        funilId.value = id;
+        await buscarKanban();
     };
 
     // ── Drag-and-drop ──
@@ -69,39 +105,39 @@
 
     const onDragEnd = () => {
         draggingLead.value  = null;
-        dragOverTagId.value = null;
+        dragOverEstagioId.value = null;
     };
 
-    const onDragOver = (tag) => {
-        if (tag.arquivada) return;
-        dragOverTagId.value = tag.id;
+    const onDragOver = (estagio) => {
+        if (estagio.arquivada) return;
+        dragOverEstagioId.value = estagio.id;
     };
 
-    const onDrop = async (evt, tag) => {
+    const onDrop = async (evt, estagio) => {
         evt.preventDefault();
-        dragOverTagId.value = null;
+        dragOverEstagioId.value = null;
         const lead = draggingLead.value;
         draggingLead.value = null;
         // Estágio arquivado é somente-saída: aceita perder leads, nunca recebê-los.
-        if (!lead || tag.arquivada || lead.tag_id === tag.id) return;
+        if (!lead || estagio.arquivada || lead.estagio_id === estagio.id) return;
 
-        const oldTagId = lead.tag_id;
-        lead.tag_id = tag.id;
+        const oldEstagioId = lead.estagio_id;
+        lead.estagio_id = estagio.id;
 
         try {
-            await axios.patch(`/api/usuarios/${lead.id}/tag`, { tag_id: tag.id });
+            await axios.patch(`/api/usuarios/${lead.id}/estagio`, { estagio_id: estagio.id });
         } catch {
-            lead.tag_id = oldTagId;
+            lead.estagio_id = oldEstagioId;
         }
     };
 
     // ── Quick-add ──
-    const abrirQuickAdd = (tagId) => {
-        quickAddTagId.value = tagId;
+    const abrirQuickAdd = (estagioId) => {
+        quickAddEstagioId.value = estagioId;
         quickAddForm.value  = { nome: '', email: '', telefone: '' };
     };
 
-    const cancelarQuickAdd = () => { quickAddTagId.value = null; };
+    const cancelarQuickAdd = () => { quickAddEstagioId.value = null; };
 
     const salvarQuickAdd = async () => {
         if (!quickAddForm.value.nome.trim() || !quickAddForm.value.email.trim() || !quickAddForm.value.telefone.trim()) return;
@@ -111,13 +147,62 @@
                 nome:     quickAddForm.value.nome.trim(),
                 email:    quickAddForm.value.email.trim(),
                 telefone: quickAddForm.value.telefone.trim(),
-                tag_id:   quickAddTagId.value,
+                estagio_id: quickAddEstagioId.value,
+                funil_id: funilAtual.value?.id ?? null,
                 user_id:  user.value.id,
             });
-            quickAddTagId.value = null;
+            quickAddEstagioId.value = null;
             await buscarKanban();
         } catch { /* silencioso */ }
         finally { quickAdding.value = false; }
+    };
+
+    // ── Mover de funil ──
+    // Transição manual e explícita: escolher o funil de destino e o estágio de
+    // entrada. Arrastar o card continua movendo só dentro do quadro atual — o
+    // backend recusa um estagio_id de outro funil no endpoint de arrastar.
+    const abrirMover = (lead) => {
+        moverAlvo.value = lead;
+        moverErro.value = '';
+        moverFunilId.value = funis.value.find(f => f.id !== funilAtual.value?.id)?.id ?? null;
+        moverEstagioId.value = null;
+        moverEstagios.value = [];
+        if (moverFunilId.value) carregarEstagiosDestino();
+    };
+
+    const fecharMover = () => { moverAlvo.value = null; };
+
+    const carregarEstagiosDestino = async () => {
+        moverEstagioId.value = null;
+        moverEstagios.value = [];
+        if (!moverFunilId.value) return;
+        try {
+            const res = await axios.post('/api/estagios', { funil_id: moverFunilId.value });
+            moverEstagios.value = res.data;
+            moverEstagioId.value = res.data.find(e => e.tipo === 'aberto')?.id ?? res.data[0]?.id ?? null;
+        } catch {
+            moverErro.value = 'Não foi possível carregar os estágios do funil de destino.';
+        }
+    };
+
+    const confirmarMover = async () => {
+        if (!moverFunilId.value || !moverEstagioId.value) return;
+        movendo.value = true;
+        moverErro.value = '';
+        try {
+            await axios.patch(`/api/usuarios/${moverAlvo.value.id}/funil`, {
+                funil_id: moverFunilId.value,
+                estagio_id: moverEstagioId.value,
+            });
+            fecharMover();
+            await buscarKanban();
+        } catch (e) {
+            moverErro.value = e?.response?.data?.error
+                ?? Object.values(e?.response?.data?.erros ?? {}).flat()[0]
+                ?? 'Não foi possível mover o lead.';
+        } finally {
+            movendo.value = false;
+        }
     };
 
     // ── Navegação para perfil ──
@@ -132,7 +217,7 @@
         try {
             await axios.patch('/api/kanban/settings', {
                 user_id:        user.value.id,
-                default_tag_id: defaultTagId.value,
+                default_estagio_id: defaultEstagioId.value,
             });
             showSettings.value = false;
         } catch { /* silencioso */ }
@@ -169,6 +254,17 @@
                 </div>
 
                 <div class="kb-topbar-right">
+                    <!-- Seletor de funil -->
+                    <select
+                        v-if="funis.length > 1"
+                        class="kb-select kb-select--funil"
+                        :value="funilId"
+                        @change="trocarFunil(Number($event.target.value))"
+                        title="Funil exibido no quadro"
+                    >
+                        <option v-for="f in funis" :key="f.id" :value="f.id">{{ f.nome }}</option>
+                    </select>
+
                     <!-- Toggle Lista / Pipeline -->
                     <div class="view-toggle">
                         <Link :href="route('dashboard')" class="vt-btn">
@@ -196,14 +292,47 @@
                         </div>
                         <div class="kb-settings-body">
                             <label class="kb-settings-label">Coluna padrão para novos leads</label>
-                            <select v-model="defaultTagId" class="kb-select">
-                                <option v-for="tag in tagsAtivas" :key="tag.id" :value="tag.id">{{ tag.descricao }}</option>
+                            <select v-model="defaultEstagioId" class="kb-select">
+                                <option v-for="estagio in estagiosAtivos" :key="estagio.id" :value="estagio.id">{{ estagio.descricao }}</option>
                             </select>
                         </div>
                         <div class="kb-settings-footer">
                             <button @click="showSettings = false" class="kb-btn-ghost kb-btn-sm"><X :size="12" /> Cancelar</button>
                             <button @click="salvarSettings" class="kb-btn-primary kb-btn-sm" :disabled="savingSettings">
                                 <Save :size="12" /> {{ savingSettings ? 'Salvando…' : 'Salvar' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+
+            <!-- Mover de funil -->
+            <Transition name="kb-fade">
+                <div v-if="moverAlvo" class="kb-settings-overlay" @click.self="fecharMover">
+                    <div class="kb-settings-panel">
+                        <div class="kb-settings-header">
+                            <span class="kb-settings-title">Mover "{{ moverAlvo.nome }}"</span>
+                            <button @click="fecharMover" class="kb-close-btn"><X :size="15" /></button>
+                        </div>
+                        <div class="kb-settings-body">
+                            <label class="kb-settings-label">Funil de destino</label>
+                            <select v-model.number="moverFunilId" class="kb-select" @change="carregarEstagiosDestino">
+                                <option v-for="f in funis.filter(f => f.id !== funilAtual?.id)" :key="f.id" :value="f.id">
+                                    {{ f.nome }}
+                                </option>
+                            </select>
+
+                            <label class="kb-settings-label" style="margin-top: 0.85rem;">Estágio de entrada</label>
+                            <select v-model.number="moverEstagioId" class="kb-select" :disabled="!moverEstagios.length">
+                                <option v-for="e in moverEstagios" :key="e.id" :value="e.id">{{ e.descricao }}</option>
+                            </select>
+
+                            <p v-if="moverErro" class="kb-mover-erro">{{ moverErro }}</p>
+                        </div>
+                        <div class="kb-settings-footer">
+                            <button @click="fecharMover" class="kb-btn-ghost kb-btn-sm"><X :size="12" /> Cancelar</button>
+                            <button @click="confirmarMover" class="kb-btn-primary kb-btn-sm" :disabled="movendo || !moverEstagioId">
+                                <ArrowRightLeft :size="12" /> {{ movendo ? 'Movendo…' : 'Mover' }}
                             </button>
                         </div>
                     </div>
@@ -219,30 +348,30 @@
             <!-- Board -->
             <div v-else class="kb-board">
                 <div
-                    v-for="tag in tags"
-                    :key="tag.id"
+                    v-for="estagio in estagios"
+                    :key="estagio.id"
                     class="kb-column"
-                    :class="{ 'kb-column--over': dragOverTagId === tag.id, 'kb-column--arquivada': tag.arquivada }"
-                    :style="{ '--col-color': getPalette(tag.id).color, '--col-bg': getPalette(tag.id).bg, '--col-border': getPalette(tag.id).border }"
-                    @dragover.prevent="onDragOver(tag)"
-                    @dragleave.self="dragOverTagId = null"
-                    @drop="onDrop($event, tag)"
+                    :class="{ 'kb-column--over': dragOverEstagioId === estagio.id, 'kb-column--arquivada': estagio.arquivada }"
+                    :style="{ '--col-color': getPalette(estagio).color, '--col-bg': getPalette(estagio).bg, '--col-border': getPalette(estagio).border }"
+                    @dragover.prevent="onDragOver(estagio)"
+                    @dragleave.self="dragOverEstagioId = null"
+                    @drop="onDrop($event, estagio)"
                 >
                     <!-- Header da coluna -->
                     <div class="kb-col-header">
                         <div class="kb-col-header-left">
                             <span class="kb-col-dot" />
-                            <span class="kb-col-name">{{ tag.descricao }}</span>
+                            <span class="kb-col-name">{{ estagio.descricao }}</span>
                             <span
-                                v-if="tag.arquivada"
+                                v-if="estagio.arquivada"
                                 class="kb-col-arquivada"
                                 title="Estágio arquivado. Arraste os leads para outra coluna; quando esvaziar, ele some do quadro."
                             >Arquivado</span>
-                            <span class="kb-col-count">{{ columnLeads(tag.id).length }}</span>
+                            <span class="kb-col-count">{{ columnLeads(estagio.id).length }}</span>
                         </div>
                         <button
-                            v-if="!tag.arquivada"
-                            @click="abrirQuickAdd(tag.id)"
+                            v-if="!estagio.arquivada"
+                            @click="abrirQuickAdd(estagio.id)"
                             class="kb-col-add"
                             title="Adicionar lead nesta coluna"
                         >
@@ -252,7 +381,7 @@
 
                     <!-- Quick-add form -->
                     <Transition name="kb-slide">
-                        <div v-if="quickAddTagId === tag.id" class="kb-quick-add">
+                        <div v-if="quickAddEstagioId === estagio.id" class="kb-quick-add">
                             <input
                                 v-model="quickAddForm.nome"
                                 type="text"
@@ -292,7 +421,7 @@
                     <!-- Cards -->
                     <div class="kb-cards">
                         <div
-                            v-for="lead in columnLeads(tag.id)"
+                            v-for="lead in columnLeads(estagio.id)"
                             :key="lead.id"
                             class="kb-card"
                             :class="{ 'kb-card--dragging': draggingLead?.id === lead.id }"
@@ -307,6 +436,14 @@
                                     <p class="kb-card-nome">{{ lead.nome }}</p>
                                     <p class="kb-card-email">{{ lead.email }}</p>
                                 </div>
+                                <button
+                                    v-if="funis.length > 1"
+                                    class="kb-card-mover"
+                                    title="Mover para outro funil"
+                                    @click.stop="abrirMover(lead)"
+                                >
+                                    <ArrowRightLeft :size="12" />
+                                </button>
                             </div>
                             <div class="kb-card-bottom">
                                 <span v-if="lead.ultimo_contato" class="kb-card-meta">
@@ -319,10 +456,10 @@
                         </div>
 
                         <!-- Drop placeholder quando a coluna está vazia -->
-                        <div v-if="!columnLeads(tag.id).length && dragOverTagId === tag.id" class="kb-drop-ghost">
+                        <div v-if="!columnLeads(estagio.id).length && dragOverEstagioId === estagio.id" class="kb-drop-ghost">
                             Solte aqui
                         </div>
-                        <div v-else-if="!columnLeads(tag.id).length" class="kb-col-empty">
+                        <div v-else-if="!columnLeads(estagio.id).length" class="kb-col-empty">
                             Nenhum lead
                         </div>
                     </div>
@@ -334,6 +471,21 @@
 </template>
 
 <style scoped>
+    .kb-select--funil { width: auto; min-width: 150px; }
+
+    .kb-card-mover {
+        width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+        border: 1px solid rgba(148,163,184,0.25); background: transparent;
+        color: #8892ab; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .kb-card-mover:hover { color: #eaedf5; border-color: var(--col-color, #6d5dfc); }
+
+    .kb-mover-erro {
+        margin-top: 0.7rem; font-size: 0.78rem; color: #fca5a5;
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+        border-radius: 8px; padding: 0.5rem 0.65rem;
+    }
+
     .kb-page {
         --bg:      #0d1117;
         --surface: #13192a;

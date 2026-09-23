@@ -2,40 +2,50 @@
 
 namespace App\Services;
 
+use App\Models\Estagio;
+use App\Models\Funil;
 use App\Models\Statu;
-use App\Models\Tags;
 use App\Models\Tenant;
 
 /**
- * Semeia o conjunto padrão de tags/status para um tenant recém-criado.
+ * Semeia o funil padrão, seus estágios e o conjunto de status de projeto para
+ * um tenant recém-criado.
  *
- * Sem isto, um tenant novo (fluxo de /register) nasce sem nenhuma tag/status:
- * `/api/tags` e `/api/status` retornam `[]`, o Kanban renderiza zero colunas
- * e `Userarios::metricas()` classifica todo lead como "sem tag"/"sem status".
+ * Sem isto, um tenant novo (fluxo de /register) nasce sem funil nenhum:
+ * `/api/funis` e `/api/status` retornam `[]`, o Kanban renderiza zero colunas
+ * e as métricas classificam todo lead como "sem estágio"/"sem status".
  *
- * O mapeamento descricao -> is_active/is_won/is_lost abaixo é o mesmo
- * mapeamento semântico real estabelecido pela migração de dados legados em
- * database/migrations/2026_08_10_090003_map_legacy_tag_and_status_ids_to_semantic_columns.php
- * — aqui apenas replicamos o mesmo conjunto para um tenant novo, sem tocar
- * naquela migração (que só reclassifica as linhas legadas do tenant 1).
+ * O conteúdo semeado é ponto de partida, não regra: a tela de configuração
+ * existe para o tenant renomear, reordenar, retipar, arquivar e criar outros
+ * funis. Nada no código depois daqui depende destes nomes.
  *
- * Todos os campos abaixo (`tenant_id`, `is_active`, `is_won`, `is_lost`) são
- * setados via atribuição direta de propriedade em vez de mass assignment,
- * porque nenhum deles está em `$fillable` de `Tags`/`Statu` — atribuição
- * direta contorna o guard sem reabrir essa porta (`tenant_id` nunca entra em
- * `$fillable`, Global Constraint da task de multi-tenancy).
+ * Todos os campos fora de $fillable (`tenant_id`, `is_default`) são setados via
+ * atribuição direta de propriedade em vez de mass assignment — a mesma técnica
+ * que o resto do projeto usa para contornar o guard sem reabrir essa porta
+ * (`tenant_id` nunca entra em `$fillable`, Global Constraint da task de
+ * multi-tenancy).
  */
 class TenantBootstrapper
 {
     public static function bootstrap(Tenant $tenant): void
     {
-        foreach (static::defaultTags() as $attributes) {
-            $tag = new Tags();
-            $tag->descricao = $attributes['descricao'];
-            $tag->ordem = $attributes['ordem'];
-            $tag->is_active = $attributes['is_active'];
-            $tag->tenant_id = $tenant->id;
-            $tag->save();
+        $funil = new Funil();
+        $funil->nome = 'Vendas';
+        $funil->descricao = 'Funil padrão, criado no cadastro da empresa.';
+        $funil->ordem = 1;
+        $funil->is_default = true;
+        $funil->tenant_id = $tenant->id;
+        $funil->save();
+
+        foreach (static::defaultEstagios() as $attributes) {
+            $estagio = new Estagio();
+            $estagio->funil_id = $funil->id;
+            $estagio->descricao = $attributes['descricao'];
+            $estagio->ordem = $attributes['ordem'];
+            $estagio->tipo = $attributes['tipo'];
+            $estagio->cor = $attributes['cor'];
+            $estagio->tenant_id = $tenant->id;
+            $estagio->save();
         }
 
         foreach (static::defaultStatus() as $attributes) {
@@ -49,15 +59,20 @@ class TenantBootstrapper
         }
     }
 
-    protected static function defaultTags(): array
+    /**
+     * "Pausado" é `aberto`, não fechado: um negócio parado não foi ganho nem
+     * perdido. O conjunto antigo o marcava como arquivado via `is_active`, e a
+     * migração de backfill corrige isso para os tenants que já existiam.
+     */
+    protected static function defaultEstagios(): array
     {
         return [
-            ['descricao' => 'Em captação', 'ordem' => 1, 'is_active' => true],
-            ['descricao' => 'Em negociacao', 'ordem' => 2, 'is_active' => true],
-            ['descricao' => 'Em desenvolvimento', 'ordem' => 3, 'is_active' => true],
-            ['descricao' => 'Concluído', 'ordem' => 4, 'is_active' => false],
-            ['descricao' => 'Pausado', 'ordem' => 5, 'is_active' => false],
-            ['descricao' => 'Cancelado', 'ordem' => 6, 'is_active' => false],
+            ['descricao' => 'Em captação',        'ordem' => 1, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#60a5fa'],
+            ['descricao' => 'Em negociacao',      'ordem' => 2, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#ec4899'],
+            ['descricao' => 'Em desenvolvimento', 'ordem' => 3, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#f59e0b'],
+            ['descricao' => 'Concluído',          'ordem' => 4, 'tipo' => Estagio::TIPO_GANHO,   'cor' => '#34d399'],
+            ['descricao' => 'Pausado',            'ordem' => 5, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#8b5cf6'],
+            ['descricao' => 'Cancelado',          'ordem' => 6, 'tipo' => Estagio::TIPO_PERDIDO, 'cor' => '#ef4444'],
         ];
     }
 

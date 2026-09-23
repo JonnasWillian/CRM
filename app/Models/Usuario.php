@@ -17,11 +17,17 @@ class Usuario extends Model
         'descricao',
         'telefone',
         'user_id',
-        'tag_id',
+        'funil_id',
+        'estagio_id',
     ];
 
-    public function tag()
+    public function estagio()
     {
-        return $this->belongsTo(Tags::class, 'tag_id')->withTrashed();
+        return $this->belongsTo(Estagio::class, 'estagio_id')->withTrashed();
+    }
+
+    public function funil()
+    {
+        return $this->belongsTo(Funil::class, 'funil_id')->withTrashed();
     }
 }

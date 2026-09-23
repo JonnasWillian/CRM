@@ -31,6 +31,10 @@ Route::get('/kanban', function () {
     return Inertia::render('Kanban');
 })->middleware(['auth', 'verified', 'tenant'])->name('kanban');
 
+Route::get('/configuracoes/funis', function () {
+    return Inertia::render('Configuracoes/Funis');
+})->middleware(['auth', 'verified', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.funis');
+
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

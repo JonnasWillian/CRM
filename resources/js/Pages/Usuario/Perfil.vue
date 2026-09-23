@@ -15,8 +15,10 @@
     const usuario = ref(null);
     const anotacoes = ref([]);
     const arquivos = ref([]);
-    const tags = ref([]);
-    const tagSelecionada = ref(null);
+    const estagios = ref([]);
+    const estagioSelecionado = ref(null);
+    const funis = ref([]);
+    const funilSelecionado = ref(null);
     const editingNoteId = ref(null);
     const showAddNote = ref(false);
     const isUploading = ref(false);
@@ -50,24 +52,32 @@
 
     const messageError = (msg) => showToast(msg, 'error');
 
-    const getTagColorClass = (tagId) => {
-        switch (Number(tagId)) {
-            case 1: return 'tag-captacao';
-            case 2: return 'tag-desenvolvimento';
-            case 3: return 'tag-concluido';
-            case 4: return 'tag-cancelado';
-            case 5: return 'tag-pausado';
-            case 6: return 'tag-negociacao';
-            default: return 'tag-default';
-        }
+    // A cor é atributo do estágio. O switch por id que existia aqui pressupunha
+    // um conjunto de estágios igual para todos os tenants.
+    const hexParaRgba = (hex, alpha) => {
+        const n = parseInt((hex || '').replace('#', ''), 16);
+        if (Number.isNaN(n)) return `rgba(148,163,184,${alpha})`;
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
     };
+
+    const estiloDoEstagio = (estagioId) => {
+        const cor = estagios.value.find(e => e.id === estagioId)?.cor || '#94a3b8';
+        return { color: cor, background: hexParaRgba(cor, 0.12) };
+    };
+
+    // O select de estágio só oferece o que existe no funil escolhido — é o
+    // mesmo par que o backend valida em UsuarioRequest.
+    const estagiosDoFunil = computed(() =>
+        estagios.value.filter(e => !funilSelecionado.value || e.funil_id === funilSelecionado.value)
+    );
 
     // ── Usuário ──
     const buscarUsuario = async (id) => {
         try {
             const response = await axios.get(`/api/usuarioPerfil/${id}`);
             usuario.value = response.data[0];
-            tagSelecionada.value = usuario.value?.tag_id ?? null;
+            estagioSelecionado.value = usuario.value?.estagio_id ?? null;
+            funilSelecionado.value = usuario.value?.funil_id ?? null;
         } catch {
             messageError('Erro ao buscar usuário!');
         }
@@ -79,7 +89,8 @@
         try {
             await axios.put(`api/usuarios/${usuario.value.id}`, {
                 ...usuario.value,
-                tag_id: tagSelecionada.value,
+                funil_id: funilSelecionado.value,
+                estagio_id: estagioSelecionado.value,
             });
             await buscarUsuario(idPerfil);
             showToast('Dados do lead salvos com sucesso!');
@@ -90,13 +101,35 @@
         }
     };
 
-    // ── Tags ──
-    const buscarTags = async () => {
+    // ── Funis e estágios ──
+    const buscarEstagios = async () => {
         try {
-            const response = await axios.post('/api/tags');
-            tags.value = response.data;
+            // Sem filtro de funil: a lista completa alimenta tanto o badge (que
+            // precisa resolver a cor do estágio atual, seja de que funil for)
+            // quanto o select, que é filtrado no cliente por estagiosDoFunil.
+            const response = await axios.post('/api/estagios');
+            estagios.value = response.data;
         } catch {
-            messageError('Erro ao buscar tags!');
+            messageError('Erro ao buscar estágios!');
+        }
+    };
+
+    const buscarFunis = async () => {
+        try {
+            const response = await axios.get('/api/funis');
+            funis.value = response.data;
+        } catch {
+            messageError('Erro ao buscar funis!');
+        }
+    };
+
+    // Trocar o funil invalida o estágio escolhido: ele é de outro quadro.
+    const aoTrocarFunil = () => {
+        const aindaVale = estagiosDoFunil.value.some(e => e.id === estagioSelecionado.value);
+        if (!aindaVale) {
+            estagioSelecionado.value = estagiosDoFunil.value.find(e => e.tipo === 'aberto')?.id
+                ?? estagiosDoFunil.value[0]?.id
+                ?? null;
         }
     };
 
@@ -271,7 +304,8 @@
             buscarAnotacao(idPerfil);
             buscarAnexo(idPerfil);
             buscarProjetos(idPerfil)
-            buscarTags();
+            buscarEstagios();
+            buscarFunis();
         } else {
             router.visit(route('dashboard'));
         }
@@ -333,8 +367,8 @@
                                 <span class="meta-badge meta-badge--proj">
                                     {{ totalProjetos }} projeto{{ totalProjetos !== 1 ? 's' : '' }}
                                 </span>
-                                <span v-if="usuario.tag_id" class="meta-badge tag" :class="getTagColorClass(usuario.tag_id)">
-                                    {{ tags.find(t => t.id === usuario.tag_id)?.descricao }}
+                                <span v-if="usuario.estagio_id" class="meta-badge estagio-badge" :style="estiloDoEstagio(usuario.estagio_id)">
+                                    {{ estagios.find(t => t.id === usuario.estagio_id)?.descricao }}
                                 </span>
                             </div>
                         </div>
@@ -401,12 +435,22 @@
                                 />
                             </div>
                             <div class="edit-field">
-                                <label class="edit-label">Tag</label>
+                                <label class="edit-label">Funil</label>
                                 <div class="select-wrapper">
-                                    <select v-model="tagSelecionada" class="edit-input edit-select">
-                                        <option :value="null">Sem tag</option>
-                                        <option v-for="tag in tags" :key="tag.id" :value="tag.id">
-                                            {{ tag.descricao }}
+                                    <select v-model="funilSelecionado" class="edit-input edit-select" @change="aoTrocarFunil">
+                                        <option :value="null">Sem funil</option>
+                                        <option v-for="f in funis" :key="f.id" :value="f.id">{{ f.nome }}</option>
+                                    </select>
+                                    <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                            <div class="edit-field">
+                                <label class="edit-label">Estágio</label>
+                                <div class="select-wrapper">
+                                    <select v-model="estagioSelecionado" class="edit-input edit-select">
+                                        <option :value="null">Sem estágio</option>
+                                        <option v-for="estagio in estagiosDoFunil" :key="estagio.id" :value="estagio.id">
+                                            {{ estagio.descricao }}
                                         </option>
                                     </select>
                                     <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -1022,15 +1066,10 @@
 
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); }
 
-    /* ── Tags ── */
-    .tag { font-size: 0.75rem; font-weight: 500; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; width: fit-content; }
-    .tag-captacao     { color: #60a5fa; background: rgba(96,165,250,0.12); }
-    .tag-desenvolvimento { color: #f59e0b; background: rgba(245,158,11,0.12); }
-    .tag-concluido    { color: #34d399; background: rgba(52,211,153,0.12); }
-    .tag-cancelado    { color: #ef4444; background: rgba(239,68,68,0.12); }
-    .tag-pausado      { color: #8b5cf6; background: rgba(139,92,246,0.12); }
-    .tag-negociacao   { color: #ec4899; background: rgba(236,72,153,0.12); }
-    .tag-default      { color: #94a3b8; background: rgba(148,163,184,0.12); }
+    /* ── Estágios ── */
+    .estagio-badge { font-size: 0.75rem; font-weight: 500; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; width: fit-content; }
+    /* As sete classes de cor por id saíram: a cor agora vem de estagios.cor e
+       é aplicada inline por estiloDoEstagio(). */
 
     /* ── Responsive ── */
     @media (max-width: 700px) {

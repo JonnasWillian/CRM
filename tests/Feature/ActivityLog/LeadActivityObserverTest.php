@@ -7,12 +7,12 @@ use App\Models\Anotacao;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\Statu;
-use App\Models\Tags;
+use App\Models\Estagio;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
-use App\Models\UsuarioTagHistorico;
+use App\Models\EstagioHistorico;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -109,12 +109,12 @@ class LeadActivityObserverTest extends TestCase
         $this->assertSame($this->lead->id, $atividade->lead_id, 'lead_id deve vir de projeto.usuario_id');
     }
 
-    public function test_trocar_tag_registra_status_alterado_e_mantem_historico_antigo(): void
+    public function test_trocar_estagio_registra_status_alterado_e_mantem_historico_antigo(): void
     {
-        $tagNova = Tags::factory()->create(['tenant_id' => $this->tenant->id]);
-        $tagAnterior = $this->lead->tag_id;
+        $estagioNovo = Estagio::factory()->create(['tenant_id' => $this->tenant->id]);
+        $estagioAnterior = $this->lead->estagio_id;
 
-        $this->lead->update(['tag_id' => $tagNova->id]);
+        $this->lead->update(['estagio_id' => $estagioNovo->id]);
 
         $atividade = $this->atividades('status_alterado')->first();
 
@@ -123,10 +123,10 @@ class LeadActivityObserverTest extends TestCase
 
         // A tabela antiga continua sendo alimentada durante a transição, agora
         // a partir do observer em vez de duplicada nos controllers.
-        $historico = UsuarioTagHistorico::where('usuario_id', $this->lead->id)->first();
-        $this->assertNotNull($historico, 'UsuarioTagHistorico precisa continuar sendo gravado');
-        $this->assertSame($tagAnterior, $historico->tag_id_anterior);
-        $this->assertSame($tagNova->id, $historico->tag_id_novo);
+        $historico = EstagioHistorico::where('usuario_id', $this->lead->id)->first();
+        $this->assertNotNull($historico, 'EstagioHistorico precisa continuar sendo gravado');
+        $this->assertSame($estagioAnterior, $historico->estagio_anterior_id);
+        $this->assertSame($estagioNovo->id, $historico->estagio_novo_id);
     }
 
     public function test_concluir_tarefa_registra_evento_separado_da_criacao(): void

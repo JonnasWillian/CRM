@@ -30,7 +30,7 @@ class RegistrationTest extends TestCase
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
-    public function test_new_registration_seeds_default_tags_and_status_for_the_tenant(): void
+    public function test_new_registration_seeds_default_estagios_and_status_for_the_tenant(): void
     {
         $this->post('/register', [
             'name' => 'Test User',
@@ -41,9 +41,9 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
 
-        $tags = $this->postJson('/api/tags');
-        $tags->assertOk();
-        $this->assertNotEmpty($tags->json());
+        $estagios = $this->postJson('/api/estagios');
+        $estagios->assertOk();
+        $this->assertNotEmpty($estagios->json());
 
         $status = $this->postJson('/api/status');
         $status->assertOk();

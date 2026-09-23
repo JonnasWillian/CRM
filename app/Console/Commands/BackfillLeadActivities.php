@@ -11,7 +11,7 @@ use App\Models\ProjetoAnotacao;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\Usuario;
-use App\Models\UsuarioTagHistorico;
+use App\Models\EstagioHistorico;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  *    subject_id, event). O comando carrega as triplas existentes e insere só
  *    as ausentes, então repetir a execução não duplica nada. É por isso que o
  *    subject é sempre a linha de origem, nunca o lead: com o lead como
- *    subject, três trocas de tag colidiriam numa tripla só.
+ *    subject, três trocas de estágio colidiriam numa tripla só.
  *
  * 2. Retroativo. O created_at de cada evento é o da linha que o originou. Sem
  *    isso todos os eventos históricos colapsariam no instante da execução, e a
@@ -154,8 +154,22 @@ class BackfillLeadActivities extends Command
             $adicionar(Usuario::class, $lead->id, 'lead_criado', $lead->id, 'Lead cadastrado no sistema', $lead->created_at);
         }
 
-        foreach (UsuarioTagHistorico::all() as $historico) {
-            $adicionar(UsuarioTagHistorico::class, $historico->id, 'status_alterado', $historico->usuario_id, 'Estágio do lead alterado', $historico->created_at);
+        foreach (EstagioHistorico::all() as $historico) {
+            // O rótulo tem de ser derivado igual ao do UsuarioObserver, ou o
+            // backfill e os observers produziriam eventos diferentes para a
+            // mesma linha e o teste de paridade quebraria. Linhas anteriores às
+            // colunas de funil têm os dois lados nulos e caem em
+            // 'status_alterado', como sempre foram.
+            $mudouFunil = $historico->funil_anterior_id !== $historico->funil_novo_id;
+
+            $adicionar(
+                EstagioHistorico::class,
+                $historico->id,
+                $mudouFunil ? 'funil_alterado' : 'status_alterado',
+                $historico->usuario_id,
+                $mudouFunil ? 'Lead movido de funil' : 'Estágio do lead alterado',
+                $historico->created_at,
+            );
         }
 
         $comSoftDelete = [

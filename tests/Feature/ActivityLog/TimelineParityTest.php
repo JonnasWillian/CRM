@@ -8,7 +8,7 @@ use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
 use App\Models\Statu;
-use App\Models\Tags;
+use App\Models\Estagio;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
@@ -59,7 +59,7 @@ class TimelineParityTest extends TestCase
         ProjetoAnotacao::create(['descricao' => 'Escopo fechado', 'projeto_id' => $projeto->id]);
         ProjetoAnexo::create(['nome' => 'contrato.pdf', 'local' => 'arquivos/c.pdf', 'projeto_id' => $projeto->id]);
 
-        $this->lead->update(['tag_id' => Tags::factory()->create(['tenant_id' => $this->tenant->id])->id]);
+        $this->lead->update(['estagio_id' => Estagio::factory()->create(['tenant_id' => $this->tenant->id])->id]);
 
         $tarefa = Tarefa::create([
             'usuario_id' => $this->lead->id,

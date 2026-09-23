@@ -23,21 +23,28 @@
     const metricas = ref(null);
     const isLoadingMetricas = ref(false);
 
-    const tagPaletteMap = {
-        1: { color: '#60a5fa', bg: 'rgba(96,165,250,0.18)'  },
-        2: { color: '#f59e0b', bg: 'rgba(245,158,11,0.18)'  },
-        3: { color: '#34d399', bg: 'rgba(52,211,153,0.18)'  },
-        4: { color: '#ef4444', bg: 'rgba(239,68,68,0.18)'   },
-        5: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.18)'  },
-        6: { color: '#ec4899', bg: 'rgba(236,72,153,0.18)'  },
+    // A cor é atributo do estágio, não função do id. O mapa fixo de 1..6 que
+    // existia aqui só funcionava porque todo tenant tinha os mesmos seis
+    // estágios; com funis customizáveis, id 3 é "Concluído" numa empresa e
+    // "Reunião marcada" na outra.
+    const hexParaRgba = (hex, alpha) => {
+        const n = parseInt((hex || '').replace('#', ''), 16);
+        if (Number.isNaN(n)) return `rgba(148,163,184,${alpha})`;
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
     };
-    const getTagPalette = (id) => tagPaletteMap[id] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.18)' };
+
+    const corDoEstagio = (id) => estagios.value.find(e => e.id === id)?.cor || '#94a3b8';
+
+    const getEstagioPalette = (id) => {
+        const cor = corDoEstagio(id);
+        return { color: cor, bg: hexParaRgba(cor, 0.18) };
+    };
 
     const formatBRL = (v) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-    const maxLeadsTag = computed(() =>
-        Math.max(1, ...(metricas.value?.leads_por_tag?.map(t => t.total) ?? [1]))
+    const maxLeadsEstagio = computed(() =>
+        Math.max(1, ...(metricas.value?.leads_por_estagio?.map(t => t.total) ?? [1]))
     );
 
     const buscarMetricas = async () => {
@@ -58,29 +65,22 @@
         } catch {  }
     };
 
-    const getTagColorClass = (tagId) => {
-        switch (Number(tagId)) {
-            case 1: return 'tag-captacao';
-            case 2: return 'tag-desenvolvimento';
-            case 3: return 'tag-concluido';
-            case 4: return 'tag-cancelado';
-            case 5: return 'tag-pausado';
-            case 6: return 'tag-negociacao';
-            default: return 'tag-default';
-        }
+    const estiloDoEstagio = (id) => {
+        const cor = corDoEstagio(id);
+        return { color: cor, background: hexParaRgba(cor, 0.12) };
     };
 
-    const tags             = ref([]);
-    const filterTags       = ref([]);
+    const estagios             = ref([]);
+    const filterEstagios       = ref([]);
     const filterStatus     = ref('todos');
     const filterDatePreset = ref('todos');
     const filterDateFrom   = ref('');
     const filterDateTo     = ref('');
 
-    const buscarTags = async () => {
+    const buscarEstagios = async () => {
         try {
-            const res = await axios.post('/api/tags');
-            tags.value = res.data;
+            const res = await axios.post('/api/estagios');
+            estagios.value = res.data;
         } catch { /* silencioso */ }
     };
 
@@ -97,23 +97,23 @@
     });
 
     const activeFiltersCount = computed(() =>
-        (filterTags.value.length > 0 ? 1 : 0) +
+        (filterEstagios.value.length > 0 ? 1 : 0) +
         (filterStatus.value !== 'todos' ? 1 : 0) +
         (filterDatePreset.value !== 'todos' ? 1 : 0)
     );
 
     const clearFilters = () => {
-        filterTags.value       = [];
+        filterEstagios.value       = [];
         filterStatus.value     = 'todos';
         filterDatePreset.value = 'todos';
         filterDateFrom.value   = '';
         filterDateTo.value     = '';
     };
 
-    const toggleFilterTag = (id) => {
-        const idx = filterTags.value.indexOf(id);
-        if (idx === -1) filterTags.value.push(id);
-        else filterTags.value.splice(idx, 1);
+    const toggleFilterEstagio = (id) => {
+        const idx = filterEstagios.value.indexOf(id);
+        if (idx === -1) filterEstagios.value.push(id);
+        else filterEstagios.value.splice(idx, 1);
     };
 
     const filteredUsuarios = computed(() => {
@@ -126,10 +126,14 @@
                     || u.descricao?.toLowerCase().includes(q);
                 if (!pass) return false;
             }
-            if (filterTags.value.length && !filterTags.value.includes(u.tag?.id)) return false;
+            if (filterEstagios.value.length && !filterEstagios.value.includes(u.estagio?.id)) return false;
             if (dateFromComputed.value && new Date(u.created_at) < dateFromComputed.value) return false;
             if (dateToComputed.value   && new Date(u.created_at) > dateToComputed.value)   return false;
-            if (filterStatus.value === 'arquivado'   && ![3,4,5].includes(u.tag?.id))  return false;
+            // Antes: ![3,4,5].includes(id) — os ids dos estágios "arquivados" do
+            // conjunto fixo. Agora é o tipo do estágio que responde isso, e ele
+            // vale para qualquer funil de qualquer tenant.
+            if (filterStatus.value === 'arquivado'   && u.estagio?.tipo === 'aberto')  return false;
+            if (filterStatus.value === 'arquivado'   && !u.estagio)                    return false;
             if (filterStatus.value === 'aberto'      && !u.tem_projeto_aberto)          return false;
             if (filterStatus.value === 'sem_projeto' && !!u.tem_projeto)                return false;
             return true;
@@ -164,7 +168,9 @@
         };
 
         payload.telefone = payload.telefone.replace(/\D/g, '');
-        payload.tag_id = 1;
+        // O funil e o estágio de entrada são resolvidos pelo backend, a partir
+        // do funil padrão do tenant. O `estagio_id = 1` que ficava aqui era um
+        // id chutado — válido só enquanto todo tenant tinha os mesmos estágios.
 
         try {
             await axios.post('/api/usuarios', payload);
@@ -204,7 +210,7 @@
         buscarUsuarios();
         buscarMetricas();
         buscarTarefasPendentes();
-        buscarTags();
+        buscarEstagios();
     });
 </script>
 
@@ -315,23 +321,23 @@
                             <!-- Leads por estágio -->
                             <div class="metric-card chart-card">
                                 <p class="metric-card-title">Leads por Estágio</p>
-                                <div v-if="metricas.leads_por_tag.length" class="bar-list">
-                                    <div v-for="tag in metricas.leads_por_tag" :key="tag.id" class="bar-row">
-                                        <span class="bar-label">{{ tag.descricao }}</span>
+                                <div v-if="metricas.leads_por_estagio.length" class="bar-list">
+                                    <div v-for="estagio in metricas.leads_por_estagio" :key="estagio.id" class="bar-row">
+                                        <span class="bar-label">{{ estagio.descricao }}</span>
                                         <div class="bar-track">
                                             <div
                                                 class="bar-fill"
                                                 :style="{
-                                                    width: (tag.total / maxLeadsTag * 100) + '%',
-                                                    background: getTagPalette(tag.id).color,
-                                                    boxShadow: `0 0 8px ${getTagPalette(tag.id).color}55`
+                                                    width: (estagio.total / maxLeadsEstagio * 100) + '%',
+                                                    background: getEstagioPalette(estagio.id).color,
+                                                    boxShadow: `0 0 8px ${getEstagioPalette(estagio.id).color}55`
                                                 }"
                                             />
                                         </div>
-                                        <span class="bar-count" :style="{ color: getTagPalette(tag.id).color }">{{ tag.total }}</span>
+                                        <span class="bar-count" :style="{ color: getEstagioPalette(estagio.id).color }">{{ estagio.total }}</span>
                                     </div>
                                 </div>
-                                <p v-else class="metric-empty">Nenhum lead com tag definida.</p>
+                                <p v-else class="metric-empty">Nenhum lead com estágio definido.</p>
                             </div>
 
                             <!-- Taxa de conversão -->
@@ -451,15 +457,15 @@
                                 <span class="fb-label">Estágio</span>
                                 <div class="fb-chips">
                                     <button
-                                        v-for="tag in tags"
-                                        :key="tag.id"
-                                        class="fb-chip fb-chip--tag"
-                                        :class="{ 'fb-chip--active': filterTags.includes(tag.id) }"
-                                        :style="filterTags.includes(tag.id)
-                                            ? { background: getTagPalette(tag.id).bg, borderColor: getTagPalette(tag.id).color, color: getTagPalette(tag.id).color }
+                                        v-for="estagio in estagios"
+                                        :key="estagio.id"
+                                        class="fb-chip fb-chip--estagio"
+                                        :class="{ 'fb-chip--active': filterEstagios.includes(estagio.id) }"
+                                        :style="filterEstagios.includes(estagio.id)
+                                            ? { background: getEstagioPalette(estagio.id).bg, borderColor: getEstagioPalette(estagio.id).color, color: getEstagioPalette(estagio.id).color }
                                             : {}"
-                                        @click="toggleFilterTag(tag.id)"
-                                    >{{ tag.descricao }}</button>
+                                        @click="toggleFilterEstagio(estagio.id)"
+                                    >{{ estagio.descricao }}</button>
                                 </div>
                             </div>
 
@@ -558,7 +564,7 @@
                                 <div class="lead-name-block">
                                     <p class="lead-name">{{ usuario.nome }}</p>
                                     <p class="lead-email">{{ usuario.email }}</p>
-                                    <p class="lead-email tag" :class="getTagColorClass(usuario?.tag?.id)">{{ usuario?.tag?.descricao }}</p>
+                                    <p class="lead-email estagio-badge" :style="estiloDoEstagio(usuario?.estagio?.id)">{{ usuario?.estagio?.descricao }}</p>
                                 </div>
                             </div>
 
@@ -698,8 +704,8 @@
         overflow-x: hidden;
     }
 
-    /* Cores das Tags */
-    .tag {
+    /* Cores dos estágios */
+    .estagio-badge {
         font-size: 0.75rem;
         font-weight: 500;
         padding: 2px 8px;
@@ -709,40 +715,9 @@
         width: fit-content;
     }
 
-    .tag-captacao {
-        color: #60a5fa;        /* Azul */
-        background: rgba(96, 165, 250, 0.12);
-    }
-
-    .tag-desenvolvimento {
-        color: #f59e0b;        /* Laranja/Amarelo */
-        background: rgba(245, 158, 11, 0.12);
-    }
-
-    .tag-concluido {
-        color: #34d399;        /* Verde */
-        background: rgba(52, 211, 153, 0.12);
-    }
-
-    .tag-cancelado {
-        color: #ef4444;        /* Vermelho */
-        background: rgba(239, 68, 68, 0.12);
-    }
-
-    .tag-pausado {
-        color: #8b5cf6;        /* Roxo */
-        background: rgba(139, 92, 246, 0.12);
-    }
-
-    .tag-negociacao {
-        color: #ec4899;        /* Rosa */
-        background: rgba(236, 72, 153, 0.12);
-    }
-
-    .tag-default {
-        color: #94a3b8;
-        background: rgba(148, 163, 184, 0.12);
-    }
+    /* As cores por estágio saíram daqui: elas eram sete classes fixas, uma por
+       id do conjunto antigo. Agora a cor vem do próprio estágio (estagios.cor)
+       e é aplicada inline por estiloDoEstagio(). */
 
     .dot-grid {
         position: fixed;

@@ -10,13 +10,15 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 use App\Models\Usuario;
-use App\Models\Tags;
+use App\Models\Estagio;
+use App\Models\Funil;
+use App\Services\Funis\MoverLeadDeFunil;
 use App\Models\Anotacao;
 use App\Models\arquivo AS ArquivoModel;
 use App\Models\Projeto;
 use App\Models\ProjetoAnotacao;
 use App\Models\ProjetoAnexo;
-use App\Models\UsuarioTagHistorico;
+use App\Models\EstagioHistorico;
 use App\Models\Tarefa;
 
 class Userarios extends Controller
@@ -24,7 +26,7 @@ class Userarios extends Controller
     public function view(Request $request)
     {
         $usuarios = Usuario::where('user_id', auth()->id())
-            ->with('tag')
+            ->with('estagio')
             ->addSelect([
                 '*',
                 'tem_projeto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
@@ -38,11 +40,28 @@ class Userarios extends Controller
         return response()->json($usuarios);
     }
 
-    public function tags()
+    public function estagios(Request $request)
     {
-        $tags = Tags::get();
-        
-        return response()->json($tags);
+        $estagios = Estagio::query()
+            ->when($request->filled('funil_id'), fn ($q) => $q->where('funil_id', $request->integer('funil_id')))
+            ->orderBy('ordem')
+            ->orderBy('id')
+            ->get();
+
+        return response()->json($estagios);
+    }
+
+    /**
+     * Funil em que o quadro/cadastro opera quando o cliente não escolhe um.
+     *
+     * Cai no padrão do tenant; se nenhum estiver marcado (tenant anterior à
+     * feature cujo backfill não rodou, ou padrão arquivado por caminho
+     * inesperado), usa o primeiro da ordem em vez de devolver nada — um Kanban
+     * vazio sem explicação é pior que um Kanban no funil errado.
+     */
+    private function funilPadrao(): ?Funil
+    {
+        return Funil::where('is_default', true)->first() ?? Funil::ordenados()->first();
     }
 
 
@@ -51,6 +70,22 @@ class Userarios extends Controller
         try {
             $validated = $request->validated();
             $validated['user_id'] = auth()->id();
+
+            // Substitui o `payload.tag_id = 1` que o Dashboard mandava fixo. Um
+            // id chutado no cliente só funcionava porque o conjunto de estágios
+            // era o mesmo para todo mundo; com funis por tenant ele apontaria
+            // para o estágio de outra empresa ou para nada.
+            if (empty($validated['funil_id'])) {
+                $validated['funil_id'] = $this->funilPadrao()?->id;
+            }
+
+            if (empty($validated['estagio_id']) && ! empty($validated['funil_id'])) {
+                $validated['estagio_id'] = Estagio::where('funil_id', $validated['funil_id'])
+                    ->aberto()
+                    ->orderBy('ordem')
+                    ->orderBy('id')
+                    ->value('id');
+            }
 
             Usuario::create($validated);
 
@@ -75,7 +110,7 @@ class Userarios extends Controller
             $usuario = Usuario::findOrFail($id);
 
             // O histórico de estágio é gravado pelo UsuarioObserver, que
-            // observa a mudança de tag_id em qualquer caminho de escrita.
+            // observa a mudança de estagio_id em qualquer caminho de escrita.
             $usuario->update($request->validated());
 
             return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
@@ -142,11 +177,11 @@ class Userarios extends Controller
                 }
             }
 
-            foreach (UsuarioTagHistorico::with(['tagAnterior', 'tagNovo'])->where('usuario_id', $id)->get() as $h) {
+            foreach (EstagioHistorico::with(['estagioAnterior', 'estagioNovo'])->where('usuario_id', $id)->get() as $h) {
                 $events[] = [
                     'tipo'          => 'status_alterado',
-                    'tag_anterior'  => $h->tagAnterior->descricao ?? '—',
-                    'tag_novo'      => $h->tagNovo->descricao ?? '—',
+                    'estagio_anterior' => $h->estagioAnterior->descricao ?? '—',
+                    'estagio_novo'     => $h->estagioNovo->descricao ?? '—',
                     'data'          => $h->created_at,
                 ];
             }
@@ -258,7 +293,19 @@ class Userarios extends Controller
     {
         $userId = auth()->id();
 
+        // O quadro mostra um funil por vez. Sem funil_id, o padrão do tenant.
+        // Com um funil_id que não existe neste tenant, 404 — devolver o padrão
+        // calado faria o usuário ver um quadro que não é o que ele pediu.
+        $funil = $request->filled('funil_id')
+            ? Funil::findOrFail($request->integer('funil_id'))
+            : $this->funilPadrao();
+
+        if ($funil === null) {
+            return response()->json(['funil' => null, 'funis' => [], 'estagios' => [], 'leads' => []]);
+        }
+
         $leads = Usuario::where('user_id', $userId)
+            ->where('funil_id', $funil->id)
             ->addSelect([
                 '*',
                 'ultimo_contato' => Anotacao::whereColumn('usuario_id', 'usuarios.id')
@@ -276,59 +323,121 @@ class Userarios extends Controller
                 'email'          => $u->email,
                 'telefone'       => $u->telefone,
                 'descricao'      => $u->descricao,
-                'tag_id'         => $u->tag_id,
+                'estagio_id'     => $u->estagio_id,
                 'ultimo_contato' => $u->ultimo_contato ?? $u->updated_at,
                 'valor_projetos' => (float) ($u->valor_projetos ?? 0),
             ]);
 
         // Um estágio arquivado (soft delete) continua vindo enquanto ainda
-        // restar lead nele. O quadro distribui os leads comparando tag_id com
+        // restar lead nele. O quadro distribui os leads comparando estagio_id com
         // o id de cada coluna: sem a coluna, o lead não renderiza em lugar
         // nenhum e some em silêncio. Marcada como `arquivada`, a UI a mostra
         // como somente-saída; esvaziada, ela para de vir e a coluna desaparece.
-        $estagiosArquivadosEmUso = $leads->pluck('tag_id')->filter()->unique();
+        $estagiosArquivadosEmUso = $leads->pluck('estagio_id')->filter()->unique();
 
-        $tags = Tags::withTrashed()
+        $estagios = Estagio::withTrashed()
+            ->where('funil_id', $funil->id)
             ->where(fn ($q) => $q->whereNull('deleted_at')
                 ->orWhereIn('id', $estagiosArquivadosEmUso))
             ->orderBy('ordem')
+            ->orderBy('id')
             ->get()
-            ->map(fn ($tag) => [
-                'id'        => $tag->id,
-                'descricao' => $tag->descricao,
-                'ordem'     => $tag->ordem,
-                'arquivada' => $tag->trashed(),
+            ->map(fn ($estagio) => [
+                'id'        => $estagio->id,
+                'descricao' => $estagio->descricao,
+                'ordem'     => $estagio->ordem,
+                'tipo'      => $estagio->tipo,
+                'cor'       => $estagio->cor,
+                'arquivada' => $estagio->trashed(),
             ])
             ->values();
 
-        return response()->json(['tags' => $tags, 'leads' => $leads]);
+        // A lista de funis acompanha o quadro para alimentar o seletor e o
+        // diálogo de "mover para outro funil" sem uma segunda requisição.
+        $funis = Funil::ordenados()->get()->map(fn (Funil $f) => [
+            'id'         => $f->id,
+            'nome'       => $f->nome,
+            'is_default' => $f->is_default,
+        ])->values();
+
+        return response()->json([
+            'funil'    => ['id' => $funil->id, 'nome' => $funil->nome, 'is_default' => $funil->is_default],
+            'funis'    => $funis,
+            'estagios' => $estagios,
+            'leads'    => $leads,
+        ]);
     }
 
-    public function patchTag(Request $request, $id)
+    public function patchEstagio(Request $request, $id)
     {
         try {
             $usuario = Usuario::findOrFail($id);
 
             $validated = $request->validate([
-                'tag_id' => [
+                'estagio_id' => [
                     'required',
-                    Rule::exists('tags', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                    Rule::exists('estagios', 'id')
+                        ->where('tenant_id', app(CurrentTenant::class)->id())
+                        // Arrastar um card move o lead dentro do quadro, e o
+                        // quadro é um funil. Sem este filtro, um estagio_id de
+                        // outro funil deixaria o lead com funil e estágio
+                        // discordando — estado que nenhuma tela sabe desenhar.
+                        // Trocar de funil é outra ação: moverFunil().
+                        ->where('funil_id', $usuario->funil_id),
                 ],
             ]);
 
             // Histórico de estágio e activity log ficam a cargo do UsuarioObserver.
             $usuario->update($validated);
 
-            return response()->json(['message' => 'Tag atualizada']);
+            return response()->json(['message' => 'Estágio atualizado']);
+        } catch (\Illuminate\Validation\ValidationException $error) {
+            return response()->json(['erros' => $error->errors()], 422);
         } catch (\Exception $error) {
             return response()->json(['error' => 'Lead não encontrado'], 404);
+        }
+    }
+
+    /**
+     * Move o lead para outro funil, no estágio de destino escolhido.
+     *
+     * A regra de negócio mora em MoverLeadDeFunil; aqui só resolvem-se os
+     * models. O histórico e o evento `funil_alterado` saem do UsuarioObserver.
+     */
+    public function moverFunil(Request $request, MoverLeadDeFunil $mover, $id)
+    {
+        try {
+            $usuario = Usuario::findOrFail($id);
+
+            $tenantId = app(CurrentTenant::class)->id();
+
+            $validated = $request->validate([
+                'funil_id' => [
+                    'required',
+                    Rule::exists('funis', 'id')->where('tenant_id', $tenantId)->whereNull('deleted_at'),
+                ],
+                'estagio_id' => [
+                    'required',
+                    Rule::exists('estagios', 'id')->where('tenant_id', $tenantId),
+                ],
+            ]);
+
+            $mover(
+                $usuario,
+                Funil::findOrFail($validated['funil_id']),
+                Estagio::findOrFail($validated['estagio_id']),
+            );
+
+            return response()->json(['message' => 'Lead movido de funil']);
+        } catch (\Illuminate\Validation\ValidationException $error) {
+            return response()->json(['erros' => $error->errors()], 422);
         }
     }
 
     public function kanbanSettings(Request $request)
     {
         try {
-            auth()->user()->update(['kanban_default_tag_id' => $request->default_tag_id]);
+            auth()->user()->update(['kanban_default_estagio_id' => $request->default_estagio_id]);
             return response()->json(['message' => 'Preferência salva']);
         } catch (\Exception $error) {
             return response()->json(['error' => 'Usuário não encontrado'], 404);
@@ -339,15 +448,18 @@ class Userarios extends Controller
     {
         $userId = auth()->id();
         $leadIds = Usuario::where('user_id', $userId)->pluck('id');
-        $leadsAtivos     = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', true))->count();
-        $leadsArquivados = Usuario::where('user_id', $userId)->whereHas('tag', fn ($q) => $q->where('is_active', false))->count();
+        // `is_active` foi removida: o que separa lead em pipeline de lead
+        // encerrado agora é o tipo do estágio. "Aberto" é o que antes era
+        // is_active = true; ganho e perdido, juntos, são o que era false.
+        $leadsAtivos     = Usuario::where('user_id', $userId)->whereHas('estagio', fn ($q) => $q->aberto())->count();
+        $leadsArquivados = Usuario::where('user_id', $userId)->whereHas('estagio', fn ($q) => $q->fechado())->count();
         $leads30Dias     = Usuario::where('user_id', $userId)->where('created_at', '>=', now()->subDays(30))->count();
         $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
         $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
-        $leadsPorTag = Usuario::where('user_id', $userId)->select('tag_id', DB::raw('count(*) as total'))->with('tag')->groupBy('tag_id')->get()
+        $leadsPorEstagio = Usuario::where('user_id', $userId)->select('estagio_id', DB::raw('count(*) as total'))->with('estagio')->groupBy('estagio_id')->get()
             ->map(fn($row) => [
-                'id'        => $row->tag_id,
-                'descricao' => $row->tag->descricao ?? 'Sem tag',
+                'id'        => $row->estagio_id,
+                'descricao' => $row->estagio->descricao ?? 'Sem estágio',
                 'total'     => (int) $row->total,
             ]);
         $totalLeads      = $leadIds->count();
@@ -362,7 +474,7 @@ class Userarios extends Controller
             'leads_30_dias'          => $leads30Dias,
             'valor_projetos_abertos' => (float) $valorAberto,
             'valor_fechado_mes'      => (float) $valorFechadoMes,
-            'leads_por_tag'          => $leadsPorTag,
+            'leads_por_estagio'      => $leadsPorEstagio,
             'taxa_conversao'         => $taxaConversao,
             'total_com_projeto'      => $leadsComProjeto,
             'total_leads'            => $totalLeads,

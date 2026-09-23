@@ -9,14 +9,39 @@ use App\Http\Controllers\arquivo;
 use App\Http\Controllers\TarefaController;
 use App\Http\Controllers\TarefaPadraoController;
 use App\Http\Controllers\LeadAtividadeController;
+use App\Http\Controllers\FunilController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
 Route::middleware(['auth', 'tenant'])->group(function () {
-    Route::post('/tags', [Userarios::class, 'tags']);
+    Route::post('/estagios', [Userarios::class, 'estagios']);
     Route::post('/status', [ProjetoController::class, 'getStatus']);
+
+    // Funis — leitura é de todo agente (Kanban, cadastro de lead e o diálogo
+    // de mover de funil precisam saber quais existem); escrita exige
+    // configuracoes.manage.
+    Route::get('/funis', [FunilController::class, 'index']);
+
+    Route::middleware('can:configuracoes.manage')->group(function () {
+        // As rotas de caminho fixo vêm antes das de parâmetro: `reordenar`
+        // declarada depois de `{funil}` nunca seria alcançada.
+        Route::patch('/funis/reordenar', [FunilController::class, 'reordenar']);
+
+        Route::post('/funis', [FunilController::class, 'store']);
+        Route::put('/funis/{funil}', [FunilController::class, 'update']);
+        Route::delete('/funis/{funil}', [FunilController::class, 'destroy']);
+        Route::patch('/funis/{funil}/padrao', [FunilController::class, 'definirPadrao']);
+
+        Route::patch('/funis/{funil}/estagios/reordenar', [FunilController::class, 'reordenarEstagios']);
+        Route::post('/funis/{funil}/estagios', [FunilController::class, 'storeEstagio']);
+        Route::put('/estagios/{estagio}', [FunilController::class, 'updateEstagio']);
+        Route::delete('/estagios/{estagio}', [FunilController::class, 'destroyEstagio']);
+        // withTrashed no binding: o alvo de restaurar é, por definição, um
+        // estágio soft-deleted, que o binding padrão resolveria como 404.
+        Route::patch('/estagios/{estagio}/restaurar', [FunilController::class, 'restaurarEstagio'])->withTrashed();
+    });
 
     // Leads (usuarios)
     Route::post('/pegarUsuarios', [Userarios::class, 'view']);
@@ -31,7 +56,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/metricas', [Userarios::class, 'metricas']);
     Route::post('/kanban', [Userarios::class, 'kanban']);
     Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
-    Route::patch('/usuarios/{id}/tag', [Userarios::class, 'patchTag']);
+    Route::patch('/usuarios/{id}/estagio', [Userarios::class, 'patchEstagio']);
+    Route::patch('/usuarios/{id}/funil', [Userarios::class, 'moverFunil']);
 
     // Anotações de Lead
     Route::get('/anotacao/{id}', [Userarios::class, 'viewAnotacao']);

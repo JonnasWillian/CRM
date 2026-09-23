@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Rules\Unique;
 
 class UsuarioRequest extends FormRequest
@@ -34,7 +35,8 @@ class UsuarioRequest extends FormRequest
             'email' => ['required', 'email', $this->emailUnicoNoTenant()],
             'telefone' => 'required|string',
             'descricao' => 'nullable|string',
-            'tag_id' => 'nullable',
+            'funil_id' => ['nullable', $this->funilDoTenant()],
+            'estagio_id' => ['nullable', $this->estagioDoTenant()],
         ];
     }
 
@@ -52,8 +54,42 @@ class UsuarioRequest extends FormRequest
             ],
             'telefone' => 'required|string|min:7',
             'descricao' => 'nullable|string',
-            'tag_id' => 'nullable',
+            'funil_id' => ['nullable', $this->funilDoTenant()],
+            'estagio_id' => ['nullable', $this->estagioDoTenant()],
         ];
+    }
+
+    /**
+     * `estagio_id` e `funil_id` só eram `nullable`, sem `exists`. Passava
+     * qualquer inteiro — inclusive o de outro tenant. Com funis por tenant isso
+     * deixa de ser teórico: o mesmo id significa estágios diferentes em
+     * empresas diferentes.
+     */
+    private function funilDoTenant(): Exists
+    {
+        return Rule::exists('funis', 'id')
+            ->where('tenant_id', app(CurrentTenant::class)->id())
+            ->whereNull('deleted_at');
+    }
+
+    /**
+     * Quando o payload traz os dois, o estágio tem de ser do funil informado.
+     *
+     * Sem este acoplamento, a edição de lead (PUT /usuarios/{id}) seria um
+     * caminho aberto para o estado que MoverLeadDeFunil e patchEstagio recusam:
+     * lead com `funil_id` de um funil e `estagio_id` de outro. O card sumiria
+     * do quadro sem erro nenhum aparecer.
+     */
+    private function estagioDoTenant(): Exists
+    {
+        $regra = Rule::exists('estagios', 'id')
+            ->where('tenant_id', app(CurrentTenant::class)->id());
+
+        if ($this->filled('funil_id')) {
+            $regra->where('funil_id', $this->integer('funil_id'));
+        }
+
+        return $regra;
     }
 
     /**

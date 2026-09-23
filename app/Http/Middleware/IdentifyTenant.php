@@ -36,6 +36,18 @@ class IdentifyTenant
 
         app(\App\Support\Tenancy\CurrentTenant::class)->set($tenant);
 
+        // O spatie/laravel-permission está em modo teams, com `tenant_id` como
+        // chave do team. Sem definir o team ativo, toda verificação de
+        // permissão consultaria `tenant_id = null` e não encontraria as
+        // atribuições, que são por empresa.
+        setPermissionsTeamId($tenant->id);
+
+        // Exigido pela documentação do pacote: relações de papel/permissão
+        // resolvidas ANTES da troca de team ficam em cache no próprio model, e
+        // a verificação seguinte leria o team errado. Um mesmo processo de
+        // fila ou de teste atende requisições de tenants diferentes.
+        $user->unsetRelation('roles')->unsetRelation('permissions');
+
         return $next($request);
     }
 }

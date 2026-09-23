@@ -2,16 +2,16 @@
 
 namespace App\Observers;
 
+use App\Models\EstagioHistorico;
 use App\Models\Usuario;
-use App\Models\UsuarioTagHistorico;
 use App\Support\ActivityLog\LeadActivity;
 
 /**
- * Observa o próprio lead: criação e mudança de estágio.
+ * Observa o próprio lead: criação, mudança de estágio e mudança de funil.
  *
- * Este observer é também o único lugar que grava UsuarioTagHistorico. O mesmo
- * bloco vivia duplicado em Userarios::update() e Userarios::patchTag(); aqui
- * ele cobre qualquer caminho que altere tag_id, não só aqueles dois.
+ * Este observer é também o único lugar que grava EstagioHistorico. O mesmo
+ * bloco vivia duplicado em Userarios::update() e Userarios::patchEstagio();
+ * aqui ele cobre qualquer caminho que altere estágio ou funil.
  */
 class UsuarioObserver
 {
@@ -22,21 +22,41 @@ class UsuarioObserver
 
     public function updated(Usuario $usuario): void
     {
-        if (! $usuario->wasChanged('tag_id')) {
+        $mudouEstagio = $usuario->wasChanged('estagio_id');
+        $mudouFunil = $usuario->wasChanged('funil_id');
+
+        if (! $mudouEstagio && ! $mudouFunil) {
             return;
         }
 
-        $anterior = $usuario->getOriginal('tag_id');
+        $estagioAnterior = $usuario->getOriginal('estagio_id');
+        $funilAnterior = $usuario->getOriginal('funil_id');
 
-        UsuarioTagHistorico::create([
+        // Uma troca de funil é sempre também uma troca de estágio (o lead cai
+        // num estágio do funil de destino), então as duas cabem numa linha só
+        // de histórico. O que muda é como o evento é rotulado.
+        EstagioHistorico::create([
             'usuario_id' => $usuario->id,
-            'tag_id_anterior' => $anterior,
-            'tag_id_novo' => $usuario->tag_id,
+            'estagio_anterior_id' => $estagioAnterior,
+            'estagio_novo_id' => $usuario->estagio_id,
+            'funil_anterior_id' => $funilAnterior,
+            'funil_novo_id' => $usuario->funil_id,
         ]);
 
-        LeadActivity::registrar($usuario, $usuario->id, 'status_alterado', 'Estágio do lead alterado', [
-            'tag_id_anterior' => $anterior,
-            'tag_id_novo' => $usuario->tag_id,
-        ]);
+        // As chaves gravadas aqui mudaram de nome junto com as colunas. Linhas
+        // JÁ existentes no activity log seguem com `tag_id_anterior`/`tag_id_novo`
+        // — histórico é imutável e não é reescrito.
+        LeadActivity::registrar(
+            $usuario,
+            $usuario->id,
+            $mudouFunil ? 'funil_alterado' : 'status_alterado',
+            $mudouFunil ? 'Lead movido de funil' : 'Estágio do lead alterado',
+            [
+                'estagio_anterior_id' => $estagioAnterior,
+                'estagio_novo_id' => $usuario->estagio_id,
+                'funil_anterior_id' => $funilAnterior,
+                'funil_novo_id' => $usuario->funil_id,
+            ],
+        );
     }
 }

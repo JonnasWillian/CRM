@@ -56,7 +56,7 @@
             case 'projeto':          return evento.nome || 'Projeto aberto';
             case 'projeto_anotacao': return `Anotação em "${evento.projeto_nome}"`;
             case 'projeto_anexo':    return `Arquivo em "${evento.projeto_nome}"`;
-            case 'status_alterado':  return `Status: ${evento.tag_anterior} → ${evento.tag_novo}`;
+            case 'status_alterado':  return `Status: ${evento.estagio_anterior} → ${evento.estagio_novo}`;
             case 'tarefa_criada':    return `Tarefa criada: "${evento.titulo}"`;
             case 'tarefa_concluida': return `Tarefa concluída: "${evento.titulo}"`;
             default: return '';
