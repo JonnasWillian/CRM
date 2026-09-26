@@ -4,6 +4,7 @@
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import axios from 'axios';
     import { Settings, X, Save, Plus, LayoutList, Columns, ArrowRightLeft } from 'lucide-vue-next';
+    import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
 
     const user = computed(() => usePage().props.auth.user);
 
@@ -18,6 +19,45 @@
     const funis      = ref([]);
     const funilAtual = ref(null);
     const funilId    = ref(null);
+
+    // ── Perda ──
+    // Um estado só para os três gatilhos que podem virar perda no quadro:
+    // arrastar para uma coluna perdida, cadastrar direto nela e mover de funil
+    // para um estágio perdido. Cada um informa como enviar e como desfazer; o
+    // modal não conhece nenhum deles.
+    const perdaPendente = ref(null);   // { titulo, enviar(perda), desfazer() }
+    const perdaErro     = ref('');
+    const perdaSalvando = ref(false);
+
+    const ehPerdido = (estagio) => estagio?.tipo === 'perdido';
+
+    const abrirPerda = (acao) => {
+        perdaPendente.value = acao;
+        perdaErro.value = '';
+    };
+
+    const cancelarPerda = () => {
+        // Desfaz o movimento otimista: o card volta para a coluna de origem.
+        perdaPendente.value?.desfazer?.();
+        perdaPendente.value = null;
+        perdaErro.value = '';
+    };
+
+    const confirmarPerda = async (perda) => {
+        perdaSalvando.value = true;
+        perdaErro.value = '';
+        try {
+            await perdaPendente.value.enviar(perda);
+            perdaPendente.value = null;
+            await buscarKanban();
+        } catch (e) {
+            perdaErro.value = e?.response?.data?.erros?.motivo_perda_id?.[0]
+                ?? e?.response?.data?.error
+                ?? 'Não foi possível registrar a perda.';
+        } finally {
+            perdaSalvando.value = false;
+        }
+    };
 
     // ── Mover de funil ──
     const moverAlvo       = ref(null);   // lead escolhido
@@ -124,10 +164,25 @@
         const oldEstagioId = lead.estagio_id;
         lead.estagio_id = estagio.id;
 
+        const enviar = (perda) => axios.patch(`/api/usuarios/${lead.id}/estagio`, {
+            estagio_id: estagio.id,
+            perda,
+        });
+        const desfazer = () => { lead.estagio_id = oldEstagioId; };
+
+        // O card move na hora e o modal pergunta o motivo depois. Bloquear o
+        // drop e exigir um menu seria mais fácil de implementar e trocaria o
+        // gesto natural do quadro por um caminho escondido; cancelar desfaz,
+        // que é o mesmo rollback já usado quando a API falha.
+        if (ehPerdido(estagio)) {
+            abrirPerda({ titulo: `Perder "${lead.nome}"`, enviar, desfazer });
+            return;
+        }
+
         try {
-            await axios.patch(`/api/usuarios/${lead.id}/estagio`, { estagio_id: estagio.id });
+            await enviar(null);
         } catch {
-            lead.estagio_id = oldEstagioId;
+            desfazer();
         }
     };
 
@@ -141,16 +196,30 @@
 
     const salvarQuickAdd = async () => {
         if (!quickAddForm.value.nome.trim() || !quickAddForm.value.email.trim() || !quickAddForm.value.telefone.trim()) return;
+
+        const estagio = estagios.value.find(e => e.id === quickAddEstagioId.value);
+        const payload = {
+            nome:     quickAddForm.value.nome.trim(),
+            email:    quickAddForm.value.email.trim(),
+            telefone: quickAddForm.value.telefone.trim(),
+            estagio_id: quickAddEstagioId.value,
+            funil_id: funilAtual.value?.id ?? null,
+            user_id:  user.value.id,
+        };
+        const enviar = (perda) => axios.post('/api/usuarios', { ...payload, perda });
+
+        // Cadastrar um lead direto numa coluna perdida é perder: o quick-add
+        // usa a coluna clicada como estágio, e ela pode ser uma delas.
+        if (ehPerdido(estagio)) {
+            const nome = payload.nome;
+            quickAddEstagioId.value = null;
+            abrirPerda({ titulo: `Cadastrar "${nome}" como perdido`, enviar, desfazer: () => {} });
+            return;
+        }
+
         quickAdding.value = true;
         try {
-            const res = await axios.post('/api/usuarios', {
-                nome:     quickAddForm.value.nome.trim(),
-                email:    quickAddForm.value.email.trim(),
-                telefone: quickAddForm.value.telefone.trim(),
-                estagio_id: quickAddEstagioId.value,
-                funil_id: funilAtual.value?.id ?? null,
-                user_id:  user.value.id,
-            });
+            await enviar(null);
             quickAddEstagioId.value = null;
             await buscarKanban();
         } catch { /* silencioso */ }
@@ -187,13 +256,28 @@
 
     const confirmarMover = async () => {
         if (!moverFunilId.value || !moverEstagioId.value) return;
+
+        const destino = moverEstagios.value.find(e => e.id === moverEstagioId.value);
+        const enviar = (perda) => axios.patch(`/api/usuarios/${moverAlvo.value.id}/funil`, {
+            funil_id: moverFunilId.value,
+            estagio_id: moverEstagioId.value,
+            perda,
+        });
+
+        // Mover para a coluna "Perdido" de outro funil é uma perda como
+        // qualquer outra — sem isto, trocar de funil seria o desvio que
+        // esvazia a obrigatoriedade.
+        if (ehPerdido(destino)) {
+            const nome = moverAlvo.value.nome;
+            fecharMover();
+            abrirPerda({ titulo: `Perder "${nome}"`, enviar, desfazer: () => {} });
+            return;
+        }
+
         movendo.value = true;
         moverErro.value = '';
         try {
-            await axios.patch(`/api/usuarios/${moverAlvo.value.id}/funil`, {
-                funil_id: moverFunilId.value,
-                estagio_id: moverEstagioId.value,
-            });
+            await enviar(null);
             fecharMover();
             await buscarKanban();
         } catch (e) {
@@ -338,6 +422,15 @@
                     </div>
                 </div>
             </Transition>
+
+            <ModalMotivoPerda
+                :aberto="!!perdaPendente"
+                :titulo="perdaPendente?.titulo ?? 'Registrar perda'"
+                :erro="perdaErro"
+                :salvando="perdaSalvando"
+                @confirmar="confirmarPerda"
+                @cancelar="cancelarPerda"
+            />
 
             <!-- Loading -->
             <div v-if="isLoading" class="kb-loading">

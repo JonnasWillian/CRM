@@ -12,6 +12,8 @@ use App\Models\Statu;
 use App\Models\Projeto;
 use App\Models\ProjetoAnotacao;
 use App\Models\ProjetoAnexo;
+use App\Services\Perdas\AplicarTransicao;
+use App\Support\Perdas\RegrasDePerda;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Validation\Rule;
 
@@ -43,7 +45,9 @@ class ProjetoController extends Controller
     public function create(ProjetoRequest $request)
     {
         try {
-            Projeto::create($request->validated());
+            // Um projeto pode nascer já perdido — o status é escolhido no
+            // próprio formulário de cadastro.
+            app(AplicarTransicao::class)(new Projeto(), $request->validated(), RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Projeto cadastrado com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -67,7 +71,7 @@ class ProjetoController extends Controller
         try {
             $projeto = Projeto::findOrFail($id);
 
-            $projeto->update($request->validated());
+            app(AplicarTransicao::class)($projeto, $request->validated(), RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Projeto atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {

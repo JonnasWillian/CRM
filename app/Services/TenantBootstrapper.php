@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Estagio;
 use App\Models\Funil;
+use App\Models\MotivoPerda;
 use App\Models\Statu;
 use App\Models\Tenant;
 
@@ -48,6 +49,14 @@ class TenantBootstrapper
             $estagio->save();
         }
 
+        foreach (static::defaultMotivosDePerda() as $posicao => $descricao) {
+            $motivo = new MotivoPerda();
+            $motivo->descricao = $descricao;
+            $motivo->ordem = $posicao + 1;
+            $motivo->tenant_id = $tenant->id;
+            $motivo->save();
+        }
+
         foreach (static::defaultStatus() as $attributes) {
             $status = new Statu();
             $status->descricao = $attributes['descricao'];
@@ -73,6 +82,30 @@ class TenantBootstrapper
             ['descricao' => 'Concluído',          'ordem' => 4, 'tipo' => Estagio::TIPO_GANHO,   'cor' => '#34d399'],
             ['descricao' => 'Pausado',            'ordem' => 5, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#8b5cf6'],
             ['descricao' => 'Cancelado',          'ordem' => 6, 'tipo' => Estagio::TIPO_PERDIDO, 'cor' => '#ef4444'],
+        ];
+    }
+
+    /**
+     * Sem catálogo de motivos, a obrigatoriedade trava o tenant: perder exige
+     * escolher um motivo, e não há como cadastrar um no meio do fluxo. Por isso
+     * ele nasce junto com a empresa, e não na primeira vez que alguém perde.
+     *
+     * "Não informado" fecha a lista porque é o alvo do backfill das perdas
+     * anteriores à feature — e continua útil para quem registra a perda sem
+     * saber o motivo ainda.
+     *
+     * @return list<string>
+     */
+    protected static function defaultMotivosDePerda(): array
+    {
+        return [
+            'Preço',
+            'Escolheu concorrente',
+            'Sem orçamento',
+            'Sem resposta do contato',
+            'Fora do perfil',
+            'Timing / adiado',
+            'Não informado',
         ];
     }
 

@@ -110,7 +110,7 @@ isolamento aplicado por Global Scope do Eloquent. Sem pacote externo.
 | `App\Models\Scopes\TenantScope` | Global Scope que filtra toda query por `tenant_id` |
 | `App\Models\Concerns\BelongsToTenant` | Registra o scope e preenche `tenant_id` ao criar |
 | `App\Http\Middleware\IdentifyTenant` | Alias `tenant`; resolve o tenant a partir do usuário logado |
-| `App\Services\TenantBootstrapper` | Semeia o funil padrão, seus estágios e os status para um tenant novo |
+| `App\Services\TenantBootstrapper` | Semeia o funil padrão, seus estágios, os status e os motivos de perda para um tenant novo |
 
 O `TenantScope` é **fail-closed**: sem tenant ativo ele lança `RuntimeException`
 em vez de devolver tudo sem filtro. Por isso jobs e commands, que rodam fora do
@@ -163,6 +163,35 @@ A tela de configuração fica em `/configuracoes/funis`, protegida pela permissi
 Unicidade de email de lead é **por tenant** (`UNIQUE(tenant_id, email)`): o mesmo
 contato pode ser lead de duas empresas diferentes.
 
+### Motivo de perda
+
+Entrar em estado de perda — lead num estágio `tipo = perdido`, projeto num
+status `is_lost` — **exige um motivo**, escolhido de um catálogo por tenant
+(`motivos_perda`), com observação livre opcional.
+
+A regra vale nos **seis** caminhos que levam a esse estado (arrastar no Kanban,
+editar no perfil, mover de funil, cadastrar já perdido, editar projeto, criar
+projeto perdido) e mora num ponto só: `App\Services\Perdas\AplicarTransicao`.
+Ele decide a partir do contrato `App\Support\Perdas\Perdivel`, que lead e
+projeto implementam — é o que permite recusar **antes** de gravar, coisa que um
+observer não faria, já que ele só roda depois.
+
+Só a *entrada* em perda pede motivo: editar um lead que já estava perdido não
+conta uma segunda perda.
+
+Cada perda é uma linha em `perdas` — evento, não estado:
+
+- reabrir um negócio não apaga a perda; perder de novo gera outra linha;
+- `valor` é fotografia do que valia no momento, não consulta à entidade hoje;
+- a FK do motivo é `restrict`: motivo aposentado é arquivado (soft delete),
+  some do seletor e continua nomeando as perdas antigas.
+
+O catálogo precisa ter ao menos um motivo disponível — arquivar o último é
+recusado, pela mesma razão que um funil sem estágio aberto é: a falha apareceria
+longe da causa, no vendedor que não consegue resolvê-la.
+
+O relatório fica em `/relatorios/perdas`, protegido por `leads.view-all`.
+
 ### Autorização
 
 `spatie/laravel-permission` em modo **teams**, com `tenant_id` como chave do
@@ -172,8 +201,9 @@ empresa é a *atribuição* (`model_has_roles.tenant_id`). `IdentifyTenant` cham
 
 Papéis: `admin`, `gestor`, `vendedor`. Quem registra a empresa vira `admin`.
 
-Desta base, **só `configuracoes.manage` é aplicada** hoje — ela protege a tela de
-funis. As policies de lead, projeto e tarefa (e o fechamento do IDOR interno)
+Desta base, **`configuracoes.manage` e `leads.view-all` são aplicadas** hoje — a
+primeira protege as telas de configuração (funis e motivos de perda), a segunda o
+relatório de perdas. As policies de lead, projeto e tarefa (e o fechamento do IDOR interno)
 seguem pendentes, especificadas em
 `docs/superpowers/specs/2026-09-15-autorizacao-rbac-design.md`.
 

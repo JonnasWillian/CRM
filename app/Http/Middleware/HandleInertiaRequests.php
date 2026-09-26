@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
                 // quando o team já está definido.
                 'permissions' => fn () => [
                     'configuracoes.manage' => (bool) $request->user()?->can('configuracoes.manage'),
+                    'leads.view-all' => (bool) $request->user()?->can('leads.view-all'),
                 ],
             ],
         ];

@@ -13,6 +13,8 @@ use App\Models\Usuario;
 use App\Models\Estagio;
 use App\Models\Funil;
 use App\Services\Funis\MoverLeadDeFunil;
+use App\Services\Perdas\AplicarTransicao;
+use App\Support\Perdas\RegrasDePerda;
 use App\Models\Anotacao;
 use App\Models\arquivo AS ArquivoModel;
 use App\Models\Projeto;
@@ -87,7 +89,10 @@ class Userarios extends Controller
                     ->value('id');
             }
 
-            Usuario::create($validated);
+            // Via AplicarTransicao e não Usuario::create(): o quick-add do Kanban
+            // cadastra o lead direto na coluna clicada, e essa coluna pode ser
+            // um estágio perdido. Nascer perdido é perder.
+            app(AplicarTransicao::class)(new Usuario(), $validated, RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Usuário cadastrado com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -111,7 +116,9 @@ class Userarios extends Controller
 
             // O histórico de estágio é gravado pelo UsuarioObserver, que
             // observa a mudança de estagio_id em qualquer caminho de escrita.
-            $usuario->update($request->validated());
+            // A perda é do AplicarTransicao, que precisa ver o estado ANTERIOR
+            // e por isso roda antes do save, não num observer.
+            app(AplicarTransicao::class)($usuario, $request->validated(), RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -385,10 +392,11 @@ class Userarios extends Controller
                         // Trocar de funil é outra ação: moverFunil().
                         ->where('funil_id', $usuario->funil_id),
                 ],
-            ]);
+                ...RegrasDePerda::campos(),
+            ], RegrasDePerda::mensagens());
 
             // Histórico de estágio e activity log ficam a cargo do UsuarioObserver.
-            $usuario->update($validated);
+            app(AplicarTransicao::class)($usuario, ['estagio_id' => $validated['estagio_id']], RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Estágio atualizado']);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -420,12 +428,14 @@ class Userarios extends Controller
                     'required',
                     Rule::exists('estagios', 'id')->where('tenant_id', $tenantId),
                 ],
-            ]);
+                ...RegrasDePerda::campos(),
+            ], RegrasDePerda::mensagens());
 
             $mover(
                 $usuario,
                 Funil::findOrFail($validated['funil_id']),
                 Estagio::findOrFail($validated['estagio_id']),
+                RegrasDePerda::extrair($request),
             );
 
             return response()->json(['message' => 'Lead movido de funil']);

@@ -24,7 +24,13 @@ class ProjetoFactory extends Factory
 
         return [
             'nome' => fake()->sentence(3),
-            'descricao' => fake()->optional()->paragraph(),
+            // text(200) e não paragraph(): `projetos.descricao` é
+            // varchar(255) e paragraph() passa disso em ~0,5% das amostras.
+            // Combinado com optional(), isso produzia uma falha intermitente
+            // de "Data too long" a cada tantas execuções da suíte — e ela
+            // estourava DENTRO da factory, antes do expectException do teste,
+            // fazendo o erro apontar para o lugar errado.
+            'descricao' => fake()->optional()->text(200),
             'usuario_id' => Usuario::factory()->create(['tenant_id' => $tenant->id])->id,
             'status_id' => Statu::factory()->create(['tenant_id' => $tenant->id])->id,
             'tenant_id' => $tenant->id,

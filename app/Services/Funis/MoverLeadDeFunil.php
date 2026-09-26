@@ -6,6 +6,7 @@ use App\Exceptions\RegraDeFunilException;
 use App\Models\Estagio;
 use App\Models\Funil;
 use App\Models\Usuario;
+use App\Services\Perdas\AplicarTransicao;
 
 /**
  * Move um lead de um funil para outro, no estágio de destino escolhido.
@@ -23,7 +24,12 @@ use App\Models\Usuario;
  */
 class MoverLeadDeFunil
 {
-    public function __invoke(Usuario $lead, Funil $destino, Estagio $estagio): Usuario
+    public function __construct(private readonly AplicarTransicao $aplicar) {}
+
+    /**
+     * @param  array{motivo_perda_id?: int|null, observacao?: string|null}|null  $perda
+     */
+    public function __invoke(Usuario $lead, Funil $destino, Estagio $estagio, ?array $perda = null): Usuario
     {
         if ((int) $estagio->funil_id !== (int) $destino->id) {
             throw new RegraDeFunilException('O estágio escolhido não pertence ao funil de destino.');
@@ -33,10 +39,14 @@ class MoverLeadDeFunil
             throw new RegraDeFunilException('Não é possível mover um lead para um estágio arquivado.');
         }
 
-        $lead->update([
+        // A escrita passa pelo AplicarTransicao porque o estágio de destino
+        // pode ser do tipo perdido: mover um lead de "Vendas" para a coluna
+        // "Perdido" de outro funil é uma perda como qualquer outra, e exige
+        // motivo. Sem isto, trocar de funil seria o desvio que esvazia a regra.
+        ($this->aplicar)($lead, [
             'funil_id' => $destino->id,
             'estagio_id' => $estagio->id,
-        ]);
+        ], $perda);
 
         return $lead;
     }

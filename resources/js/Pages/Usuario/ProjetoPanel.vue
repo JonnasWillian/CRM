@@ -7,6 +7,7 @@
         FileText, Paperclip, Upload, Download,
     } from 'lucide-vue-next';
     import Swal from 'sweetalert2';
+    import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
 
     const props = defineProps({ usuarioId: { type: [Number, String], required: true } });
     const emit  = defineEmits(['update:total']);
@@ -106,6 +107,34 @@
         data_final:   f.data_final   || null,
     });
 
+    // ── Perda ──
+    // Um projeto entra em perda quando recebe um status com `is_lost`. Vale
+    // tanto no cadastro (pode nascer perdido) quanto na edição.
+    const perdaPendente = ref(null);
+    const perdaErro     = ref('');
+    const perdaSalvando = ref(false);
+
+    const statusEhPerdido = (id) => !!status.value.find(s => s.id === id)?.is_lost;
+
+    const abrirPerda = (acao) => { perdaPendente.value = acao; perdaErro.value = ''; };
+    const cancelarPerda = () => { perdaPendente.value = null; perdaErro.value = ''; };
+
+    const confirmarPerda = async (perda) => {
+        perdaSalvando.value = true;
+        perdaErro.value = '';
+        try {
+            await perdaPendente.value.enviar(perda);
+            perdaPendente.value = null;
+            await buscarProjetos();
+        } catch (e) {
+            perdaErro.value = e?.response?.data?.erros?.motivo_perda_id?.[0]
+                ?? e?.response?.data?.error
+                ?? 'Não foi possível registrar a perda.';
+        } finally {
+            perdaSalvando.value = false;
+        }
+    };
+
     // ── API: Projetos ──
     const buscarStatus = async () => {
         try {
@@ -124,9 +153,20 @@
     };
     const cadastrarProjeto = async () => {
         if (!form.value.nome.trim() || !form.value.status_id) return;
+
+        const payload = montarPayload(form.value);
+        const enviar = (perda) => axios.post('/api/projeto', { ...payload, perda });
+
+        if (statusEhPerdido(form.value.status_id)) {
+            const nome = form.value.nome;
+            resetForm();
+            abrirPerda({ titulo: `Cadastrar "${nome}" como perdido`, enviar });
+            return;
+        }
+
         isSaving.value = true;
         try {
-            await axios.post('/api/projeto', montarPayload(form.value));
+            await enviar(null);
             showToast('Projeto criado com sucesso!');
             resetForm();
             await buscarProjetos();
@@ -152,9 +192,25 @@
     const cancelarEdicao = () => { editingId.value = null; };
     const salvarEdicao = async () => {
         if (!editForm.value.nome.trim() || !editForm.value.status_id) return;
+
+        const projeto = projetos.value.find(p => p.id === editingId.value);
+        const jaEstavaPerdido = statusEhPerdido(projeto?.status_id);
+        const payload = montarPayload(editForm.value);
+        const id = editingId.value;
+        const enviar = (perda) => axios.put(`/api/projeto/${id}`, { ...payload, perda });
+
+        // Só a ENTRADA em perda pede motivo. Editar o preço de um projeto que
+        // já estava perdido não é uma perda nova e não pode contar duas vezes.
+        if (statusEhPerdido(editForm.value.status_id) && !jaEstavaPerdido) {
+            const nome = editForm.value.nome;
+            editingId.value = null;
+            abrirPerda({ titulo: `Perder "${nome}"`, enviar });
+            return;
+        }
+
         isSaving.value = true;
         try {
-            await axios.put(`/api/projeto/${editingId.value}`, montarPayload(editForm.value));
+            await enviar(null);
             showToast('Projeto atualizado!');
             editingId.value = null;
             await buscarProjetos();
@@ -296,6 +352,14 @@
 </script>
 
 <template>
+    <ModalMotivoPerda
+        :aberto="!!perdaPendente"
+        :titulo="perdaPendente?.titulo ?? 'Registrar perda'"
+        :erro="perdaErro"
+        :salvando="perdaSalvando"
+        @confirmar="confirmarPerda"
+        @cancelar="cancelarPerda"
+    />
     <Transition name="proj-toast">
         <div v-if="toast.show" class="proj-toast" :class="`proj-toast--${toast.type}`">
             <CheckCircle2 v-if="toast.type === 'success'" :size="14" />

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Perdas\RegrasDePerda;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,7 @@ class UsuarioRequest extends FormRequest
             'descricao' => 'nullable|string',
             'funil_id' => ['nullable', $this->funilDoTenant()],
             'estagio_id' => ['nullable', $this->estagioDoTenant()],
+            ...RegrasDePerda::campos(),
         ];
     }
 
@@ -56,6 +58,7 @@ class UsuarioRequest extends FormRequest
             'descricao' => 'nullable|string',
             'funil_id' => ['nullable', $this->funilDoTenant()],
             'estagio_id' => ['nullable', $this->estagioDoTenant()],
+            ...RegrasDePerda::campos(),
         ];
     }
 
@@ -107,6 +110,7 @@ class UsuarioRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...RegrasDePerda::mensagens(),
             'nome.required' => 'O campo nome é obrigatório.',
             'nome.min' => 'O nome deve ter no mínimo :min caracteres.',
             'nome.string' => 'O nome deve ser um texto válido.',

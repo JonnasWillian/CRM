@@ -9,6 +9,7 @@
     // de navegação, não autorização: a rota e as chamadas de API são barradas de
     // qualquer jeito pelo middleware `can:` e pelos FormRequests.
     const podeConfigurar = computed(() => usePage().props.auth.permissions?.['configuracoes.manage'] === true);
+    const podeVerTudo    = computed(() => usePage().props.auth.permissions?.['leads.view-all'] === true);
 
     const getInitials = (name) => {
         return name?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '?';
@@ -44,6 +45,16 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h10M4 12h7M4 18h4M17 4v6m0 0l-2.5-2.5M17 10l2.5-2.5"/>
                     </svg>
                     <span>Funis</span>
+                </Link>
+
+                <Link v-if="podeConfigurar" :href="route('configuracoes.motivosPerda')" class="nav-item" :class="{ active: route().current('configuracoes.motivosPerda') }">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 9v4m0 4h.01M10.3 3.9l-8 14A2 2 0 004 21h16a2 2 0 001.7-3.1l-8-14a2 2 0 00-3.4 0z"/></svg>
+                    <span>Motivos de perda</span>
+                </Link>
+
+                <Link v-if="podeVerTudo" :href="route('relatorios.perdas')" class="nav-item" :class="{ active: route().current('relatorios.perdas') }">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 7l6 6 4-4 8 8m0 0h-5m5 0v-5"/></svg>
+                    <span>Por que perdemos</span>
                 </Link>
 
                 <Link :href="route('profile.edit')" class="nav-item" :class="{ active: route().current('profile.edit') }">
@@ -99,6 +110,14 @@
                         <Link v-if="podeConfigurar" :href="route('configuracoes.funis')" class="nav-item" :class="{ active: route().current('configuracoes.funis') }" @click="showingMobileMenu = false">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h10M4 12h7M4 18h4M17 4v6m0 0l-2.5-2.5M17 10l2.5-2.5"/></svg>
                             <span>Funis</span>
+                        </Link>
+                        <Link v-if="podeConfigurar" :href="route('configuracoes.motivosPerda')" class="nav-item" :class="{ active: route().current('configuracoes.motivosPerda') }" @click="showingMobileMenu = false">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 9v4m0 4h.01M10.3 3.9l-8 14A2 2 0 004 21h16a2 2 0 001.7-3.1l-8-14a2 2 0 00-3.4 0z"/></svg>
+                            <span>Motivos de perda</span>
+                        </Link>
+                        <Link v-if="podeVerTudo" :href="route('relatorios.perdas')" class="nav-item" :class="{ active: route().current('relatorios.perdas') }" @click="showingMobileMenu = false">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 7l6 6 4-4 8 8m0 0h-5m5 0v-5"/></svg>
+                            <span>Por que perdemos</span>
                         </Link>
                         <Link :href="route('profile.edit')" class="nav-item" @click="showingMobileMenu = false">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>

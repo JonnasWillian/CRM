@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Perdas\RegrasDePerda;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ProjetoRequest extends FormRequest
@@ -36,6 +37,7 @@ class ProjetoRequest extends FormRequest
             'qtd_parcelas' => 'nullable|numeric',
             'status_id' => 'required',
             'usuario_id' => 'required',
+            ...RegrasDePerda::campos(),
         ];
     }
 
@@ -50,12 +52,15 @@ class ProjetoRequest extends FormRequest
             'parcelas' => 'nullable|boolean',
             'qtd_parcelas' => 'nullable|numeric',
             'status_id' => 'required',
+            ...RegrasDePerda::campos(),
         ];
     }
 
     public function messages(): array
     {
         return [
+            ...RegrasDePerda::mensagens(),
+
             'nome.required' => 'O campo nome é obrigatório.',
             'nome.min' => 'O nome deve ter no mínimo :min caracteres.',
             'nome.string' => 'O nome deve ser um texto válido.',

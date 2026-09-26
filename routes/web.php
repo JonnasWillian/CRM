@@ -35,6 +35,14 @@ Route::get('/configuracoes/funis', function () {
     return Inertia::render('Configuracoes/Funis');
 })->middleware(['auth', 'verified', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.funis');
 
+Route::get('/configuracoes/motivos-perda', function () {
+    return Inertia::render('Configuracoes/MotivosPerda');
+})->middleware(['auth', 'verified', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.motivosPerda');
+
+Route::get('/relatorios/perdas', function () {
+    return Inertia::render('Relatorios/Perdas');
+})->middleware(['auth', 'verified', 'tenant', 'can:leads.view-all'])->name('relatorios.perdas');
+
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

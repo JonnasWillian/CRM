@@ -3,6 +3,7 @@
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
     import axios from 'axios';
+    import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
     import { vMaska } from 'maska/vue';
     import { PlusCircle, FileText, Paperclip, Trash2, Edit, Save, X, Download, Upload, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-vue-next';
     import Swal from 'sweetalert2';
@@ -83,15 +84,53 @@
         }
     };
 
-    const editarUsuario = async () => {
-        isSavingUser.value = true;
-        usuario.value.telefone = usuario.value.telefone?.replace(/\D/g, '');
+    // ── Perda ──
+    const perdaPendente = ref(null);
+    const perdaErro     = ref('');
+    const perdaSalvando = ref(false);
+
+    const estagioEhPerdido = (id) => estagios.value.find(e => e.id === id)?.tipo === 'perdido';
+
+    const cancelarPerda = () => { perdaPendente.value = null; perdaErro.value = ''; };
+
+    const confirmarPerda = async (perda) => {
+        perdaSalvando.value = true;
+        perdaErro.value = '';
         try {
-            await axios.put(`api/usuarios/${usuario.value.id}`, {
-                ...usuario.value,
-                funil_id: funilSelecionado.value,
-                estagio_id: estagioSelecionado.value,
-            });
+            await perdaPendente.value.enviar(perda);
+            perdaPendente.value = null;
+            await buscarUsuario(idPerfil);
+            showToast('Perda registrada.');
+        } catch (e) {
+            perdaErro.value = e?.response?.data?.erros?.motivo_perda_id?.[0]
+                ?? e?.response?.data?.error
+                ?? 'Não foi possível registrar a perda.';
+        } finally {
+            perdaSalvando.value = false;
+        }
+    };
+
+    const editarUsuario = async () => {
+        usuario.value.telefone = usuario.value.telefone?.replace(/\D/g, '');
+
+        const enviar = (perda) => axios.put(`api/usuarios/${usuario.value.id}`, {
+            ...usuario.value,
+            funil_id: funilSelecionado.value,
+            estagio_id: estagioSelecionado.value,
+            perda,
+        });
+
+        // Só a ENTRADA em perda pede motivo: salvar o telefone de um lead que
+        // já estava perdido não é uma perda nova.
+        if (estagioEhPerdido(estagioSelecionado.value) && !estagioEhPerdido(usuario.value?.estagio_id)) {
+            perdaErro.value = '';
+            perdaPendente.value = { titulo: `Perder "${usuario.value.nome}"`, enviar };
+            return;
+        }
+
+        isSavingUser.value = true;
+        try {
+            await enviar(null);
             await buscarUsuario(idPerfil);
             showToast('Dados do lead salvos com sucesso!');
         } catch {
@@ -313,6 +352,14 @@
 </script>
 
 <template>
+    <ModalMotivoPerda
+        :aberto="!!perdaPendente"
+        :titulo="perdaPendente?.titulo ?? 'Registrar perda'"
+        :erro="perdaErro"
+        :salvando="perdaSalvando"
+        @confirmar="confirmarPerda"
+        @cancelar="cancelarPerda"
+    />
     <Head title="Perfil do Lead — UserFlow" />
     <AuthenticatedLayout>
         <div class="page">
