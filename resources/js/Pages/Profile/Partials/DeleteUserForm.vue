@@ -1,10 +1,4 @@
 <script setup>
-import DangerButton from '@/Components/DangerButton.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import Modal from '@/Components/Modal.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
 import { nextTick, ref } from 'vue';
 
@@ -39,70 +33,60 @@ const closeModal = () => {
 </script>
 
 <template>
-    <section class="space-y-6">
-        <header>
-            <h2 class="text-lg font-medium text-gray-900">
-                Delete Account
-            </h2>
+    <section class="pf-card pf-card--perigo">
+        <h2 class="pf-card-titulo">Excluir conta</h2>
+        <p class="pf-card-desc">
+            Apagar a conta remove permanentemente todos os seus dados. Baixe antes o que
+            quiser guardar — não há como desfazer.
+        </p>
 
-            <p class="mt-1 text-sm text-gray-600">
-                Once your account is deleted, all of its resources and data will
-                be permanently deleted. Before deleting your account, please
-                download any data or information that you wish to retain.
-            </p>
-        </header>
+        <div class="pf-acoes" style="margin-top: 1.1rem">
+            <button class="pf-btn-perigo" @click="confirmUserDeletion">Excluir conta</button>
+        </div>
 
-        <DangerButton @click="confirmUserDeletion">Delete Account</DangerButton>
+        <!--
+            Diálogo próprio em vez de Components/Modal.vue: aquele componente é
+            o do Breeze, de tema claro, e também serve as telas de Auth — mudá-lo
+            mexeria nelas. O overlay aqui segue o mesmo desenho de
+            ModalMotivoPerda, que é o padrão de diálogo do app.
+        -->
+        <Transition name="pf-fade">
+            <div v-if="confirmingUserDeletion" class="pf-overlay" @click.self="closeModal">
+                <div class="pf-dialogo">
+                    <h2 class="pf-card-titulo">Excluir sua conta?</h2>
+                    <p class="pf-card-desc">
+                        Todos os seus dados são apagados permanentemente. Digite sua senha
+                        para confirmar.
+                    </p>
 
-        <Modal :show="confirmingUserDeletion" @close="closeModal">
-            <div class="p-6">
-                <h2
-                    class="text-lg font-medium text-gray-900"
-                >
-                    Are you sure you want to delete your account?
-                </h2>
+                    <div class="pf-campo" style="margin-top: 1.1rem">
+                        <label class="pf-label" for="delete_password">Senha</label>
+                        <input
+                            id="delete_password"
+                            ref="passwordInput"
+                            v-model="form.password"
+                            type="password"
+                            class="pf-input"
+                            placeholder="Sua senha atual"
+                            @keyup.enter="deleteUser"
+                        />
+                        <span v-if="form.errors.password" class="pf-erro">
+                            {{ form.errors.password }}
+                        </span>
+                    </div>
 
-                <p class="mt-1 text-sm text-gray-600">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Please enter your password to
-                    confirm you would like to permanently delete your account.
-                </p>
-
-                <div class="mt-6">
-                    <InputLabel
-                        for="password"
-                        value="Password"
-                        class="sr-only"
-                    />
-
-                    <TextInput
-                        id="password"
-                        ref="passwordInput"
-                        v-model="form.password"
-                        type="password"
-                        class="mt-1 block w-3/4"
-                        placeholder="Password"
-                        @keyup.enter="deleteUser"
-                    />
-
-                    <InputError :message="form.errors.password" class="mt-2" />
-                </div>
-
-                <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeModal">
-                        Cancel
-                    </SecondaryButton>
-
-                    <DangerButton
-                        class="ms-3"
-                        :class="{ 'opacity-25': form.processing }"
-                        :disabled="form.processing"
-                        @click="deleteUser"
-                    >
-                        Delete Account
-                    </DangerButton>
+                    <div class="pf-dialogo-acoes">
+                        <button class="pf-btn-ghost" @click="closeModal">Cancelar</button>
+                        <button
+                            class="pf-btn-perigo pf-btn-perigo--solido"
+                            :disabled="form.processing"
+                            @click="deleteUser"
+                        >
+                            {{ form.processing ? 'Excluindo…' : 'Excluir conta' }}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </Modal>
+        </Transition>
     </section>
 </template>

@@ -1,8 +1,4 @@
 <script setup>
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -34,87 +30,63 @@ const updatePassword = () => {
 </script>
 
 <template>
-    <section>
-        <header>
-            <h2 class="text-lg font-medium text-gray-900">
-                Update Password
-            </h2>
+    <section class="pf-card">
+        <h2 class="pf-card-titulo">Senha</h2>
+        <p class="pf-card-desc">
+            Use uma senha longa e que você não use em outro lugar — ela é o que protege a
+            carteira de leads da empresa.
+        </p>
 
-            <p class="mt-1 text-sm text-gray-600">
-                Ensure your account is using a long, random password to stay
-                secure.
-            </p>
-        </header>
-
-        <form @submit.prevent="updatePassword" class="mt-6 space-y-6">
-            <div>
-                <InputLabel for="current_password" value="Current Password" />
-
-                <TextInput
+        <form class="pf-form" @submit.prevent="updatePassword">
+            <div class="pf-campo">
+                <label class="pf-label" for="current_password">Senha atual</label>
+                <input
                     id="current_password"
                     ref="currentPasswordInput"
                     v-model="form.current_password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="pf-input"
                     autocomplete="current-password"
                 />
-
-                <InputError
-                    :message="form.errors.current_password"
-                    class="mt-2"
-                />
+                <span v-if="form.errors.current_password" class="pf-erro">
+                    {{ form.errors.current_password }}
+                </span>
             </div>
 
-            <div>
-                <InputLabel for="password" value="New Password" />
-
-                <TextInput
+            <div class="pf-campo">
+                <label class="pf-label" for="password">Nova senha</label>
+                <input
                     id="password"
                     ref="passwordInput"
                     v-model="form.password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="pf-input"
                     autocomplete="new-password"
                 />
-
-                <InputError :message="form.errors.password" class="mt-2" />
+                <span v-if="form.errors.password" class="pf-erro">{{ form.errors.password }}</span>
             </div>
 
-            <div>
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
-
-                <TextInput
+            <div class="pf-campo">
+                <label class="pf-label" for="password_confirmation">Confirmar nova senha</label>
+                <input
                     id="password_confirmation"
                     v-model="form.password_confirmation"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="pf-input"
                     autocomplete="new-password"
                 />
-
-                <InputError
-                    :message="form.errors.password_confirmation"
-                    class="mt-2"
-                />
+                <span v-if="form.errors.password_confirmation" class="pf-erro">
+                    {{ form.errors.password_confirmation }}
+                </span>
             </div>
 
-            <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+            <div class="pf-acoes">
+                <button type="submit" class="pf-btn-primary" :disabled="form.processing">
+                    {{ form.processing ? 'Salvando…' : 'Salvar' }}
+                </button>
 
-                <Transition
-                    enter-active-class="transition ease-in-out"
-                    enter-from-class="opacity-0"
-                    leave-active-class="transition ease-in-out"
-                    leave-to-class="opacity-0"
-                >
-                    <p
-                        v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-600"
-                    >
-                        Saved.
-                    </p>
+                <Transition name="pf-fade">
+                    <span v-if="form.recentlySuccessful" class="pf-ok">Senha atualizada.</span>
                 </Transition>
             </div>
         </form>
