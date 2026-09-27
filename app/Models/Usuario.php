@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -78,5 +79,23 @@ class Usuario extends Model implements Perdivel
             ->sum('preco');
 
         return $soma > 0 ? (float) $soma : null;
+    }
+
+    /**
+     * Restringe a listagem ao que o agente pode enxergar.
+     *
+     * Com `leads.view-all` não há filtro adicional — o TenantScope já limita à
+     * empresa. Sem a permission, o agente vê só a própria carteira.
+     *
+     * Este scope serve as LISTAGENS. O acesso a um lead específico é decidido
+     * pela UsuarioPolicy, que aplica a mesma regra para uma linha só.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->can('leads.view-all')) {
+            return $query;
+        }
+
+        return $query->where('usuarios.user_id', $user->id);
     }
 }

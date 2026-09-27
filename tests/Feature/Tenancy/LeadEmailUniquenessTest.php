@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,10 @@ class LeadEmailUniquenessTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $staff = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        setPermissionsTeamId($tenant->id);
+        $staff->assignRole('vendedor');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return [$tenant, $staff];
     }

@@ -10,9 +10,11 @@ use Illuminate\Validation\Rule;
 
 class TarefaController extends Controller
 {
-    public function index($usuarioId)
+    public function index(Usuario $usuario)
     {
-        $tarefas = Tarefa::where('usuario_id', $usuarioId)
+        $this->authorize('view', $usuario);
+
+        $tarefas = Tarefa::where('usuario_id', $usuario->id)
             ->orderBy('concluido')
             ->orderBy('data_limite')
             ->get();
@@ -23,6 +25,14 @@ class TarefaController extends Controller
     public function store(Request $request)
     {
         try {
+            // O lead vem de um campo do CORPO: o route model binding nunca o vê,
+            // então a TarefaPolicy não roda sozinha aqui. findOrFail primeiro — o
+            // TenantScope já devolve 404 para id de outro tenant — e só então
+            // autoriza, para que "não existe" e "não é seu" deem a mesma resposta.
+            $lead = Usuario::findOrFail($request->integer('usuario_id'));
+
+            $this->authorize('update', $lead);
+
             $validated = $request->validate([
                 'usuario_id' => [
                     'required',
@@ -33,6 +43,8 @@ class TarefaController extends Controller
                 'anotacao'   => 'nullable|string',
             ]);
 
+            $validated['usuario_id'] = $lead->id;
+
             $tarefa = Tarefa::create($validated);
 
             return response()->json(['message' => 'Tarefa criada com sucesso', 'data' => $tarefa], 201);
@@ -41,11 +53,11 @@ class TarefaController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Tarefa $tarefa)
     {
-        try {
-            $tarefa = Tarefa::findOrFail($id);
+        $this->authorize('update', $tarefa);
 
+        try {
             $validated = $request->validate([
                 'titulo'      => 'sometimes|string|max:255',
                 'data_limite' => 'sometimes|date',
@@ -62,26 +74,21 @@ class TarefaController extends Controller
             return response()->json(['message' => 'Tarefa atualizada com sucesso', 'data' => $tarefa], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json(['erros' => $error->errors()], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Tarefa não encontrada'], 404);
         }
     }
 
-    public function destroy($id)
+    public function destroy(Tarefa $tarefa)
     {
-        try {
-            $tarefa = Tarefa::findOrFail($id);
-            $tarefa->delete();
+        $this->authorize('delete', $tarefa);
 
-            return response()->json(['message' => 'Tarefa removida com sucesso'], 200);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Tarefa não encontrada'], 404);
-        }
+        $tarefa->delete();
+
+        return response()->json(['message' => 'Tarefa removida com sucesso'], 200);
     }
 
     public function pendentes(Request $request)
     {
-        $leadIds = Usuario::where('user_id', auth()->id())->pluck('id');
+        $leadIds = Usuario::visibleTo(auth()->user())->pluck('id');
 
         if ($leadIds->isEmpty()) {
             return response()->json(['hoje' => [], 'atrasadas' => []]);

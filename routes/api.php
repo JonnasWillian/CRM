@@ -66,57 +66,63 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // Leads (usuarios)
     Route::post('/pegarUsuarios', [Userarios::class, 'view']);
     Route::post('/usuarios', [Userarios::class, 'create']);
-    Route::get('/usuarioPerfil/{id}', [Userarios::class, 'viewUsuario']);
-    Route::put('/usuarios/{id}', [Userarios::class, 'update']);
+    Route::get('/usuarioPerfil/{usuario}', [Userarios::class, 'viewUsuario']);
+    Route::put('/usuarios/{usuario}', [Userarios::class, 'update']);
     Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
     // Timeline montada em runtime. Substituída pelo activity log abaixo;
     // mantida durante a transição, até o frontend trocar.
-    Route::get('/timeline/{id}', [Userarios::class, 'timeline']);
+    Route::get('/timeline/{usuario}', [Userarios::class, 'timeline']);
     Route::get('/leads/{usuario}/atividades', [LeadAtividadeController::class, 'index']);
     Route::post('/metricas', [Userarios::class, 'metricas']);
     Route::post('/kanban', [Userarios::class, 'kanban']);
     Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
-    Route::patch('/usuarios/{id}/estagio', [Userarios::class, 'patchEstagio']);
-    Route::patch('/usuarios/{id}/funil', [Userarios::class, 'moverFunil']);
+    Route::patch('/usuarios/{usuario}/estagio', [Userarios::class, 'patchEstagio']);
+    Route::patch('/usuarios/{usuario}/funil', [Userarios::class, 'moverFunil']);
 
     // Anotações de Lead
-    Route::get('/anotacao/{id}', [Userarios::class, 'viewAnotacao']);
+    Route::get('/anotacao/{usuario}', [Userarios::class, 'viewAnotacao']);
     Route::post('/anotacao', [Userarios::class, 'createAnotacao']);
-    Route::put('/anotacao/{id}', [Userarios::class, 'updateAnotacao']);
-    Route::delete('/anotacao/{id}', [Userarios::class, 'destroyAnotacao']);
+    Route::put('/anotacao/{anotacao}', [Userarios::class, 'updateAnotacao']);
+    Route::delete('/anotacao/{anotacao}', [Userarios::class, 'destroyAnotacao']);
 
     // Anexos de Lead
-    Route::apiResource('arquivos', arquivo::class);
+    // only(['index', 'store', 'destroy']): o controller só implementa esses
+    // três — nem update() nem show() existem. A rota de show() existia e
+    // apontava para um método inexistente: GET /api/arquivos/{arquivo} batia
+    // em "Call to undefined method" e virava 500 a cada chamada.
+    Route::apiResource('arquivos', arquivo::class)->only(['index', 'store', 'destroy']);
     Route::post('buscarArquivo', [arquivo::class, 'index']);
 
     // Projetos
     Route::post('/projetos', [ProjetoController::class, 'view']);
     Route::post('/projeto', [ProjetoController::class, 'create']);
-    Route::get('/projeto/{id}', [ProjetoController::class, 'viewProjeto']);
-    Route::put('/projeto/{id}', [ProjetoController::class, 'update']);
+    Route::get('/projeto/{projeto}', [ProjetoController::class, 'viewProjeto']);
+    Route::put('/projeto/{projeto}', [ProjetoController::class, 'update']);
 
     // Anotações de Projeto
-    Route::get('/projetoAnotacao/{id}', [ProjetoController::class, 'viewAnotacao']);
+    // {id} por verbo: no GET o id é do PROJETO, no PUT/DELETE é da própria
+    // anotação — mesma URL, o binding resolve pelo nome do parâmetro.
+    Route::get('/projetoAnotacao/{projeto}', [ProjetoController::class, 'viewAnotacao']);
     Route::post('/projetoAnotacao', [ProjetoController::class, 'createAnotacao']);
-    Route::put('/projetoAnotacao/{id}', [ProjetoController::class, 'updateAnotacao']);
-    Route::delete('/projetoAnotacao/{id}', [ProjetoController::class, 'destroyAnotacao']);
+    Route::put('/projetoAnotacao/{projetoAnotacao}', [ProjetoController::class, 'updateAnotacao']);
+    Route::delete('/projetoAnotacao/{projetoAnotacao}', [ProjetoController::class, 'destroyAnotacao']);
 
-    // Anexos de Projeto
-    Route::get('/projetoAnexo/{id}', [ProjetoController::class, 'viewAnexo']);
+    // Anexos de Projeto (mesma armadilha do {id} por verbo)
+    Route::get('/projetoAnexo/{projeto}', [ProjetoController::class, 'viewAnexo']);
     Route::post('/projetoAnexo', [ProjetoController::class, 'createAnexo']);
-    Route::delete('/projetoAnexo/{id}', [ProjetoController::class, 'destroyAnexo']);
+    Route::delete('/projetoAnexo/{projetoAnexo}', [ProjetoController::class, 'destroyAnexo']);
 
     // Tarefas de Lead
-    Route::get('/tarefas/{usuarioId}', [TarefaController::class, 'index']);
+    Route::get('/tarefas/{usuario}', [TarefaController::class, 'index']);
     Route::post('/tarefas', [TarefaController::class, 'store']);
-    Route::put('/tarefas/{id}', [TarefaController::class, 'update']);
-    Route::delete('/tarefas/{id}', [TarefaController::class, 'destroy']);
+    Route::put('/tarefas/{tarefa}', [TarefaController::class, 'update']);
+    Route::delete('/tarefas/{tarefa}', [TarefaController::class, 'destroy']);
     Route::post('/tarefasPendentes', [TarefaController::class, 'pendentes']);
 
     // Modelos de Tarefa
     Route::get('/tarefa-padroes',          [TarefaPadraoController::class, 'index']);
     Route::post('/tarefa-padroes',         [TarefaPadraoController::class, 'store']);
     Route::post('/tarefa-padroes/aplicar', [TarefaPadraoController::class, 'aplicar']);
-    Route::put('/tarefa-padroes/{id}',     [TarefaPadraoController::class, 'update']);
-    Route::delete('/tarefa-padroes/{id}',  [TarefaPadraoController::class, 'destroy']);
+    Route::put('/tarefa-padroes/{tarefaPadrao}',     [TarefaPadraoController::class, 'update']);
+    Route::delete('/tarefa-padroes/{tarefaPadrao}',  [TarefaPadraoController::class, 'destroy']);
 });

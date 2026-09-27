@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\ProjetoRequest;
-use App\Http\Requests\ArquivoRequest;
+use App\Http\Requests\ProjetoAnexoRequest;
 
 use App\Service\ArquivoService;
 
@@ -12,10 +12,9 @@ use App\Models\Statu;
 use App\Models\Projeto;
 use App\Models\ProjetoAnotacao;
 use App\Models\ProjetoAnexo;
+use App\Models\Usuario;
 use App\Services\Perdas\AplicarTransicao;
 use App\Support\Perdas\RegrasDePerda;
-use App\Support\Tenancy\CurrentTenant;
-use Illuminate\Validation\Rule;
 
 class ProjetoController extends Controller
 {
@@ -36,9 +35,17 @@ class ProjetoController extends Controller
 
     public function view(Request $request)
     {
-        $projetos = Projeto::where('usuario_id', $request->usuario_id)->with('status')->get();
+        // O lead vem de um campo do CORPO: o binding nunca o enxerga, então a
+        // policy não roda sozinha. findOrFail primeiro — o TenantScope já
+        // devolve 404 para id de outro tenant — e só então autoriza, para que
+        // "não existe" e "não é seu" deem a mesma resposta.
+        $lead = Usuario::findOrFail($request->integer('usuario_id'));
 
-        return response()->json($projetos);
+        $this->authorize('view', $lead);
+
+        return response()->json(
+            Projeto::where('usuario_id', $lead->id)->with('status')->get()
+        );
     }
 
 
@@ -58,19 +65,19 @@ class ProjetoController extends Controller
     }
 
 
-    public function viewProjeto($id)
+    public function viewProjeto(Projeto $projeto)
     {
-        $projeto = Projeto::where('id', $id)->with('status')->first();
+        $this->authorize('view', $projeto);
 
-        return response()->json($projeto);
+        return response()->json($projeto->load('status'));
     }
 
 
-    public function update(ProjetoRequest $request, $id)
+    public function update(ProjetoRequest $request, Projeto $projeto)
     {
-        try {
-            $projeto = Projeto::findOrFail($id);
+        $this->authorize('update', $projeto);
 
+        try {
             app(AplicarTransicao::class)($projeto, $request->validated(), RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Projeto atualizado com sucesso'], 200);
@@ -78,15 +85,15 @@ class ProjetoController extends Controller
             return response()->json([
                 'erros' => $error->errors()
             ], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Projeto não encontrado'], 404);
         }
     }
 
 
-    public function viewAnotacao($id)
+    public function viewAnotacao(Projeto $projeto)
     {
-        $anotacoes = ProjetoAnotacao::where('projeto_id', $id)->get();
+        $this->authorize('view', $projeto);
+
+        $anotacoes = ProjetoAnotacao::where('projeto_id', $projeto->id)->get();
 
         return response()->json($anotacoes);
     }
@@ -95,15 +102,21 @@ class ProjetoController extends Controller
     public function createAnotacao(Request $request)
     {
         try {
-            $validateRequest = $request->validate([
-                'descricao' => 'required|string',
-                'projeto_id' => [
-                    'required',
-                    Rule::exists('projetos', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
-                ],
-            ]);
+            // O projeto vem de um campo do CORPO: o binding nunca o enxerga,
+            // então a policy não roda sozinha. findOrFail primeiro — o
+            // TenantScope já devolve 404 para id de outro tenant — e só então
+            // autoriza, para que "não existe" e "não é seu" deem a mesma
+            // resposta.
+            $projeto = Projeto::findOrFail($request->integer('projeto_id'));
 
-            ProjetoAnotacao::create($validateRequest);
+            $this->authorize('update', $projeto);
+
+            $validated = $request->validate(['descricao' => 'required|string']);
+
+            ProjetoAnotacao::create([
+                'descricao' => $validated['descricao'],
+                'projeto_id' => $projeto->id,
+            ]);
 
             return response()->json(['message' => 'Anotação cadastrada com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -114,58 +127,68 @@ class ProjetoController extends Controller
     }
 
 
-    public function updateAnotacao(Request $request, $id)
+    public function updateAnotacao(Request $request, ProjetoAnotacao $projetoAnotacao)
     {
-        try {
-            $anotacao = ProjetoAnotacao::findOrFail($id);
+        $this->authorize('update', $projetoAnotacao);
 
+        try {
             $validateRequest = $request->validate([
                 'descricao' => 'required|string',
             ]);
 
-            $anotacao->update($validateRequest);
+            $projetoAnotacao->update($validateRequest);
 
             return response()->json(['message' => 'Anotação atualizada com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
                 'erros' => $error->errors()
             ], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Anotação não encontrada'], 404);
         }
     }
 
 
-    public function destroyAnotacao($id)
+    public function destroyAnotacao(ProjetoAnotacao $projetoAnotacao)
     {
-        try {
-            $anotacao = ProjetoAnotacao::findOrFail($id);
-            $anotacao->delete();
+        $this->authorize('delete', $projetoAnotacao);
 
-            return response()->json(['message' => 'Anotação deletada com sucesso'], 200);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Anotação não encontrada'], 404);
-        }
+        $projetoAnotacao->delete();
+
+        return response()->json(['message' => 'Anotação deletada com sucesso'], 200);
     }
 
 
-    public function viewAnexo($id)
+    public function viewAnexo(Projeto $projeto)
     {
-        $anexos = ProjetoAnexo::where('projeto_id', $id)->get();
+        $this->authorize('view', $projeto);
+
+        $anexos = ProjetoAnexo::where('projeto_id', $projeto->id)->get();
 
         return response()->json($anexos);
     }
 
 
-    public function createAnexo(ArquivoRequest $request)
+    public function createAnexo(ProjetoAnexoRequest $request)
     {
+        // O id que vai para o banco é o do model que
+        // ProjetoAnexoRequest::authorize() já resolveu e autorizou (via
+        // integer()), não o texto cru do corpo — que pode trazer lixo
+        // depois do número ("1abc") e quebrar o INSERT em sql_mode
+        // estrito, ou simplesmente divergir do que foi checado.
+        //
+        // Fora do try/catch, igual ao irmão arquivo::store(): dentro dele, um
+        // catch(\Exception) genérico transformaria o 404 do findOrFail em 500
+        // com mensagem enganosa. Hoje o ramo é inalcançável (o id já foi
+        // validado e autorizado antes de chegar aqui), mas se deixar de ser,
+        // a resposta certa continua sendo 404, não 500.
+        $projeto = Projeto::findOrFail($request->integer('usuario_id'));
+
         try {
             $caminho = $this->arquivoService->salveFile($request->file('arquivo'));
 
             $anexo = ProjetoAnexo::create([
                 'nome' => $request->nome ?: '',
                 'local' => $caminho,
-                'projeto_id' => $request->usuario_id,
+                'projeto_id' => $projeto->id,
             ]);
 
             return response()->json([
@@ -178,15 +201,12 @@ class ProjetoController extends Controller
     }
 
 
-    public function destroyAnexo($id)
+    public function destroyAnexo(ProjetoAnexo $projetoAnexo)
     {
-        try {
-            $anexo = ProjetoAnexo::findOrFail($id);
-            $anexo->delete();
+        $this->authorize('delete', $projetoAnexo);
 
-            return response()->json(['message' => 'Anexo deletado com sucesso'], 200);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Anexo não encontrado'], 404);
-        }
+        $projetoAnexo->delete();
+
+        return response()->json(['message' => 'Anexo deletado com sucesso'], 200);
     }
 }

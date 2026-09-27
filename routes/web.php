@@ -28,13 +28,28 @@ Route::get('/dashboard', function () {
  * confiar no botão voltar do navegador — e "me manda esse lead" é conversa
  * diária num CRM.
  *
- * O binding implícito resolve o model, e como Usuario usa BelongsToTenant o
- * TenantScope já devolve 404 para um id de outra empresa, sem verificação
- * adicional aqui.
+ * ── Correção da justificativa anterior ──
+ *
+ * Este comentário dizia que o TenantScope bastava, "sem verificação adicional
+ * aqui". Era falso, e pior do que falso: aparentava conferência. O TenantScope
+ * resolve o lead de OUTRA empresa; não resolve nada contra o colega da MESMA
+ * empresa. Sem o `can` abaixo, um vendedor pedindo /leads/{id de um colega}
+ * recebia 200 e /leads/999999 recebia 404 — a diferença enumera os ids do
+ * tenant inteiro sem nem precisar ler o corpo da resposta. Era a nona porta de
+ * um plano que fechou oito.
+ *
+ * `->can('view', 'usuario')` e não Gate::authorize() dentro do closure: a
+ * autorização fica na mesma linha em que já estão `auth`, `verified` e
+ * `tenant`, que é onde quem lê o arquivo de rotas procura por ela — um closure
+ * de duas linhas é exatamente onde ninguém vai olhar. O middleware `can` roda
+ * depois de SubstituteBindings (a prioridade padrão do framework põe
+ * Authorize logo após ele), então recebe o model já resolvido. A policy
+ * responde com denyAsNotFound(), então a negativa é 404, igual à do id que
+ * não existe.
  */
 Route::get('/leads/{usuario}', function (App\Models\Usuario $usuario) {
     return Inertia::render('Usuario/Perfil', ['leadId' => $usuario->id]);
-})->middleware(['auth', 'verified', 'tenant'])->name('leads.show');
+})->middleware(['auth', 'verified', 'tenant'])->can('view', 'usuario')->name('leads.show');
 
 Route::get('/modelos-tarefa', function () {
     return Inertia::render('ModelosTarefa');

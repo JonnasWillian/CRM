@@ -174,9 +174,12 @@ Nenhuma URL consumida pelo frontend muda.
 ### 7. FormRequests
 
 - `UsuarioRequest`, `ProjetoRequest`, `ArquivoRequest`: `authorize()` deixa de ser
-  `return true`. A autorização de instância fica nas policies (o controller já
-  terá o model resolvido); o `authorize()` do request cobre a permissão de classe
-  (ex.: `leads.manage`).
+  `return true`. O `authorize()` do request cobre a permissão de classe
+  (ex.: `leads.manage`) **e também a autorização de instância**, sempre que a
+  requisição identificar um recurso — pelo parâmetro de rota ou por um id no
+  corpo. Ver *"Correção de 27/09: onde a autorização de instância cabe"*, no
+  fim deste documento: a redação original desta linha delegava a instância às
+  policies, e isso deixou oito portas abertas.
 
 **`ArquivoRequest` está sendo usado por dois endpoints incompatíveis.** Ele valida
 um campo `usuario_id`, e:
@@ -264,3 +267,130 @@ tenants diferentes na mesma execução.
 **Volume de mudança.** 22 rotas e 42 métodos num diff só. Mitigação: a
 implementação é sequenciada em fases (fundação → policies → rotas → requests),
 cada uma verde antes da seguinte.
+
+---
+
+# Revisão de 2026-09-27
+
+O desenho acima continua valendo. O inventário, não: entre 15/09 e hoje
+entraram funis múltiplos, motivo de perda obrigatório e a modernização de UI.
+Esta seção reconcilia o spec com o código antes de ele virar plano.
+
+## Parte 1 já está implementada
+
+Entregue junto com os funis, sem ter sido nomeada como tal:
+
+| Item do spec | Onde |
+|---|---|
+| `spatie/laravel-permission ^6.25` | `composer.json` |
+| `teams => true`, `team_foreign_key => tenant_id` | `config/permission.php` |
+| `User` com `HasRoles` | `app/Models/User.php` |
+| Papéis e permissions globais, semeados por migration | `2026_09_22_100008_seed_roles_and_permissions` |
+| `setPermissionsTeamId` + `unsetRelation` | `app/Http/Middleware/IdentifyTenant.php` |
+
+### Um pré-requisito que o spec não tinha
+
+O mecanismo central deste desenho é route model binding. Ele **não funcionava**:
+`SubstituteBindings` roda no grupo de middleware e `tenant` é middleware de
+rota, que roda depois — então o binding resolvia models sem tenant ativo e o
+`TenantScope`, que é fail-closed, derrubava a requisição com 500.
+
+Corrigido em `bootstrap/app.php` via `prependToPriorityList`, e travado por
+`tests/Feature/Navegacao/UrlDoLeadTest.php`, que limpa o `CurrentTenant` de
+propósito antes da requisição — a condição real de produção, que o `setUp()`
+dos outros testes mascarava.
+
+Sem essa correção, implementar este spec produziria 500 em toda rota com
+parâmetro.
+
+## Mapeamento de permissões: confirmado
+
+A tabela marcada como *"confirmar"* na versão original foi confirmada em
+27/09, sem alteração. `leads.view-all` para admin e gestor;
+`configuracoes.manage` para admin e gestor; `agentes.manage` só admin.
+
+## O inventário mudou: 22 → 36 rotas com parâmetro
+
+**Quatorze rotas nasceram depois do spec** — funis (6), estágios (3), motivos
+de perda (3), atividades do lead (1), mover lead de funil (1).
+
+**Três foram renomeadas:** `/api/tags` → `/api/estagios`,
+`/api/usuarios/{id}/tag` → `/api/usuarios/{id}/estagio`, e `/perfilUsuario`
+(sem identificador, com o id em `sessionStorage`) → `/leads/{usuario}`.
+
+## Quatro models novos, nenhuma policy nova
+
+`Funil`, `Estagio` e `MotivoPerda` são **configuração do tenant**, não dado de
+carteira: quem pode mexer neles é quem tem `configuracoes.manage`, e as rotas
+já carregam esse gate. Não existe "meu funil" e "funil do colega" — existe o
+funil da empresa.
+
+`Perda` não tem rota própria: ela é lida pelo relatório agregado, já barrado
+por `leads.view-all`, e escrita pelo `AplicarTransicao` no contexto de um lead
+ou projeto cuja autorização é a da entidade-mãe.
+
+**As 8 policies do spec original continuam sendo as 8 corretas.** O trabalho
+real são as ~21 rotas legadas com `{id}`, incluindo a armadilha já documentada
+na versão original: `/projetoAnotacao/{id}` e `/projetoAnexo/{id}` significam
+coisas diferentes conforme o verbo.
+
+## Um bug existente que as policies corrigem
+
+`LeadAtividadeController::index` carrega uma autorização provisória:
+
+```php
+abort_unless($usuario->user_id === auth()->id(), 404);
+```
+
+Ela está **errada para gestor e admin**: impede que vejam as atividades de um
+lead da própria equipe. Substituí-la pela `UsuarioPolicy` não só fecha o IDOR —
+conserta um comportamento quebrado que está em produção.
+
+## Correção de 27/09: onde a autorização de instância cabe
+
+A versão original deste spec dizia, na seção 7, que *"a autorização de instância
+fica nas policies (o controller já terá o model resolvido)"*. **A premissa é
+falsa para metade dos casos**, e a execução do plano encontrou oito portas
+abertas por causa dela.
+
+Ela vale para `PUT`/`DELETE` com route model binding: ali o parâmetro de rota
+identifica o recurso, o binding resolve o model, e o controller autoriza o
+objeto que já tem em mãos.
+
+Ela não vale para **`POST` que referencia outro recurso por id no corpo**. Não
+há parâmetro de rota, logo não há binding, logo não há model resolvido, logo a
+policy nunca é consultada. Para a policy, `POST /api/anotacao` com o
+`usuario_id` do lead de outro agente é indistinguível de uma anotação legítima.
+
+Duas consequências práticas, as duas verificadas em runtime durante a execução:
+
+1. **A autorização de instância pertence ao `FormRequest::authorize()`, não ao
+   corpo do controller.** O `FormRequest` valida antes de o controller rodar;
+   autorizar depois da validação cria um oráculo — payload malformado contra o
+   lead de um colega devolve 422, payload válido devolve 404, e a diferença
+   entre as duas respostas confirma que aquele id existe.
+2. **Todo endpoint que decide algo a partir de um id vindo do corpo precisa
+   resolver e autorizar esse recurso**, com o id convertido explicitamente
+   (`$this->integer('usuario_id')`).
+
+As oito portas: `POST /buscarArquivo`, `POST /arquivos`, `POST /projetoAnexo`,
+`POST /projetos`, `POST /anotacao`, `POST /projetoAnotacao`, `POST /tarefas`
+junto de `POST /tarefa-padroes/aplicar`, e `POST /projeto`.
+
+**Por que escaparam do levantamento original:** o inventário deste spec procurou
+rotas *com parâmetro*. Nenhuma das oito tem parâmetro. A pergunta que as
+encontra não é "esta rota tem `{id}`?" — é **"este método decide alguma coisa a
+partir de um id de recurso, venha ele de onde vier, e chega a perguntar se você
+pode?"**. Quem estender este sistema deve usar a segunda pergunta.
+
+A rede em `tests/Feature/Autorizacao/TodaRotaDeEscritaAutorizaTest.php` existe
+para que a nona porta quebre o build em vez de chegar em produção.
+
+## Escopo desta implementação
+
+Somente o que falta: as 8 policies, a conversão das rotas legadas para binding,
+`Usuario::scopeVisibleTo`, os três `FormRequest` que ainda declaram
+`authorize(): bool { return true; }`, a separação de `ArquivoRequest` em dois, o
+fechamento das oito portas de id-no-corpo, e a rede de segurança sobre **todas
+as rotas de escrita** — não só as que têm parâmetro, como dizia a versão
+original desta linha.

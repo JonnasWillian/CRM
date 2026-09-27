@@ -13,7 +13,56 @@ class UsuarioRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        // Permissão de CLASSE primeiro: sem `leads.manage` não há o que checar
+        // na instância — quem não mexe em lead nenhum não passa daqui, ponto.
+        if (! ($this->user()?->can('leads.manage') ?? false)) {
+            return false;
+        }
+
+        // Na edição a autorização da INSTÂNCIA precisa acontecer AQUI, e não no
+        // corpo do controller: o FormRequest é validado antes de o método rodar,
+        // e um 422 contra um lead alheio já revelaria que o id existe no tenant.
+        // No cadastro (POST) não há lead na rota — nada a checar aqui além disso.
+        $usuario = $this->route('usuario');
+
+        return $usuario === null || $this->user()->can('update', $usuario);
+    }
+
+    /**
+     * 404 existe para esconder existência. Onde não há existência a esconder,
+     * a resposta honesta é 403.
+     *
+     * Três situações, uma regra:
+     *
+     *   sem modelo na rota (POST)        -> 403. Não há recurso.
+     *   modelo que o autor JÁ PODE VER   -> 403. Ele sabe que existe; mentir
+     *                                       "não encontrado" produz o bug de
+     *                                       "o lead sumiu ao salvar".
+     *   modelo que ele não pode ver      -> 404. Aqui 403 confirmaria o id e
+     *                                       deixaria enumerar a carteira dos
+     *                                       colegas, um id por vez.
+     *
+     * O caso do meio é o que faltava, e é o que o usuário sem papel vivia: ele
+     * abre o próprio lead (a policy de view deixa, ele é o dono), edita, salva
+     * e recebe 404. O certo é 403 — a negativa é de CLASSE, ele não edita lead
+     * NENHUM, e o recurso é dele.
+     *
+     * Não vaza nada: quem cai no 403 aqui já passaria no `view` do mesmo
+     * recurso. E quem não tem `leads.manage` recebe 403 para todo lead que
+     * enxerga e 404 para todo lead que não enxerga — que é exatamente a
+     * fronteira que ele já conhecia.
+     */
+    protected function failedAuthorization(): void
+    {
+        $usuario = $this->route('usuario');
+
+        if ($usuario === null || ($this->user()?->can('view', $usuario) ?? false)) {
+            parent::failedAuthorization();
+
+            return;
+        }
+
+        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
 
     public function rules(): array
@@ -49,10 +98,10 @@ class UsuarioRequest extends FormRequest
             'email' => [
                 'required',
                 'email',
-                // O id vem da rota, não do corpo: é o mesmo identificador que o
-                // controller usa no findOrFail(), e não depende do cliente
-                // reenviar 'id' no payload.
-                $this->emailUnicoNoTenant()->ignore($this->route('id')),
+                // O model vem do route model binding, não do corpo: é o mesmo
+                // lead que o controller autoriza via policy, e não depende do
+                // cliente reenviar 'id' no payload.
+                $this->emailUnicoNoTenant()->ignore($this->route('usuario')?->id),
             ],
             'telefone' => 'required|string|min:7',
             'descricao' => 'nullable|string',

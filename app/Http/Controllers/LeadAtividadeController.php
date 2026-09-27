@@ -22,10 +22,7 @@ class LeadAtividadeController extends Controller
 
     public function index(Request $request, Usuario $usuario)
     {
-        // Autorização provisória, até as policies do spec de RBAC entrarem:
-        // o lead precisa ser da carteira do agente autenticado. 404 em vez de
-        // 403 para não confirmar que o lead existe neste tenant.
-        abort_unless($usuario->user_id === auth()->id(), 404);
+        $this->authorize('view', $usuario);
 
         $atividades = Activity::where('lead_id', $usuario->id)
             ->orderByDesc('created_at')

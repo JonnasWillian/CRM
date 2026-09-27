@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -49,6 +50,10 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $this->tenant = Tenant::factory()->create();
         $this->staff = User::factory()->create(['tenant_id' => $this->tenant->id]);
         app(CurrentTenant::class)->set($this->tenant);
+
+        setPermissionsTeamId($this->tenant->id);
+        $this->staff->assignRole('vendedor');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->funil = Funil::factory()->padrao()->create(['tenant_id' => $this->tenant->id]);
         $this->outroFunil = Funil::factory()->create(['tenant_id' => $this->tenant->id]);

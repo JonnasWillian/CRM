@@ -7,25 +7,26 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Anexo de LEAD.
+ * Anexo de PROJETO.
  *
- * Servia também o anexo de PROJETO até esta separação — o mesmo campo
- * `usuario_id` carregava ora um id de lead, ora um id de projeto, e só
- * funcionava porque a regra era `required` e nada mais. `ProjetoAnexoRequest`
- * assumiu o segundo caso.
+ * O campo se chama `usuario_id` e carrega um id de projeto — o controller faz
+ * `'projeto_id' => $request->usuario_id` e o frontend envia
+ * `fd.append('usuario_id', projetoId)`. O nome está errado e é conhecido;
+ * renomear exige mexer no frontend e fica como tarefa própria. O que esta
+ * classe corrige é a validação, que antes aceitava qualquer inteiro.
  */
-class ArquivoRequest extends FormRequest
+class ProjetoAnexoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        if (! $this->user()?->can('leads.manage')) {
+        if (! $this->user()?->can('projetos.manage')) {
             return false;
         }
 
-        // O lead vem de um campo do CORPO, não da rota: o route model binding
-        // nunca o enxerga, então a policy de instância não roda sozinha aqui.
-        // Sem esta checagem dá para anexar arquivo ao lead de um colega que
-        // você nem consegue abrir.
+        // O projeto vem de um campo do CORPO, não da rota: o route model
+        // binding nunca o enxerga, então a policy de instância não roda
+        // sozinha aqui. Sem esta checagem dá para anexar arquivo ao projeto
+        // de um colega que você nem consegue abrir.
         //
         // Todas as negativas convergem para a mesma resposta — sem permissão
         // de classe, id inexistente e id de terceiro são indistinguíveis — então
@@ -45,9 +46,9 @@ class ArquivoRequest extends FormRequest
         // garante é a rede de segurança: mesmo que authorize() acerte por
         // acidente, a validação recusa o array logo depois e nada malformado
         // chega ao controller ou ao banco.
-        $lead = \App\Models\Usuario::find($this->integer('usuario_id'));
+        $projeto = \App\Models\Projeto::find($this->integer('usuario_id'));
 
-        return $lead !== null && $this->user()->can('update', $lead);
+        return $projeto !== null && $this->user()->can('update', $projeto);
     }
 
     public function rules(): array
@@ -57,7 +58,7 @@ class ArquivoRequest extends FormRequest
             'usuario_id' => [
                 'required',
                 'integer',
-                Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                Rule::exists('projetos', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
             ],
         ];
     }
@@ -65,10 +66,10 @@ class ArquivoRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'usuario_id.required' => 'O usuário detentor do arquivo é obrigatório',
-            'usuario_id.exists' => 'Usuário inválido.',
-            'arquivo.required' => 'O campo arquivo é obrigatorio',
-            'arquivo.file' => 'Deve ser enviado um arquivo',
+            'usuario_id.required' => 'O projeto do anexo é obrigatório.',
+            'usuario_id.exists' => 'Projeto inválido.',
+            'arquivo.required' => 'O campo arquivo é obrigatório.',
+            'arquivo.file' => 'Deve ser enviado um arquivo.',
         ];
     }
 }

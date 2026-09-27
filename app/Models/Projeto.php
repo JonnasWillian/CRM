@@ -30,6 +30,11 @@ class Projeto extends Model implements Perdivel
         return $this->belongsTo(Statu::class, 'status_id')->withTrashed();
     }
 
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
     public function perdas(): MorphMany
     {
         return $this->morphMany(Perda::class, 'perdivel');

@@ -133,6 +133,61 @@ class UrlDoLeadTest extends TestCase
             ->assertOk();
     }
 
+    /**
+     * A nona porta.
+     *
+     * Esta rota era a única de todo o branch com parâmetro de model e sem
+     * autorização, e o comentário acima dela em routes/web.php alegava que o
+     * TenantScope bastava. Bastava contra OUTRA empresa; contra o colega da
+     * MESMA empresa não fazia nada. O resultado: /leads/{id de colega} devolvia
+     * 200 e /leads/{id inexistente} devolvia 404, e a diferença enumera a
+     * carteira do tenant inteiro sem nem ler o corpo.
+     */
+    public function test_vendedor_nao_abre_a_tela_do_lead_de_um_colega(): void
+    {
+        [$tenant, , $lead] = $this->cenario();
+
+        $colega = User::factory()->create(['tenant_id' => $tenant->id]);
+        setPermissionsTeamId($tenant->id);
+        $colega->assignRole('vendedor');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $doColega = $this->actingAs($colega)->get("/leads/{$lead->id}");
+        $inexistente = $this->actingAs($colega)->get('/leads/999999');
+
+        $doColega->assertNotFound();
+        $this->assertSame(
+            $inexistente->status(),
+            $doColega->status(),
+            'a diferenca entre lead de colega e id inexistente enumera a carteira',
+        );
+    }
+
+    /** O dono continua entrando: a correção não pode trancar quem é de casa. */
+    public function test_o_dono_continua_abrindo_o_proprio_lead(): void
+    {
+        [, $staff, $lead] = $this->cenario();
+
+        setPermissionsTeamId($staff->tenant_id);
+        $staff->assignRole('vendedor');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->actingAs($staff)->get("/leads/{$lead->id}")->assertOk();
+    }
+
+    /** E o gestor, que tem `leads.view-all`, enxerga o lead da equipe. */
+    public function test_gestor_abre_a_tela_de_lead_de_outro_agente(): void
+    {
+        [$tenant, , $lead] = $this->cenario();
+
+        $gestor = User::factory()->create(['tenant_id' => $tenant->id]);
+        setPermissionsTeamId($tenant->id);
+        $gestor->assignRole('gestor');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->actingAs($gestor)->get("/leads/{$lead->id}")->assertOk();
+    }
+
     public function test_a_rota_antiga_sem_identificador_nao_existe_mais(): void
     {
         [, $staff] = $this->cenario();

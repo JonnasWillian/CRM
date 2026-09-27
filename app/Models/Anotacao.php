@@ -15,4 +15,9 @@ class Anotacao extends Model
         'descricao',
         'usuario_id',
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
 }

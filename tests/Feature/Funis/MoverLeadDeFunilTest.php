@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -40,6 +41,10 @@ class MoverLeadDeFunilTest extends TestCase
         $this->tenant = Tenant::factory()->create();
         $this->staff = User::factory()->create(['tenant_id' => $this->tenant->id]);
         app(CurrentTenant::class)->set($this->tenant);
+
+        setPermissionsTeamId($this->tenant->id);
+        $this->staff->assignRole('vendedor');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->vendas = Funil::factory()->padrao()->create(['tenant_id' => $this->tenant->id, 'nome' => 'Vendas']);
         $this->posVenda = Funil::factory()->create(['tenant_id' => $this->tenant->id, 'nome' => 'Pós-venda']);

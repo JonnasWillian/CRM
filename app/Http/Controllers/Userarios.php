@@ -27,7 +27,7 @@ class Userarios extends Controller
 {
     public function view(Request $request)
     {
-        $usuarios = Usuario::where('user_id', auth()->id())
+        $usuarios = Usuario::visibleTo(auth()->user())
             ->with('estagio')
             ->addSelect([
                 '*',
@@ -102,18 +102,18 @@ class Userarios extends Controller
         }
     }
 
-    public function viewUsuario($id)
+    public function viewUsuario(Usuario $usuario)
     {
-        $usuario = Usuario::where('id', $id)->get();
+        $this->authorize('view', $usuario);
 
-        return response()->json($usuario);
+        return response()->json([$usuario]);
     }
 
-    public function update(UsuarioRequest $request, $id)
+    public function update(UsuarioRequest $request, Usuario $usuario)
     {
-        try {
-            $usuario = Usuario::findOrFail($id);
+        $this->authorize('update', $usuario);
 
+        try {
             // O histórico de estágio é gravado pelo UsuarioObserver, que
             // observa a mudança de estagio_id em qualquer caminho de escrita.
             // A perda é do AplicarTransicao, que precisa ver o estado ANTERIOR
@@ -125,130 +125,130 @@ class Userarios extends Controller
             return response()->json([
                 'erros' => $error->errors()
             ], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Usuário não encontrado'], 404);
         }
     }
 
-    public function timeline($id)
+    public function timeline(Usuario $usuario)
     {
-        try {
-            $usuario = Usuario::findOrFail($id);
-            $events = [];
+        $this->authorize('view', $usuario);
 
+        $id = $usuario->id;
+
+        $events = [];
+
+        $events[] = [
+            'tipo'      => 'lead_criado',
+            'descricao' => 'Lead cadastrado no sistema',
+            'data'      => $usuario->created_at,
+        ];
+
+        foreach (Anotacao::where('usuario_id', $id)->get() as $a) {
             $events[] = [
-                'tipo'      => 'lead_criado',
-                'descricao' => 'Lead cadastrado no sistema',
-                'data'      => $usuario->created_at,
+                'tipo'     => 'anotacao',
+                'descricao' => $a->descricao,
+                'data'     => $a->created_at,
+            ];
+        }
+
+        foreach (ArquivoModel::where('usuario_id', $id)->get() as $f) {
+            $events[] = [
+                'tipo' => 'arquivo',
+                'nome' => $f->nome ?: 'Arquivo sem nome',
+                'data' => $f->created_at,
+            ];
+        }
+
+        foreach (Projeto::where('usuario_id', $id)->get() as $p) {
+            $events[] = [
+                'tipo' => 'projeto',
+                'nome' => $p->nome,
+                'data' => $p->created_at,
             ];
 
-            foreach (Anotacao::where('usuario_id', $id)->get() as $a) {
+            foreach (ProjetoAnotacao::where('projeto_id', $p->id)->get() as $pa) {
                 $events[] = [
-                    'tipo'     => 'anotacao',
-                    'descricao' => $a->descricao,
-                    'data'     => $a->created_at,
+                    'tipo'         => 'projeto_anotacao',
+                    'descricao'    => $pa->descricao,
+                    'projeto_nome' => $p->nome,
+                    'data'         => $pa->created_at,
                 ];
             }
 
-            foreach (ArquivoModel::where('usuario_id', $id)->get() as $f) {
+            foreach (ProjetoAnexo::where('projeto_id', $p->id)->get() as $pf) {
                 $events[] = [
-                    'tipo' => 'arquivo',
-                    'nome' => $f->nome ?: 'Arquivo sem nome',
-                    'data' => $f->created_at,
+                    'tipo'         => 'projeto_anexo',
+                    'nome'         => $pf->nome ?: 'Arquivo sem nome',
+                    'projeto_nome' => $p->nome,
+                    'data'         => $pf->created_at,
                 ];
             }
+        }
 
-            foreach (Projeto::where('usuario_id', $id)->get() as $p) {
+        foreach (EstagioHistorico::with(['estagioAnterior', 'estagioNovo'])->where('usuario_id', $id)->get() as $h) {
+            $events[] = [
+                'tipo'          => 'status_alterado',
+                'estagio_anterior' => $h->estagioAnterior->descricao ?? '—',
+                'estagio_novo'     => $h->estagioNovo->descricao ?? '—',
+                'data'          => $h->created_at,
+            ];
+        }
+
+        foreach (Tarefa::where('usuario_id', $id)->get() as $t) {
+            $events[] = [
+                'tipo'   => 'tarefa_criada',
+                'titulo' => $t->titulo,
+                'data'   => $t->created_at,
+            ];
+            if ($t->concluido && $t->concluido_em) {
                 $events[] = [
-                    'tipo' => 'projeto',
-                    'nome' => $p->nome,
-                    'data' => $p->created_at,
-                ];
-
-                foreach (ProjetoAnotacao::where('projeto_id', $p->id)->get() as $pa) {
-                    $events[] = [
-                        'tipo'         => 'projeto_anotacao',
-                        'descricao'    => $pa->descricao,
-                        'projeto_nome' => $p->nome,
-                        'data'         => $pa->created_at,
-                    ];
-                }
-
-                foreach (ProjetoAnexo::where('projeto_id', $p->id)->get() as $pf) {
-                    $events[] = [
-                        'tipo'         => 'projeto_anexo',
-                        'nome'         => $pf->nome ?: 'Arquivo sem nome',
-                        'projeto_nome' => $p->nome,
-                        'data'         => $pf->created_at,
-                    ];
-                }
-            }
-
-            foreach (EstagioHistorico::with(['estagioAnterior', 'estagioNovo'])->where('usuario_id', $id)->get() as $h) {
-                $events[] = [
-                    'tipo'          => 'status_alterado',
-                    'estagio_anterior' => $h->estagioAnterior->descricao ?? '—',
-                    'estagio_novo'     => $h->estagioNovo->descricao ?? '—',
-                    'data'          => $h->created_at,
-                ];
-            }
-
-            foreach (Tarefa::where('usuario_id', $id)->get() as $t) {
-                $events[] = [
-                    'tipo'   => 'tarefa_criada',
+                    'tipo'   => 'tarefa_concluida',
                     'titulo' => $t->titulo,
-                    'data'   => $t->created_at,
+                    'data'   => $t->concluido_em,
                 ];
-                if ($t->concluido && $t->concluido_em) {
-                    $events[] = [
-                        'tipo'   => 'tarefa_concluida',
-                        'titulo' => $t->titulo,
-                        'data'   => $t->concluido_em,
-                    ];
-                }
             }
-
-            usort($events, fn($a, $b) => $b['data'] <=> $a['data']);
-
-            return response()->json($events);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Lead não encontrado'], 404);
         }
+
+        usort($events, fn($a, $b) => $b['data'] <=> $a['data']);
+
+        return response()->json($events);
     }
 
-    public function destroy(Request $request, $id)
+    public function destroy(Request $request, Usuario $usuario)
     {
-        try {
-            $usuario = Usuario::findOrFail($id);
-            $usuario->delete();
+        $this->authorize('delete', $usuario);
 
-            return response()->json(['message' => 'Usuário deletado com sucesso'], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors()
-            ], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Usuário não encontrado'], 201);
-        }
+        $usuario->delete();
+
+        return response()->json(['message' => 'Usuário deletado com sucesso'], 201);
     }
 
-    public function viewAnotacao($id)
+    public function viewAnotacao(Usuario $usuario)
     {
-        $anotacoes = Anotacao::where('usuario_id', $id)->get();
+        $this->authorize('view', $usuario);
 
-        return response()->json($anotacoes);
+        return response()->json(Anotacao::where('usuario_id', $usuario->id)->get());
     }
 
 
     public function createAnotacao(Request $request)
     {
         try {
-            $validateRequest = $request->validate([
-                'descricao' => 'required|string',
-                'usuario_id' => 'required',
-            ]);
+            // O lead vem de um campo do CORPO: o binding nunca o enxerga,
+            // então a policy não roda sozinha. findOrFail primeiro — o
+            // TenantScope já devolve 404 para id de outro tenant — e só então
+            // autoriza, para que "não existe" e "não é seu" deem a mesma
+            // resposta. Antes, `usuario_id` só tinha `required`: nem
+            // existência, nem tenant, nem posse.
+            $lead = Usuario::findOrFail($request->integer('usuario_id'));
 
-            Anotacao::create($validateRequest);
+            $this->authorize('update', $lead);
+
+            $validated = $request->validate(['descricao' => 'required|string']);
+
+            Anotacao::create([
+                'descricao' => $validated['descricao'],
+                'usuario_id' => $lead->id,
+            ]);
 
             return response()->json(['message' => 'Anotação cadastrada com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
@@ -259,47 +259,26 @@ class Userarios extends Controller
     }
 
 
-    public function updateAnotacao(Request $request, $id)
+    public function updateAnotacao(Request $request, Anotacao $anotacao)
     {
-        try {
-            $anotacao = Anotacao::findOrFail($id);
-            
-            $validateRequest = $request->validate([
-                'descricao' => 'required|string',
-            ]);
+        $this->authorize('update', $anotacao);
 
-            $anotacao->update($validateRequest);
+        $anotacao->update($request->validate(['descricao' => 'required|string']));
 
-            return response()->json(['message' => 'Anotação atualizada com sucesso'], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors()
-            ], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Anotação não encontrado'], 201);
-        }
+        return response()->json(['message' => 'Anotação atualizada']);
     }
 
-    public function destroyAnotacao(Request $request, $id)
+    public function destroyAnotacao(Anotacao $anotacao)
     {
-        try {
-            $anotacao = Anotacao::findOrFail($id);
-            $anotacao->delete();
+        $this->authorize('delete', $anotacao);
 
-            return response()->json(['message' => 'Anotação deletada com sucesso'], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors()
-            ], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Anotação não encontrada'], 201);
-        }
+        $anotacao->delete();
+
+        return response()->json(['message' => 'Anotação removida']);
     }
 
     public function kanban(Request $request)
     {
-        $userId = auth()->id();
-
         // O quadro mostra um funil por vez. Sem funil_id, o padrão do tenant.
         // Com um funil_id que não existe neste tenant, 404 — devolver o padrão
         // calado faria o usuário ver um quadro que não é o que ele pediu.
@@ -311,7 +290,7 @@ class Userarios extends Controller
             return response()->json(['funil' => null, 'funis' => [], 'estagios' => [], 'leads' => []]);
         }
 
-        $leads = Usuario::where('user_id', $userId)
+        $leads = Usuario::visibleTo(auth()->user())
             ->where('funil_id', $funil->id)
             ->addSelect([
                 '*',
@@ -375,11 +354,11 @@ class Userarios extends Controller
         ]);
     }
 
-    public function patchEstagio(Request $request, $id)
+    public function patchEstagio(Request $request, Usuario $usuario)
     {
-        try {
-            $usuario = Usuario::findOrFail($id);
+        $this->authorize('update', $usuario);
 
+        try {
             $validated = $request->validate([
                 'estagio_id' => [
                     'required',
@@ -401,8 +380,6 @@ class Userarios extends Controller
             return response()->json(['message' => 'Estágio atualizado']);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json(['erros' => $error->errors()], 422);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Lead não encontrado'], 404);
         }
     }
 
@@ -412,11 +389,11 @@ class Userarios extends Controller
      * A regra de negócio mora em MoverLeadDeFunil; aqui só resolvem-se os
      * models. O histórico e o evento `funil_alterado` saem do UsuarioObserver.
      */
-    public function moverFunil(Request $request, MoverLeadDeFunil $mover, $id)
+    public function moverFunil(Request $request, MoverLeadDeFunil $mover, Usuario $usuario)
     {
-        try {
-            $usuario = Usuario::findOrFail($id);
+        $this->authorize('update', $usuario);
 
+        try {
             $tenantId = app(CurrentTenant::class)->id();
 
             $validated = $request->validate([
@@ -456,17 +433,16 @@ class Userarios extends Controller
 
     public function metricas(Request $request)
     {
-        $userId = auth()->id();
-        $leadIds = Usuario::where('user_id', $userId)->pluck('id');
+        $leadIds = Usuario::visibleTo(auth()->user())->pluck('id');
         // `is_active` foi removida: o que separa lead em pipeline de lead
         // encerrado agora é o tipo do estágio. "Aberto" é o que antes era
         // is_active = true; ganho e perdido, juntos, são o que era false.
-        $leadsAtivos     = Usuario::where('user_id', $userId)->whereHas('estagio', fn ($q) => $q->aberto())->count();
-        $leadsArquivados = Usuario::where('user_id', $userId)->whereHas('estagio', fn ($q) => $q->fechado())->count();
-        $leads30Dias     = Usuario::where('user_id', $userId)->where('created_at', '>=', now()->subDays(30))->count();
+        $leadsAtivos     = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->aberto())->count();
+        $leadsArquivados = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->fechado())->count();
+        $leads30Dias     = Usuario::visibleTo(auth()->user())->where('created_at', '>=', now()->subDays(30))->count();
         $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
         $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
-        $leadsPorEstagio = Usuario::where('user_id', $userId)->select('estagio_id', DB::raw('count(*) as total'))->with('estagio')->groupBy('estagio_id')->get()
+        $leadsPorEstagio = Usuario::visibleTo(auth()->user())->select('estagio_id', DB::raw('count(*) as total'))->with('estagio')->groupBy('estagio_id')->get()
             ->map(fn($row) => [
                 'id'        => $row->estagio_id,
                 'descricao' => $row->estagio->descricao ?? 'Sem estágio',
