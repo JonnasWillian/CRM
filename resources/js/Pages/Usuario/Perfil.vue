@@ -11,6 +11,13 @@
     import TimelinePanel from './TimelinePanel.vue';
     import TarefaPanel from './TarefaPanel.vue';
 
+    // Vem da rota /leads/{id}, não mais de sessionStorage: é o que torna o
+    // lead linkável, abrível em nova aba e compatível com o botão voltar.
+    const props = defineProps({
+        leadId: { type: [Number, String], required: true },
+    });
+    const idPerfil = props.leadId;
+
     const user = computed(() => usePage().props.auth.user);
 
     const usuario = ref(null);
@@ -25,7 +32,6 @@
     const isUploading = ref(false);
     const uploadProgress = ref(0);
     const isSavingUser = ref(false);
-    const idPerfil = sessionStorage.getItem('idPerfil');
     const arquivosPendentes = ref([]);
     const toast = ref({ show: false, message: '', type: 'success' });
 
@@ -697,33 +703,29 @@
 </template>
 
 <style>
-    body, #app { background: #0d1117 !important; margin: 0; padding: 0; }
+    body, #app { background: var(--bg-0) !important; margin: 0; padding: 0; }
+    /* ══════════════════════════════════════════════════════════
+       Escala e densidade alinhadas ao Pipeline e à Lista de Leads.
+       ══════════════════════════════════════════════════════════ */
+    .profile-name, .panel-title, .section-title {
+        font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px;
+    }
+    .tab {
+        font-size: var(--fs-md);
+        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
+    }
+    .edit-label, .meta-label { font-size: var(--fs-sm); color: var(--fg-1); }
+    .edit-input, .edit-select, .edit-textarea {
+        border-radius: var(--r-2); font-size: var(--fs-md);
+        transition: border-color var(--d-1) var(--e);
+    }
+
 </style>
 
 <style scoped>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
     .page {
-        --bg:       #0d1117;
-        --surface:  #13192a;
-        --surface2: #0f1420;
-        --border:   #1e2840;
-        --border-h: #2a3758;
-        --accent:   #6d5dfc;
-        --accent-h: #7c6efd;
-        --glow:     rgba(109, 93, 252, 0.22);
-        --green:    #3ecf8e;
-        --green-bg: rgba(62, 207, 142, 0.1);
-        --red:      #f06292;
-        --red-bg:   rgba(240, 98, 146, 0.1);
-        --purple:   #a78bfa;
-        --purple-bg: rgba(167, 139, 250, 0.1);
-        --yellow:   #f5c542;
-        --yellow-bg: rgba(245, 197, 66, 0.12);
-        --t1:       #eaedf5;
-        --t2:       #8892ab;
-        --t3:       #4a5470;
-        --inp-bg:   #0b0f1a;
         font-family: 'DM Sans', sans-serif;
         background: var(--bg);
         min-height: 100vh;
@@ -734,7 +736,7 @@
     /* ── Background ── */
     .dot-grid {
         position: fixed; inset: 0;
-        background-image: radial-gradient(circle, #1c2540 1px, transparent 1px);
+        background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
         background-size: 30px 30px;
         opacity: 0.45; pointer-events: none; z-index: 0;
     }
@@ -750,7 +752,7 @@
         position: fixed; top: 1.25rem; right: 1.5rem; z-index: 9999;
         display: inline-flex; align-items: center; gap: 0.5rem;
         padding: 0.65rem 1.1rem;
-        border-radius: 10px;
+        border-radius: var(--r-2);
         font-size: 0.82rem; font-weight: 500;
         backdrop-filter: blur(12px);
         border: 1px solid transparent;
@@ -758,7 +760,7 @@
     }
     .toast--success { background: rgba(62,207,142,0.15); border-color: rgba(62,207,142,0.3); color: var(--green); }
     .toast--error   { background: rgba(240,98,146,0.15); border-color: rgba(240,98,146,0.3); color: var(--red); }
-    .toast-enter-active, .toast-leave-active { transition: opacity 0.25s, transform 0.25s; }
+    .toast-enter-active, .toast-leave-active { transition: opacity var(--d-1), transform 0.25s; }
     .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(16px); }
 
     /* ── Loading ── */
@@ -788,7 +790,7 @@
     .breadcrumb { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.75rem; }
     .breadcrumb-link {
         display: inline-flex; align-items: center; gap: 0.3rem;
-        font-size: 0.8rem; color: var(--t3); text-decoration: none; transition: color 0.2s;
+        font-size: 0.8rem; color: var(--t3); text-decoration: none; transition: color var(--d-1);
     }
     .breadcrumb-link:hover { color: var(--accent); }
     .breadcrumb-sep { color: var(--t3); font-size: 0.8rem; }
@@ -800,7 +802,7 @@
         justify-content: space-between;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 16px;
+        border-radius: var(--r-3);
         padding: 1.5rem 1.75rem;
         margin-bottom: 1.25rem;
         gap: 1rem; flex-wrap: wrap;
@@ -808,8 +810,8 @@
     .hero-left { display: flex; align-items: center; gap: 1.1rem; }
     .profile-avatar {
         width: 50px; height: 50px;
-        border-radius: 13px;
-        background: linear-gradient(135deg, var(--accent), #9c52f2);
+        border-radius: var(--r-3);
+        background: var(--accent-dim); color: var(--accent-hi);
         display: flex; align-items: center; justify-content: center;
         font-family: 'Syne', sans-serif;
         font-size: 1rem; font-weight: 700; color: #fff;
@@ -835,7 +837,7 @@
     .meta-badge--proj {
         background: rgba(251,146,60,0.1);
         border-color: rgba(251,146,60,0.25);
-        color: #fb923c;
+        color: var(--warn);
     }
 
     /* ── Tab Navigation ── */
@@ -844,7 +846,7 @@
         gap: 0.25rem;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: var(--r-3);
         padding: 0.3rem;
         margin-bottom: 1.25rem;
         width: fit-content;
@@ -852,13 +854,13 @@
     .tab-btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
         padding: 0.5rem 1rem;
-        border-radius: 8px;
+        border-radius: var(--r-2);
         border: none; background: transparent;
         color: var(--t3);
         font-family: 'DM Sans', sans-serif;
         font-size: 0.82rem; font-weight: 500;
         cursor: pointer;
-        transition: color 0.2s, background 0.2s;
+        transition: color var(--d-1), background 0.2s;
         white-space: nowrap;
     }
     .tab-btn:hover { color: var(--t2); background: rgba(255,255,255,0.04); }
@@ -869,7 +871,7 @@
     }
 
     /* ── Tab Transition ── */
-    .tab-fade-enter-active, .tab-fade-leave-active { transition: opacity 0.18s, transform 0.18s; }
+    .tab-fade-enter-active, .tab-fade-leave-active { transition: opacity var(--d-1), transform 0.18s; }
     .tab-fade-enter-from { opacity: 0; transform: translateY(6px); }
     .tab-fade-leave-to   { opacity: 0; transform: translateY(-4px); }
 
@@ -877,7 +879,7 @@
     .panel {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 16px;
+        border-radius: var(--r-3);
         overflow: hidden;
         display: flex; flex-direction: column;
     }
@@ -895,7 +897,7 @@
         color: var(--t1); margin: 0;
     }
     .panel-icon {
-        width: 26px; height: 26px; border-radius: 7px;
+        width: 26px; height: 26px; border-radius: var(--r-1);
         display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .panel-icon--accent { background: rgba(109,93,252,0.15); color: var(--accent); }
@@ -927,10 +929,10 @@
     }
     .edit-input {
         background: var(--inp-bg); border: 1px solid var(--border);
-        border-radius: 9px; color: var(--t1);
+        border-radius: var(--r-2); color: var(--t1);
         font-family: 'DM Sans', sans-serif; font-size: 0.875rem;
         padding: 0.6rem 0.85rem; outline: none;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: border-color var(--d-1), box-shadow 0.2s;
         width: 100%; box-sizing: border-box;
     }
     .edit-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
@@ -938,18 +940,18 @@
     .edit-textarea { resize: vertical; min-height: 96px; }
     .select-wrapper { position: relative; display: flex; align-items: center; }
     .edit-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 2.25rem; }
-    .edit-select option { background: #0b0f1a; color: #eaedf5; }
+    .edit-select option { background: var(--bg-0); color: var(--fg-0); }
     .select-arrow { position: absolute; right: 0.85rem; pointer-events: none; color: var(--t3); flex-shrink: 0; }
 
     /* ── Buttons ── */
     .btn-save-full {
         display: flex; align-items: center; justify-content: center; gap: 0.45rem;
         width: 100%; background: var(--accent); color: #fff;
-        border: none; border-radius: 9px;
+        border: none; border-radius: var(--r-2);
         padding: 0.7rem 1rem;
         font-family: 'DM Sans', sans-serif;
         font-size: 0.875rem; font-weight: 500; cursor: pointer;
-        transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+        transition: background var(--d-1), box-shadow 0.2s, opacity 0.2s;
     }
     .btn-save-full:hover:not(:disabled) { background: var(--accent-h); box-shadow: 0 0 20px var(--glow); }
     .btn-save-full:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -961,9 +963,9 @@
     .btn-icon-action {
         width: 28px; height: 28px;
         display: flex; align-items: center; justify-content: center;
-        border-radius: 8px; background: var(--green-bg);
+        border-radius: var(--r-2); background: var(--green-bg);
         border: 1px solid rgba(62,207,142,0.25); color: var(--green);
-        cursor: pointer; transition: background 0.2s, border-color 0.2s; text-decoration: none;
+        cursor: pointer; transition: background var(--d-1), border-color 0.2s; text-decoration: none;
     }
     .btn-icon-action:hover { background: rgba(62,207,142,0.2); border-color: rgba(62,207,142,0.4); }
     .btn-icon-action--purple { background: var(--purple-bg); border-color: rgba(167,139,250,0.25); color: var(--purple); }
@@ -973,10 +975,10 @@
 
     .btn-primary {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: 8px;
+        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
         padding: 0.5rem 0.9rem;
         font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer;
-        transition: background 0.2s, box-shadow 0.2s;
+        transition: background var(--d-1), box-shadow 0.2s;
     }
     .btn-primary:hover:not(:disabled) { background: var(--accent-h); box-shadow: 0 0 14px var(--glow); }
     .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -985,9 +987,9 @@
     .btn-ghost {
         display: inline-flex; align-items: center; gap: 0.4rem;
         padding: 0.5rem 0.9rem; background: transparent;
-        border: 1px solid var(--border); border-radius: 8px; color: var(--t2);
+        border: 1px solid var(--border); border-radius: var(--r-2); color: var(--t2);
         font-family: 'DM Sans', sans-serif; font-size: 0.82rem; cursor: pointer;
-        transition: border-color 0.2s, color 0.2s;
+        transition: border-color var(--d-1), color 0.2s;
     }
     .btn-ghost:hover { border-color: var(--border-h); color: var(--t1); }
     .btn-ghost.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
@@ -995,9 +997,9 @@
     .btn-green {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: var(--green-bg); border: 1px solid rgba(62,207,142,0.3);
-        color: var(--green); border-radius: 8px; padding: 0.45rem 0.85rem;
+        color: var(--green); border-radius: var(--r-2); padding: 0.45rem 0.85rem;
         font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer;
-        transition: background 0.2s;
+        transition: background var(--d-1);
     }
     .btn-green:hover:not(:disabled) { background: rgba(62,207,142,0.2); }
     .btn-green:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1006,16 +1008,16 @@
         display: inline-flex; align-items: center; gap: 0.3rem;
         font-size: 0.75rem; color: var(--t3);
         background: transparent; border: none; cursor: pointer; padding: 0.3rem 0.5rem;
-        border-radius: 6px; transition: color 0.2s;
+        border-radius: var(--r-1); transition: color var(--d-1);
     }
     .btn-link-danger:hover { color: var(--red); }
 
     .icon-btn {
         width: 26px; height: 26px;
         display: flex; align-items: center; justify-content: center;
-        border-radius: 6px; border: 1px solid var(--border);
+        border-radius: var(--r-1); border: 1px solid var(--border);
         background: transparent; cursor: pointer; color: var(--t3);
-        transition: color 0.15s, border-color 0.15s, background 0.15s;
+        transition: color var(--d-1), border-color 0.15s, background 0.15s;
         text-decoration: none; flex-shrink: 0;
     }
     .icon-btn--edit:hover    { color: var(--accent); border-color: rgba(109,93,252,0.4); background: rgba(109,93,252,0.08); }
@@ -1043,12 +1045,12 @@
     .pending-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 500; color: var(--accent); }
     .pending-zone-actions { display: flex; gap: 0.4rem; align-items: center; }
     .progress-bar { height: 3px; background: var(--border); border-radius: 100px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 0.3s ease; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width var(--d-1) var(--e); }
     .pending-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .pending-item {
         display: flex; align-items: center; justify-content: space-between;
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: 8px; padding: 0.5rem 0.75rem;
+        border-radius: var(--r-2); padding: 0.5rem 0.75rem;
     }
     .pending-file-info { display: flex; align-items: center; gap: 0.55rem; }
     .file-type-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
@@ -1059,12 +1061,12 @@
     .files-list { display: flex; flex-direction: column; }
     .file-item {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.8rem 1.25rem; border-bottom: 1px solid rgba(30,40,64,0.6); transition: background 0.15s;
+        padding: 0.8rem 1.25rem; border-bottom: 1px solid rgba(30,40,64,0.6); transition: background var(--d-1);
     }
     .file-item:last-child { border-bottom: none; }
     .file-item:hover { background: rgba(109,93,252,0.04); }
     .file-item-left { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
-    .file-icon-wrap { width: 28px; height: 28px; border-radius: 7px; background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .file-icon-wrap { width: 28px; height: 28px; border-radius: var(--r-1); background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .file-item-info { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
     .file-name { font-size: 0.82rem; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
     .file-size { font-size: 0.7rem; color: var(--t3); }
@@ -1077,10 +1079,10 @@
     }
     .note-textarea {
         background: var(--inp-bg); border: 1px solid var(--border);
-        border-radius: 9px; color: var(--t1);
+        border-radius: var(--r-2); color: var(--t1);
         font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
         padding: 0.65rem 0.9rem; outline: none; resize: vertical; width: 100%; box-sizing: border-box;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: border-color var(--d-1), box-shadow 0.2s;
     }
     .note-textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(167,139,250,0.15); }
     .note-textarea::placeholder { color: var(--t3); }
@@ -1088,7 +1090,7 @@
     .notes-list { display: flex; flex-direction: column; }
     .note-item {
         padding: 0.9rem 1.25rem; border-bottom: 1px solid rgba(30,40,64,0.5);
-        animation: fadeRow 0.3s cubic-bezier(0.22,1,0.36,1) both; transition: background 0.15s;
+        animation: fadeRow 0.3s cubic-bezier(0.22,1,0.36,1) both; transition: background var(--d-1);
     }
     .note-item:last-child { border-bottom: none; }
     .note-item:hover { background: rgba(167,139,250,0.03); }
@@ -1108,13 +1110,13 @@
     .empty-panel-sub { font-size: 0.78rem; color: var(--t3); }
 
     /* ── Transitions ── */
-    .slide-enter-active, .slide-leave-active { transition: opacity 0.2s, transform 0.2s; }
+    .slide-enter-active, .slide-leave-active { transition: opacity var(--d-1), transform 0.2s; }
     .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-6px); }
 
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); }
 
     /* ── Estágios ── */
-    .estagio-badge { font-size: 0.75rem; font-weight: 500; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; width: fit-content; }
+    .estagio-badge { font-size: 0.75rem; font-weight: 500; padding: 2px 8px; border-radius: var(--r-1); display: inline-block; margin-top: 4px; width: fit-content; }
     /* As sete classes de cor por id saíram: a cor agora vem de estagios.cor e
        é aplicada inline por estiloDoEstagio(). */
 
@@ -1125,4 +1127,20 @@
         .tabs-nav { width: 100%; overflow-x: auto; }
         .tab-btn { padding: 0.45rem 0.75rem; font-size: 0.78rem; }
     }
+    /* ══════════════════════════════════════════════════════════
+       Escala e densidade alinhadas ao Pipeline e à Lista de Leads.
+       ══════════════════════════════════════════════════════════ */
+    .profile-name, .panel-title, .section-title {
+        font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px;
+    }
+    .tab {
+        font-size: var(--fs-md);
+        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
+    }
+    .edit-label, .meta-label { font-size: var(--fs-sm); color: var(--fg-1); }
+    .edit-input, .edit-select, .edit-textarea {
+        border-radius: var(--r-2); font-size: var(--fs-md);
+        transition: border-color var(--d-1) var(--e);
+    }
+
 </style>

@@ -22,6 +22,28 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => \App\Http\Middleware\IdentifyTenant::class,
         ]);
+
+        /*
+         * O tenant precisa estar ativo ANTES do route model binding.
+         *
+         * `SubstituteBindings` resolve os models tipados na assinatura da rota
+         * — {funil}, {estagio}, {motivo}, {usuario}. Todos usam BelongsToTenant,
+         * cujo TenantScope é fail-closed: sem tenant ativo ele lança.
+         *
+         * Middleware de rota roda depois do grupo, e `SubstituteBindings` vem
+         * no grupo. Sem esta linha, o binding acontecia antes de
+         * IdentifyTenant e toda rota com parâmetro de model devolvia 500.
+         *
+         * Os testes não pegavam porque o CurrentTenant é singleton e o
+         * setUp() dos casos o deixava preenchido antes da requisição —
+         * mascarando exatamente a condição de produção. O teste em
+         * tests/Feature/Navegacao/UrlDoLeadTest.php limpa o tenant de
+         * propósito para que a regressão não passe de novo.
+         */
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\IdentifyTenant::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

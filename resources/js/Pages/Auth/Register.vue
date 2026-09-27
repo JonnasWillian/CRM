@@ -176,16 +176,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
 
     .page {
-        --bg:       #0d1117;
-        --surface:  #13192a;
-        --border:   #1e2840;
-        --accent:   #6d5dfc;
-        --accent-h: #7c6efd;
-        --glow:     rgba(109, 93, 252, 0.28);
-        --t1:       #eaedf5;
-        --t2:       #8892ab;
-        --t3:       #4a5470;
-        --inp-bg:   #0b0f1a;
         font-family: 'DM Sans', sans-serif;
         background: var(--bg);
         min-height: 100vh;

@@ -73,15 +73,20 @@ class TenantBootstrapper
      * perdido. O conjunto antigo o marcava como arquivado via `is_active`, e a
      * migração de backfill corrige isso para os tenants que já existiam.
      */
+    /*
+     * As cores são as da paleta validada em resources/css/theme.css — banda de
+     * luminosidade, piso de croma e separação para daltonismo conferidos contra
+     * a superfície real. As anteriores eram claras demais para fundo escuro.
+     */
     protected static function defaultEstagios(): array
     {
         return [
-            ['descricao' => 'Em captação',        'ordem' => 1, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#60a5fa'],
-            ['descricao' => 'Em negociacao',      'ordem' => 2, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#ec4899'],
-            ['descricao' => 'Em desenvolvimento', 'ordem' => 3, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#f59e0b'],
-            ['descricao' => 'Concluído',          'ordem' => 4, 'tipo' => Estagio::TIPO_GANHO,   'cor' => '#34d399'],
-            ['descricao' => 'Pausado',            'ordem' => 5, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#8b5cf6'],
-            ['descricao' => 'Cancelado',          'ordem' => 6, 'tipo' => Estagio::TIPO_PERDIDO, 'cor' => '#ef4444'],
+            ['descricao' => 'Em captação',        'ordem' => 1, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#499fca'],
+            ['descricao' => 'Em negociacao',      'ordem' => 2, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#e5618d'],
+            ['descricao' => 'Em desenvolvimento', 'ordem' => 3, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#bd8939'],
+            ['descricao' => 'Concluído',          'ordem' => 4, 'tipo' => Estagio::TIPO_GANHO,   'cor' => '#30ae77'],
+            ['descricao' => 'Pausado',            'ordem' => 5, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#9268f3'],
+            ['descricao' => 'Cancelado',          'ordem' => 6, 'tipo' => Estagio::TIPO_PERDIDO, 'cor' => '#f15873'],
         ];
     }
 

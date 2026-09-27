@@ -19,9 +19,22 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified', 'tenant'])->name('dashboard');
 
-Route::get('/perfilUsuario', function () {
-    return Inertia::render('Usuario/Perfil');
-})->middleware(['auth', 'verified', 'tenant'])->name('perfilUsuario');
+/*
+ * O lead tem URL própria.
+ *
+ * Antes era `/perfilUsuario` sem identificador, com o id do lead viajando em
+ * `sessionStorage`. Na prática isso significava que não dava para mandar o
+ * link de um lead para um colega, abrir dois leads em abas para comparar, nem
+ * confiar no botão voltar do navegador — e "me manda esse lead" é conversa
+ * diária num CRM.
+ *
+ * O binding implícito resolve o model, e como Usuario usa BelongsToTenant o
+ * TenantScope já devolve 404 para um id de outra empresa, sem verificação
+ * adicional aqui.
+ */
+Route::get('/leads/{usuario}', function (App\Models\Usuario $usuario) {
+    return Inertia::render('Usuario/Perfil', ['leadId' => $usuario->id]);
+})->middleware(['auth', 'verified', 'tenant'])->name('leads.show');
 
 Route::get('/modelos-tarefa', function () {
     return Inertia::render('ModelosTarefa');

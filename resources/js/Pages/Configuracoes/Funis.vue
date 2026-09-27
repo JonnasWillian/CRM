@@ -18,7 +18,10 @@
         { valor: 'perdido', rotulo: 'Perdido', ajuda: 'Negócio encerrado sem fechar.' },
     ];
 
-    const PALETA = ['#60a5fa', '#f59e0b', '#34d399', '#ef4444', '#8b5cf6', '#ec4899', '#22d3ee', '#a3e635'];
+    // Paleta validada (ver theme.css): as quatro categóricas passam em
+    // separação para daltonismo e visão normal; ganho e perdido entram porque
+    // todo estágio aparece sempre com o nome ao lado — nunca só a cor.
+    const PALETA = ['#499fca', '#bd8939', '#9268f3', '#e5618d', '#30ae77', '#f15873'];
 
     const formFunil    = ref(null);   // { id|null, nome, descricao }
     const formEstagio  = ref(null);   // { id|null, funil_id, descricao, tipo, cor }
@@ -318,8 +321,6 @@
 
 <style scoped>
     .cf-page {
-        --bg: #0d1117; --surface: #13192a; --border: #1e2840;
-        --accent: #6d5dfc; --t1: #eaedf5; --t2: #8892ab; --t3: #4a5470;
         font-family: 'DM Sans', sans-serif;
         padding: 2rem 2.25rem 4rem;
         color: var(--t1);
@@ -334,14 +335,14 @@
     .cf-erro {
         display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
         background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
-        color: #fca5a5; border-radius: 10px; padding: 0.7rem 0.9rem;
+        color: var(--danger); border-radius: var(--r-2); padding: 0.7rem 0.9rem;
         font-size: 0.83rem; margin-bottom: 1.25rem;
     }
     .cf-erro-close { background: none; border: none; color: inherit; cursor: pointer; display: flex; }
 
     .cf-lista { display: flex; flex-direction: column; gap: 1rem; }
 
-    .cf-funil { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.2rem; }
+    .cf-funil { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-3); padding: 1.1rem 1.2rem; }
     .cf-funil-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
     .cf-funil-id { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
     .cf-funil-nome { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; }
@@ -349,7 +350,7 @@
     .cf-funil-acoes, .cf-estagio-acoes { display: flex; align-items: center; gap: 0.25rem; }
 
     .cf-badge {
-        font-size: 0.68rem; font-weight: 500; padding: 2px 8px; border-radius: 999px;
+        font-size: 0.68rem; font-weight: 500; padding: 2px 8px; border-radius: var(--r-full);
         background: rgba(136,146,171,0.12); color: var(--t2); border: 1px solid var(--border);
     }
     .cf-badge--padrao { background: rgba(109,93,252,0.15); color: var(--accent); border-color: rgba(109,93,252,0.35); }
@@ -358,36 +359,36 @@
     .cf-estagio {
         display: flex; align-items: center; gap: 0.6rem;
         background: rgba(13,17,23,0.55); border: 1px solid var(--border);
-        border-radius: 10px; padding: 0.55rem 0.7rem;
+        border-radius: var(--r-2); padding: 0.55rem 0.7rem;
     }
     .cf-estagio-nome { flex: 1; font-size: 0.85rem; }
     .cf-cor { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
-    .cf-tipo { font-size: 0.66rem; font-weight: 500; padding: 2px 7px; border-radius: 999px; }
-    .cf-tipo--aberto  { color: #60a5fa; background: rgba(96,165,250,0.14); }
-    .cf-tipo--ganho   { color: #34d399; background: rgba(52,211,153,0.14); }
-    .cf-tipo--perdido { color: #ef4444; background: rgba(239,68,68,0.14); }
-    .cf-tipo--arquivado { color: #8892ab; background: rgba(136,146,171,0.14); }
+    .cf-tipo { font-size: 0.66rem; font-weight: 500; padding: 2px 7px; border-radius: var(--r-full); }
+    .cf-tipo--aberto  { color: var(--info); background: rgba(96,165,250,0.14); }
+    .cf-tipo--ganho   { color: var(--ok); background: rgba(52,211,153,0.14); }
+    .cf-tipo--perdido { color: var(--danger); background: rgba(239,68,68,0.14); }
+    .cf-tipo--arquivado { color: var(--fg-1); background: rgba(136,146,171,0.14); }
 
     .cf-estagio--arquivado { opacity: 0.55; border-style: dashed; }
 
     .cf-icon {
-        width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--border);
+        width: 26px; height: 26px; border-radius: var(--r-1); border: 1px solid var(--border);
         background: transparent; color: var(--t2); cursor: pointer;
-        display: flex; align-items: center; justify-content: center; transition: color .15s, border-color .15s;
+        display: flex; align-items: center; justify-content: center; transition: color var(--d-1), border-color .15s;
     }
     .cf-icon:hover:not(:disabled) { color: var(--t1); border-color: var(--accent); }
     .cf-icon:disabled { opacity: 0.3; cursor: not-allowed; }
-    .cf-icon--perigo:hover:not(:disabled) { color: #f06292; border-color: rgba(240,98,146,0.45); }
+    .cf-icon--perigo:hover:not(:disabled) { color: var(--danger); border-color: rgba(240,98,146,0.45); }
 
     .cf-add-estagio {
         margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.35rem;
         background: transparent; border: 1px dashed var(--border); color: var(--t2);
-        border-radius: 9px; padding: 0.45rem 0.8rem; font-size: 0.78rem; cursor: pointer;
+        border-radius: var(--r-2); padding: 0.45rem 0.8rem; font-size: 0.78rem; cursor: pointer;
     }
     .cf-add-estagio:hover { color: var(--accent); border-color: var(--accent); }
 
-    .cf-form-card { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+    .cf-form-card { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--r-3); padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
     .cf-form-card--inline { margin: 0.75rem 0 0; }
     .cf-form-title { font-size: 0.8rem; font-weight: 500; color: var(--t2); margin-bottom: 0.7rem; }
     .cf-form-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
@@ -395,7 +396,7 @@
 
     .cf-input {
         flex: 1; min-width: 200px; background: rgba(13,17,23,0.7); border: 1px solid var(--border);
-        border-radius: 9px; padding: 0.55rem 0.75rem; color: var(--t1); font-size: 0.85rem;
+        border-radius: var(--r-2); padding: 0.55rem 0.75rem; color: var(--t1); font-size: 0.85rem;
         font-family: inherit; outline: none;
     }
     .cf-input:focus { border-color: var(--accent); }
@@ -405,26 +406,26 @@
     .cf-tipos { display: flex; gap: 0.4rem; margin-top: 0.7rem; flex-wrap: wrap; }
     .cf-tipo-opt {
         display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;
-        border: 1px solid var(--border); border-radius: 999px; padding: 0.3rem 0.75rem;
+        border: 1px solid var(--border); border-radius: var(--r-full); padding: 0.3rem 0.75rem;
         font-size: 0.78rem; color: var(--t2);
     }
     .cf-tipo-opt input { display: none; }
     .cf-tipo-opt--on { border-color: var(--accent); color: var(--accent); background: rgba(109,93,252,0.12); }
 
     .cf-cores { display: flex; gap: 0.35rem; margin-top: 0.7rem; flex-wrap: wrap; }
-    .cf-cor-opt { width: 22px; height: 22px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; }
+    .cf-cor-opt { width: 22px; height: 22px; border-radius: var(--r-1); border: 2px solid transparent; cursor: pointer; }
     .cf-cor-opt--on { border-color: var(--t1); }
 
     .cf-btn-primary {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: 9px;
+        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
         padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
     .cf-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .cf-btn-ghost {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: transparent; color: var(--t2); border: 1px solid var(--border);
-        border-radius: 9px; padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
+        border-radius: var(--r-2); padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
 
     .cf-loading, .cf-vazio {
@@ -434,7 +435,7 @@
     .cf-spin { animation: cf-rot 1s linear infinite; }
     @keyframes cf-rot { to { transform: rotate(360deg); } }
 
-    .cf-fade-enter-active, .cf-fade-leave-active { transition: opacity .18s; }
+    .cf-fade-enter-active, .cf-fade-leave-active { transition: opacity var(--d-1); }
     .cf-fade-enter-from, .cf-fade-leave-to { opacity: 0; }
 
     @media (max-width: 768px) {

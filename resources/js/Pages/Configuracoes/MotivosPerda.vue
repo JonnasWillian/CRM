@@ -176,8 +176,6 @@
 
 <style scoped>
     .mt-page {
-        --surface: #13192a; --border: #1e2840; --accent: #6d5dfc;
-        --t1: #eaedf5; --t2: #8892ab; --t3: #4a5470;
         font-family: 'DM Sans', sans-serif;
         padding: 2rem 2.25rem 4rem; color: var(--t1); min-height: 100vh;
     }
@@ -190,19 +188,19 @@
     .mt-erro {
         display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
         background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
-        color: #fca5a5; border-radius: 10px; padding: 0.7rem 0.9rem;
+        color: var(--danger); border-radius: var(--r-2); padding: 0.7rem 0.9rem;
         font-size: 0.83rem; margin-bottom: 1.25rem;
     }
     .mt-erro-close { background: none; border: none; color: inherit; cursor: pointer; display: flex; }
 
-    .mt-form { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+    .mt-form { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--r-3); padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
     .mt-form-title { font-size: 0.8rem; font-weight: 500; color: var(--t2); margin-bottom: 0.7rem; }
     .mt-form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.85rem; }
     .mt-hint { font-size: 0.74rem; color: var(--t3); margin-top: 0.5rem; }
 
     .mt-input {
         width: 100%; background: rgba(13,17,23,0.7); border: 1px solid var(--border);
-        border-radius: 9px; padding: 0.55rem 0.75rem; color: var(--t1);
+        border-radius: var(--r-2); padding: 0.55rem 0.75rem; color: var(--t1);
         font-size: 0.85rem; font-family: inherit; outline: none;
     }
     .mt-input:focus { border-color: var(--accent); }
@@ -211,44 +209,44 @@
     .mt-item {
         display: flex; align-items: center; gap: 0.6rem;
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: 10px; padding: 0.65rem 0.8rem;
+        border-radius: var(--r-2); padding: 0.65rem 0.8rem;
     }
     .mt-item--arquivado { opacity: 0.55; border-style: dashed; }
     .mt-nome { flex: 1; font-size: 0.87rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .mt-badge {
-        font-size: 0.66rem; padding: 2px 7px; border-radius: 999px;
+        font-size: 0.66rem; padding: 2px 7px; border-radius: var(--r-full);
         background: rgba(136,146,171,0.12); color: var(--t2); border: 1px solid var(--border); flex-shrink: 0;
     }
     .mt-badge--uso { background: rgba(109,93,252,0.12); color: var(--accent); border-color: rgba(109,93,252,0.3); }
 
     .mt-acoes { display: flex; gap: 0.25rem; flex-shrink: 0; }
     .mt-icon {
-        width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--border);
+        width: 26px; height: 26px; border-radius: var(--r-1); border: 1px solid var(--border);
         background: transparent; color: var(--t2); cursor: pointer;
-        display: flex; align-items: center; justify-content: center; transition: color .15s, border-color .15s;
+        display: flex; align-items: center; justify-content: center; transition: color var(--d-1), border-color .15s;
     }
     .mt-icon:hover:not(:disabled) { color: var(--t1); border-color: var(--accent); }
     .mt-icon:disabled { opacity: 0.3; cursor: not-allowed; }
-    .mt-icon--perigo:hover:not(:disabled) { color: #f06292; border-color: rgba(240,98,146,0.45); }
+    .mt-icon--perigo:hover:not(:disabled) { color: var(--danger); border-color: rgba(240,98,146,0.45); }
 
     .mt-btn-primary {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: 9px;
+        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
         padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
     .mt-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .mt-btn-ghost {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: transparent; color: var(--t2); border: 1px solid var(--border);
-        border-radius: 9px; padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
+        border-radius: var(--r-2); padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
 
     .mt-loading { display: flex; align-items: center; gap: 0.5rem; justify-content: center; color: var(--t2); font-size: 0.88rem; padding: 3rem 0; }
     .mt-spin { animation: mt-rot 1s linear infinite; }
     @keyframes mt-rot { to { transform: rotate(360deg); } }
 
-    .mt-fade-enter-active, .mt-fade-leave-active { transition: opacity .18s; }
+    .mt-fade-enter-active, .mt-fade-leave-active { transition: opacity var(--d-1); }
     .mt-fade-enter-from, .mt-fade-leave-to { opacity: 0; }
 
     @media (max-width: 768px) { .mt-page { padding: 1.25rem 1rem 3rem; } }

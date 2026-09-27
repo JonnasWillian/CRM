@@ -182,8 +182,6 @@
 
 <style scoped>
     .rp-page {
-        --bg: #0d1117; --surface: #13192a; --border: #1e2840;
-        --accent: #6d5dfc; --t1: #eaedf5; --t2: #8892ab; --t3: #4a5470;
         font-family: 'DM Sans', sans-serif;
         padding: 2rem 2.25rem 4rem;
         color: var(--t1);
@@ -198,14 +196,14 @@
     .rp-filtros { display: flex; gap: 0.7rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .rp-campo { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.74rem; color: var(--t2); }
     .rp-input {
-        background: rgba(13,17,23,0.7); border: 1px solid var(--border); border-radius: 9px;
+        background: rgba(13,17,23,0.7); border: 1px solid var(--border); border-radius: var(--r-2);
         padding: 0.45rem 0.65rem; color: var(--t1); font-size: 0.82rem; font-family: inherit;
         outline: none; color-scheme: dark;
     }
     .rp-input:focus { border-color: var(--accent); }
     .rp-btn-ghost {
         background: transparent; color: var(--t2); border: 1px solid var(--border);
-        border-radius: 9px; padding: 0.45rem 0.85rem; font-size: 0.8rem;
+        border-radius: var(--r-2); padding: 0.45rem 0.85rem; font-size: 0.8rem;
         font-family: inherit; cursor: pointer;
     }
     .rp-btn-ghost:hover { color: var(--t1); border-color: var(--accent); }
@@ -214,10 +212,10 @@
     .rp-tile {
         display: flex; align-items: center; gap: 0.75rem;
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: 12px; padding: 1rem 1.1rem;
+        border-radius: var(--r-3); padding: 1rem 1.1rem;
     }
     .rp-tile-icone {
-        width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+        width: 32px; height: 32px; border-radius: var(--r-2); flex-shrink: 0;
         background: rgba(109,93,252,0.15); color: var(--accent);
         display: flex; align-items: center; justify-content: center;
     }
@@ -226,7 +224,7 @@
     .rp-tile-sep { color: var(--t3); font-weight: 400; font-size: 0.8rem; }
     .rp-tile-label { font-size: 0.74rem; color: var(--t2); margin-top: 0.15rem; }
 
-    .rp-grafico { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem; }
+    .rp-grafico { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-3); padding: 1.2rem; }
     .rp-grafico-titulo { font-size: 0.85rem; font-weight: 500; color: var(--t2); margin-bottom: 1rem; }
 
     .rp-linha {
@@ -236,7 +234,7 @@
         align-items: center; gap: 0.75rem;
         /* 2px de respiro entre barras adjacentes, contra a superfície. */
         padding: 0.35rem 0.4rem;
-        border-radius: 8px;
+        border-radius: var(--r-2);
     }
     .rp-linha--hover { background: rgba(109,93,252,0.07); }
 
@@ -246,12 +244,12 @@
     .rp-linha-nome > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .rp-arquivado {
         font-size: 0.62rem; color: var(--t3); border: 1px solid var(--border);
-        border-radius: 999px; padding: 1px 6px; flex-shrink: 0;
+        border-radius: var(--r-full); padding: 1px 6px; flex-shrink: 0;
     }
 
     .rp-trilho { height: 10px; background: rgba(148,163,184,0.09); border-radius: 4px; overflow: hidden; }
     /* Extremidade arredondada de 4px, ancorada na linha de base (esquerda). */
-    .rp-barra { height: 100%; border-radius: 0 4px 4px 0; transition: width .25s ease; }
+    .rp-barra { height: 100%; border-radius: 0 4px 4px 0; transition: width var(--d-1) var(--e); }
 
     .rp-linha-num { display: flex; align-items: baseline; gap: 0.4rem; justify-content: flex-end; }
     .rp-total { font-size: 0.9rem; font-weight: 600; color: var(--t1); }
@@ -260,14 +258,14 @@
 
     .rp-dica {
         position: absolute; right: 0.4rem; bottom: calc(100% - 0.2rem); z-index: 5;
-        background: #0d1117; border: 1px solid var(--border); border-radius: 8px;
+        background: var(--bg-0); border: 1px solid var(--border); border-radius: var(--r-2);
         padding: 0.35rem 0.6rem; font-size: 0.74rem; color: var(--t1); white-space: nowrap;
         pointer-events: none;
     }
 
     .rp-erro {
-        font-size: 0.83rem; color: #fca5a5; background: rgba(239,68,68,0.1);
-        border: 1px solid rgba(239,68,68,0.35); border-radius: 10px;
+        font-size: 0.83rem; color: var(--danger); background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.35); border-radius: var(--r-2);
         padding: 0.7rem 0.9rem; margin-bottom: 1.25rem;
     }
 

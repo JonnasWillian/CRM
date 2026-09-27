@@ -199,8 +199,7 @@
     };
 
     const usuarioPerfil = (id) => {
-        sessionStorage.setItem('idPerfil', id);
-        router.visit(route('perfilUsuario'));
+        router.visit(route('leads.show', id));
     };
 
     const getInitials = (nome) =>
@@ -220,13 +219,12 @@
     <AuthenticatedLayout>
         <div class="page">
             <div class="dot-grid" aria-hidden="true" />
-            <div class="glow-blob" aria-hidden="true" />
 
             <div class="p-10">
 
                 <div class="topbar">
                     <div>
-                        <p class="topbar-greeting font-bold">Olá, {{ user.name.split(' ')[0] }} 👋</p>
+                        <p class="topbar-greeting">Olá, {{ user.name.split(' ')[0] }}</p>
                         <h1 class="topbar-title">Lista de <span class="accent">Leads</span></h1>
                     </div>
                     <div class="view-toggle">
@@ -271,7 +269,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </div>
                                 <div>
-                                    <p class="summary-value" style="color:#3ecf8e">{{ metricas.leads_ativos }}</p>
+                                    <p class="summary-value num is-ok">{{ metricas.leads_ativos }}</p>
                                     <p class="summary-label">Leads Ativos</p>
                                     <p class="summary-sub">{{ metricas.leads_arquivados }} arquivados</p>
                                 </div>
@@ -283,7 +281,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 4v16m8-8H4"/></svg>
                                 </div>
                                 <div>
-                                    <p class="summary-value" style="color:#38bdf8">{{ metricas.leads_30_dias }}</p>
+                                    <p class="summary-value num is-info">{{ metricas.leads_30_dias }}</p>
                                     <p class="summary-label">Novos (30 dias)</p>
                                     <p class="summary-sub">de {{ metricas.total_leads }} total</p>
                                 </div>
@@ -295,7 +293,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                                 </div>
                                 <div class="summary-text-overflow">
-                                    <p class="summary-value summary-value--sm" style="color:#fb923c">{{ formatBRL(metricas.valor_projetos_abertos) }}</p>
+                                    <p class="summary-value num summary-value--sm is-warn">{{ formatBRL(metricas.valor_projetos_abertos) }}</p>
                                     <p class="summary-label">Em aberto</p>
                                     <p class="summary-sub">projetos ativos</p>
                                 </div>
@@ -307,7 +305,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 </div>
                                 <div class="summary-text-overflow">
-                                    <p class="summary-value summary-value--sm" style="color:#a78bfa">{{ formatBRL(metricas.valor_fechado_mes) }}</p>
+                                    <p class="summary-value num summary-value--sm is-cat">{{ formatBRL(metricas.valor_fechado_mes) }}</p>
                                     <p class="summary-label">Fechado no mês</p>
                                     <p class="summary-sub">status concluído</p>
                                 </div>
@@ -334,7 +332,7 @@
                                                 }"
                                             />
                                         </div>
-                                        <span class="bar-count" :style="{ color: getEstagioPalette(estagio.id).color }">{{ estagio.total }}</span>
+                                        <span class="bar-count num" :style="{ color: getEstagioPalette(estagio.id).color }">{{ estagio.total }}</span>
                                     </div>
                                 </div>
                                 <p v-else class="metric-empty">Nenhum lead com estágio definido.</p>
@@ -380,7 +378,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </div>
                                 <div>
-                                    <p class="summary-value">{{ usuarios.length }}</p>
+                                    <p class="summary-value num">{{ usuarios.length }}</p>
                                     <p class="summary-label">Total de Leads</p>
                                 </div>
                             </div>
@@ -556,7 +554,7 @@
                             v-for="(usuario, i) in filteredUsuarios"
                             :key="usuario.id"
                             class="table-row"
-                            :style="{ animationDelay: `${i * 0.04}s` }"
+                            :style="{ '--i': Math.min(i, 8) }"
                             @click="usuarioPerfil(usuario.id)"
                         >
                             <div class="col-lead">
@@ -683,20 +681,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
     .page {
-        --bg:       #0d1117;
-        --surface:  #13192a;
-        --surface2: #0f1420;
-        --border:   #1e2840;
-        --accent:   #6d5dfc;
-        --accent-h: #7c6efd;
-        --glow:     rgba(109, 93, 252, 0.22);
-        --green:    #3ecf8e;
-        --blue:     #38bdf8;
-        --orange:   #fb923c;
-        --t1:       #eaedf5;
-        --t2:       #8892ab;
-        --t3:       #4a5470;
-        --inp-bg:   #0b0f1a;
         font-family: 'DM Sans', sans-serif;
         background: var(--bg);
         min-height: 100vh;
@@ -709,7 +693,7 @@
         font-size: 0.75rem;
         font-weight: 500;
         padding: 2px 8px;
-        border-radius: 6px;
+        border-radius: var(--r-1);
         display: inline-block;
         margin-top: 4px;
         width: fit-content;
@@ -722,20 +706,9 @@
     .dot-grid {
         position: fixed;
         inset: 0;
-        background-image: radial-gradient(circle, #1c2540 1px, transparent 1px);
+        background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
         background-size: 30px 30px;
         opacity: 0.45;
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    .glow-blob {
-        position: fixed;
-        top: -200px;
-        right: -150px;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(109,93,252,0.14) 0%, transparent 70%);
         pointer-events: none;
         z-index: 0;
     }
@@ -758,7 +731,7 @@
         display: flex;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: var(--r-2);
         overflow: hidden;
         padding: 3px;
         gap: 2px;
@@ -766,10 +739,10 @@
     .vt-btn {
         display: inline-flex; align-items: center; gap: 0.35rem;
         font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
-        padding: 0.35rem 0.8rem; border-radius: 7px; cursor: pointer;
+        padding: 0.35rem 0.8rem; border-radius: var(--r-1); cursor: pointer;
         background: transparent; border: none; color: var(--t3);
         text-decoration: none;
-        transition: color 0.15s, background 0.15s;
+        transition: color var(--d-1), background 0.15s;
     }
     .vt-btn:hover:not(.vt-btn--active) { color: var(--t2); background: rgba(255,255,255,0.04); }
     .vt-btn--active { background: rgba(109,93,252,0.2); color: var(--t1); }
@@ -797,13 +770,13 @@
         background: var(--accent);
         color: #fff;
         border: none;
-        border-radius: 10px;
+        border-radius: var(--r-2);
         padding: 0.65rem 1.2rem;
         font-family: 'DM Sans', sans-serif;
         font-size: 0.875rem;
         font-weight: 500;
         cursor: pointer;
-        transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+        transition: background var(--d-1), box-shadow 0.2s, transform 0.1s;
         white-space: nowrap;
     }
 
@@ -819,12 +792,12 @@
         padding: 0.65rem 1.2rem;
         background: transparent;
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: var(--r-2);
         color: var(--t2);
         font-family: 'DM Sans', sans-serif;
         font-size: 0.875rem;
         cursor: pointer;
-        transition: border-color 0.2s, color 0.2s;
+        transition: border-color var(--d-1), color 0.2s;
     }
 
     .btn-ghost:hover { border-color: var(--t2); color: var(--t1); }
@@ -839,12 +812,12 @@
     .summary-card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 14px;
+        border-radius: var(--r-3);
         padding: 1.25rem 1.5rem;
         display: flex;
         align-items: center;
         gap: 1rem;
-        transition: border-color 0.2s, transform 0.15s;
+        transition: border-color var(--d-1), transform 0.15s;
     }
 
     .summary-card:hover { border-color: rgba(109,93,252,0.3); transform: translateY(-2px); }
@@ -854,7 +827,7 @@
     .summary-icon {
         width: 40px;
         height: 40px;
-        border-radius: 10px;
+        border-radius: var(--r-2);
         background: rgba(109, 93, 252, 0.15);
         color: var(--accent);
         display: flex;
@@ -885,7 +858,7 @@
     .leads-panel {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 16px;
+        border-radius: var(--r-3);
         overflow: hidden;
     }
 
@@ -927,10 +900,10 @@
         gap: 0.6rem;
         background: var(--inp-bg);
         border: 1px solid var(--border);
-        border-radius: 9px;
+        border-radius: var(--r-2);
         padding: 0.55rem 0.9rem;
         min-width: 240px;
-        transition: border-color 0.2s;
+        transition: border-color var(--d-1);
     }
 
     .search-box:focus-within { border-color: var(--accent); }
@@ -972,7 +945,7 @@
         align-items: center;
         padding: 1rem 1.5rem;
         border-bottom: 1px solid rgba(30,40,64,0.5);
-        transition: background 0.15s;
+        transition: background var(--d-1);
         animation: fadeRow 0.35s cubic-bezier(0.22,1,0.36,1) both;
     }
     .table-row:last-child { border-bottom: none; }
@@ -994,8 +967,8 @@
     .lead-avatar {
         width: 36px;
         height: 36px;
-        border-radius: 9px;
-        background: linear-gradient(135deg, var(--accent), #9c52f2);
+        border-radius: var(--r-2);
+        background: var(--accent-dim); color: var(--accent-hi);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1050,7 +1023,7 @@
     .row-action {
         width: 32px;
         height: 32px;
-        border-radius: 8px;
+        border-radius: var(--r-2);
         border: 1px solid var(--border);
         background: transparent;
         color: var(--t3);
@@ -1058,7 +1031,7 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: color 0.15s, border-color 0.15s, background 0.15s;
+        transition: color var(--d-1), border-color 0.15s, background 0.15s;
     }
 
     .row-action svg { width: 14px; height: 14px; }
@@ -1111,7 +1084,7 @@
         max-width: 480px;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 20px;
+        border-radius: var(--r-3);
         padding: 2rem;
         box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 40px 80px rgba(0,0,0,0.6), 0 0 60px var(--glow);
     }
@@ -1137,11 +1110,11 @@
         width: 30px; height: 30px;
         border: 1px solid var(--border);
         background: transparent;
-        border-radius: 7px;
+        border-radius: var(--r-1);
         color: var(--t3);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
-        transition: color 0.2s, border-color 0.2s;
+        transition: color var(--d-1), border-color 0.2s;
     }
     .modal-close svg { width: 15px; height: 15px; }
     .modal-close:hover { color: var(--t1); border-color: var(--t2); }
@@ -1162,25 +1135,25 @@
     .field-input {
         background: var(--inp-bg);
         border: 1px solid var(--border);
-        border-radius: 9px;
+        border-radius: var(--r-2);
         color: var(--t1);
         font-family: 'DM Sans', sans-serif;
         font-size: 0.875rem;
         padding: 0.7rem 0.9rem;
         outline: none;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: border-color var(--d-1), box-shadow 0.2s;
         width: 100%;
         box-sizing: border-box;
     }
 
     .field-input::placeholder { color: var(--t3); }
     .field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
-    .field-input--error { border-color: #f06292 !important; }
+    .field-input--error { border-color: var(--danger) !important; }
     .field-input--error:focus { box-shadow: 0 0 0 3px rgba(240,98,146,0.15) !important; }
 
     .field-error {
         font-size: 0.72rem;
-        color: #f06292;
+        color: var(--danger);
         margin-top: 0.2rem;
     }
     .field-error--geral {
@@ -1188,7 +1161,7 @@
         padding: 0.5rem 0.75rem;
         background: rgba(240,98,146,0.08);
         border: 1px solid rgba(240,98,146,0.25);
-        border-radius: 8px;
+        border-radius: var(--r-2);
     }
 
     .modal-footer {
@@ -1198,8 +1171,8 @@
         margin-top: 0.5rem;
     }
 
-    .modal-enter-active, .modal-leave-active { transition: opacity 0.22s ease; }
-    .modal-enter-active .modal, .modal-leave-active .modal { transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), opacity 0.22s ease; }
+    .modal-enter-active, .modal-leave-active { transition: opacity 0.22s var(--e); }
+    .modal-enter-active .modal, .modal-leave-active .modal { transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), opacity 0.22s var(--e); }
     .modal-enter-from, .modal-leave-to { opacity: 0; }
     .modal-enter-from .modal, .modal-leave-to .modal { transform: scale(0.95) translateY(12px); opacity: 0; }
 
@@ -1223,7 +1196,7 @@
     .skel-card { min-height: 82px; animation: skel-pulse 1.4s ease-in-out infinite; }
     .skel-block {
         background: rgba(255,255,255,0.04);
-        border-radius: 14px;
+        border-radius: var(--r-3);
         animation: skel-pulse 1.4s ease-in-out infinite;
         border: 1px solid var(--border);
     }
@@ -1245,9 +1218,9 @@
     .metric-card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 14px;
+        border-radius: var(--r-3);
         padding: 1.25rem 1.5rem;
-        transition: border-color 0.2s;
+        transition: border-color var(--d-1);
     }
     .metric-card:hover { border-color: rgba(109,93,252,0.28); }
     .metric-card-title {
@@ -1329,7 +1302,7 @@
         align-items: flex-start;
         gap: 0.65rem;
         padding: 0.85rem 1.1rem;
-        border-radius: 12px;
+        border-radius: var(--r-3);
         border: 1px solid;
         flex-wrap: wrap;
     }
@@ -1338,12 +1311,12 @@
     .tasks-alert--danger {
         background: rgba(239,68,68,0.07);
         border-color: rgba(239,68,68,0.25);
-        color: #ef4444;
+        color: var(--danger);
     }
     .tasks-alert--today {
         background: rgba(245,158,11,0.07);
         border-color: rgba(245,158,11,0.25);
-        color: #f59e0b;
+        color: var(--warn);
     }
 
     .tasks-alert-label {
@@ -1366,7 +1339,7 @@
         padding: 0.2rem 0.65rem;
         border-radius: 100px;
         cursor: pointer;
-        transition: opacity 0.15s, transform 0.15s;
+        transition: opacity var(--d-1), transform 0.15s;
         white-space: nowrap;
         max-width: 260px;
         overflow: hidden;
@@ -1377,12 +1350,12 @@
     .task-chip--danger {
         background: rgba(239,68,68,0.12);
         border: 1px solid rgba(239,68,68,0.3);
-        color: #ef4444;
+        color: var(--danger);
     }
     .task-chip--today {
         background: rgba(245,158,11,0.12);
         border: 1px solid rgba(245,158,11,0.3);
-        color: #f59e0b;
+        color: var(--warn);
     }
 
     .task-chip-more {
@@ -1429,9 +1402,9 @@
         border: 1px solid var(--border);
         background: transparent; color: var(--t3);
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all var(--d-1);
     }
-    .fb-chip:hover { color: var(--t2); border-color: #2a3860; }
+    .fb-chip:hover { color: var(--fg-0); border-color: var(--line-2); }
     .fb-chip--active {
         background: rgba(109,93,252,0.12);
         border-color: rgba(109,93,252,0.35);
@@ -1442,10 +1415,10 @@
         display: flex; align-items: center; gap: 0.4rem;
     }
     .fb-date-input {
-        background: var(--inp-bg); border: 1px solid var(--border); border-radius: 8px;
+        background: var(--inp-bg); border: 1px solid var(--border); border-radius: var(--r-2);
         color: var(--t1); font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
         padding: 0.28rem 0.55rem; outline: none; color-scheme: dark;
-        transition: border-color 0.15s;
+        transition: border-color var(--d-1);
     }
     .fb-date-input:focus { border-color: var(--accent); }
     .fb-date-sep { font-size: 0.72rem; color: var(--t3); }
@@ -1457,8 +1430,8 @@
         font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 500;
         padding: 0.2rem 0.65rem; border-radius: 100px;
         border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08);
-        color: #ef4444; cursor: pointer;
-        transition: background 0.15s;
+        color: var(--danger); cursor: pointer;
+        transition: background var(--d-1);
     }
     .fb-clear-btn:hover { background: rgba(239,68,68,0.15); }
     .fb-result-count { font-size: 0.72rem; color: var(--t3); }
@@ -1493,4 +1466,71 @@
         .modal-footer { flex-direction: column-reverse; }
         .btn-ghost, .btn-primary { width: 100%; justify-content: center; }
     }
+    /* ══════════════════════════════════════════════════════════
+       Densidade e tipografia — a parte que não dá para automatizar.
+
+       O que muda em relação ao layout anterior: os quatro cartões de resumo
+       deixam de ser caixas com ícone grande e viram número + rótulo, que é o
+       que se lê de fato; a tabela aperta para caber mais lead na tela sem
+       rolar; e a escala de tipo passa a sair dos tokens em vez de valores
+       soltos por regra.
+       ══════════════════════════════════════════════════════════ */
+
+    .topbar { align-items: center; gap: var(--s-4); margin-bottom: var(--s-6); }
+    .topbar-greeting { font-size: var(--fs-md); color: var(--fg-2); font-weight: 400; }
+    .topbar-title { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.3px; margin-top: 2px; }
+
+    .summary-row { gap: var(--s-3); }
+    .summary-card {
+        gap: var(--s-3); padding: var(--s-4);
+        border-radius: var(--r-3); background: var(--bg-1); border: 1px solid var(--line);
+        transition: border-color var(--d-1) var(--e);
+    }
+    .summary-card:hover { border-color: var(--line-2); }
+    /* Ícone recuado: ele identifica o cartão, não é o conteúdo dele. */
+    .summary-icon { width: 30px; height: 30px; border-radius: var(--r-2); flex-shrink: 0; }
+    .summary-icon svg { width: 15px; height: 15px; }
+
+    .summary-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.1; letter-spacing: -.4px; }
+    .summary-value--sm { font-size: 17px; }
+    .summary-label { font-size: var(--fs-md); color: var(--fg-1); margin-top: 3px; }
+    .summary-sub { font-size: var(--fs-xs); color: var(--fg-2); margin-top: 1px; }
+
+    /* Cor por significado, vinda dos tokens — antes era hex inline no template. */
+    .summary-value.is-ok   { color: var(--ok); }
+    .summary-value.is-info { color: var(--info); }
+    .summary-value.is-warn { color: var(--warn); }
+    .summary-value.is-cat  { color: var(--cat-3); }
+
+    .panel-title { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; }
+    .metric-card-title { font-size: var(--fs-md); color: var(--fg-1); }
+
+    /* ── Tabela ──────────────────────────────────────────────── */
+    .table-head {
+        font-size: var(--fs-xs); letter-spacing: .07em; text-transform: uppercase;
+        color: var(--fg-2); padding: var(--s-2) var(--s-4);
+    }
+    .table-row {
+        padding: 9px var(--s-4); gap: var(--s-3);
+        border-radius: var(--r-2);
+        transition: background var(--d-1) var(--e);
+        animation: linha-entra var(--d-2) var(--e) backwards;
+        animation-delay: calc(var(--i, 0) * 20ms);
+    }
+    @keyframes linha-entra { from { opacity: 0; transform: translateY(3px); } }
+    .table-row:hover { background: var(--bg-2); }
+
+    .lead-avatar {
+        width: 30px; height: 30px; border-radius: var(--r-2);
+        font-size: 11px; font-weight: 600; font-family: var(--font-display);
+    }
+    .lead-name { font-size: var(--fs-md); font-weight: 500; }
+    .lead-email { font-size: var(--fs-sm); color: var(--fg-2); }
+    .desc-text, .phone-tag { font-size: var(--fs-sm); color: var(--fg-1); }
+
+    /* Ação da linha só aparece quando a linha é o foco — reduz o ruído de
+       uma coluna de botões repetidos descendo a tela inteira. */
+    .row-action { opacity: 0; transition: opacity var(--d-1) var(--e), color var(--d-1) var(--e); }
+    .table-row:hover .row-action, .table-row:focus-within .row-action { opacity: 1; }
+
 </style>

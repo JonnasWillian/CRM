@@ -51,13 +51,6 @@ defineProps({
 -->
 <style>
     .pf-page {
-        --surface: #13192a;
-        --border:  #1e2840;
-        --accent:  #6d5dfc;
-        --t1:      #eaedf5;
-        --t2:      #8892ab;
-        --t3:      #4a5470;
-        --perigo:  #f06292;
 
         font-family: 'DM Sans', sans-serif;
         padding: 2rem 2.25rem 4rem;
@@ -80,7 +73,7 @@ defineProps({
     .pf-card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 14px;
+        border-radius: var(--r-3);
         padding: 1.2rem 1.3rem;
     }
     .pf-card--perigo { border-color: rgba(240, 98, 146, 0.3); }
@@ -96,25 +89,25 @@ defineProps({
         width: 100%;
         background: rgba(13, 17, 23, 0.7);
         border: 1px solid var(--border);
-        border-radius: 9px;
+        border-radius: var(--r-2);
         padding: 0.55rem 0.75rem;
         color: var(--t1);
         font-size: 0.85rem;
         font-family: inherit;
         outline: none;
-        transition: border-color 0.15s;
+        transition: border-color var(--d-1);
     }
     .pf-input:focus { border-color: var(--accent); }
     .pf-input::placeholder { color: var(--t3); }
 
-    .pf-erro { font-size: 0.74rem; color: #fca5a5; }
+    .pf-erro { font-size: 0.74rem; color: var(--danger); }
 
     .pf-aviso {
         font-size: 0.78rem;
         color: var(--t2);
         background: rgba(245, 158, 11, 0.08);
         border: 1px solid rgba(245, 158, 11, 0.28);
-        border-radius: 9px;
+        border-radius: var(--r-2);
         padding: 0.6rem 0.75rem;
         line-height: 1.55;
     }
@@ -127,13 +120,13 @@ defineProps({
         cursor: pointer;
         text-decoration: underline;
     }
-    .pf-ok { font-size: 0.78rem; color: #34d399; }
+    .pf-ok { font-size: 0.78rem; color: var(--ok); }
 
     .pf-acoes { display: flex; align-items: center; gap: 0.7rem; margin-top: 0.25rem; }
 
     .pf-btn-primary {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: 9px;
+        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
         padding: 0.5rem 0.95rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
     .pf-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -141,7 +134,7 @@ defineProps({
     .pf-btn-ghost {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: transparent; color: var(--t2); border: 1px solid var(--border);
-        border-radius: 9px; padding: 0.5rem 0.95rem; font-size: 0.82rem;
+        border-radius: var(--r-2); padding: 0.5rem 0.95rem; font-size: 0.82rem;
         font-family: inherit; cursor: pointer;
     }
     .pf-btn-ghost:hover { color: var(--t1); }
@@ -151,7 +144,7 @@ defineProps({
     .pf-btn-perigo {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: rgba(240, 98, 146, 0.1); color: var(--perigo);
-        border: 1px solid rgba(240, 98, 146, 0.35); border-radius: 9px;
+        border: 1px solid rgba(240, 98, 146, 0.35); border-radius: var(--r-2);
         padding: 0.5rem 0.95rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
     .pf-btn-perigo:hover { background: rgba(240, 98, 146, 0.18); }
@@ -159,7 +152,7 @@ defineProps({
     .pf-btn-perigo--solido {
         background: var(--perigo); color: #fff; border-color: var(--perigo);
     }
-    .pf-btn-perigo--solido:hover { background: #ec407a; }
+    .pf-btn-perigo--solido:hover { background: var(--danger); }
     .pf-btn-perigo--solido:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ── Diálogo de confirmação ── */
@@ -171,11 +164,11 @@ defineProps({
     .pf-dialogo {
         width: 100%; max-width: 440px;
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: 14px; padding: 1.2rem 1.3rem; color: var(--t1);
+        border-radius: var(--r-3); padding: 1.2rem 1.3rem; color: var(--t1);
     }
     .pf-dialogo-acoes { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.1rem; }
 
-    .pf-fade-enter-active, .pf-fade-leave-active { transition: opacity 0.18s; }
+    .pf-fade-enter-active, .pf-fade-leave-active { transition: opacity var(--d-1); }
     .pf-fade-enter-from, .pf-fade-leave-to { opacity: 0; }
 
     @media (max-width: 768px) {

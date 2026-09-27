@@ -163,12 +163,6 @@
 
 <style scoped>
     .tl-wrap {
-        --bg:      #0d1117;
-        --surface: #13192a;
-        --border:  #1e2840;
-        --t1:      #eaedf5;
-        --t2:      #8892ab;
-        --t3:      #4a5470;
         font-family: 'DM Sans', sans-serif;
     }
 
@@ -192,13 +186,13 @@
         border: 1px solid var(--border);
         color: var(--t3);
         cursor: pointer;
-        transition: color 0.18s, border-color 0.18s, background 0.18s;
+        transition: color var(--d-1), border-color 0.18s, background 0.18s;
     }
-    .tl-chip:hover { color: var(--t2); border-color: #2a3758; }
+    .tl-chip:hover { color: var(--t2); border-color: var(--line-2); }
     .tl-chip--active {
         background: rgba(109, 93, 252, 0.13);
         border-color: rgba(109, 93, 252, 0.35);
-        color: #a78bfa;
+        color: var(--cat-3);
     }
     .tl-chip-count {
         font-size: 0.68rem;
@@ -220,7 +214,7 @@
     .tl-spinner {
         width: 18px; height: 18px;
         border: 2px solid var(--border);
-        border-top-color: #a78bfa;
+        border-top-color: var(--cat-3);
         border-radius: 50%;
         animation: tl-spin 0.65s linear infinite;
         flex-shrink: 0;
@@ -266,7 +260,7 @@
     }
     .tl-dot {
         width: 28px; height: 28px;
-        border-radius: 8px;
+        border-radius: var(--r-2);
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
         z-index: 1;
@@ -285,13 +279,13 @@
         flex: 1;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: var(--r-3);
         padding: 0.75rem 1rem;
         margin-bottom: 0.65rem;
-        transition: border-color 0.15s;
+        transition: border-color var(--d-1);
         min-width: 0;
     }
-    .tl-card:hover { border-color: #2a3758; }
+    .tl-card:hover { border-color: var(--line-2); }
     .tl-card-top {
         display: flex;
         align-items: center;

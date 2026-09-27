@@ -3,8 +3,9 @@
     import { Head, Link, router, usePage } from '@inertiajs/vue3';
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import axios from 'axios';
-    import { Settings, X, Save, Plus, LayoutList, Columns, ArrowRightLeft } from 'lucide-vue-next';
+    import { Settings, X, Save, Plus, LayoutList, ArrowRightLeft, Clock } from 'lucide-vue-next';
     import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
+    import { useContador } from '@/Composables/useContador';
 
     const user = computed(() => usePage().props.auth.user);
 
@@ -291,8 +292,7 @@
 
     // ── Navegação para perfil ──
     const irParaLead = (id) => {
-        sessionStorage.setItem('idPerfil', id);
-        router.visit(route('perfilUsuario'));
+        router.visit(route('leads.show', id));
     };
 
     // ── Settings: coluna padrão ──
@@ -322,106 +322,88 @@
         return `há ${Math.floor(diff / 365)} ano(s)`;
     };
 
+    // ── Números do quadro ──────────────────────────────────────
+    // Somados no cliente a partir dos leads que já vieram: pedir ao servidor
+    // um total que está na mão seria uma consulta a mais para o mesmo número.
+    const totalLeads = computed(() => leads.value.length);
+    const valorAberto = computed(() =>
+        leads.value.reduce((soma, l) => soma + (l.valor_projetos || 0), 0)
+    );
+
+    // Contam até o novo valor quando ele muda — nunca na primeira carga.
+    const leadsExibidos = useContador(() => totalLeads.value);
+    const valorExibido  = useContador(() => valorAberto.value);
+
+    const valorDaColuna = (estagioId) =>
+        columnLeads(estagioId).reduce((soma, l) => soma + (l.valor_projetos || 0), 0);
+
+    // ── Idade do lead ──────────────────────────────────────────
+    // Quantos dias desde o último contato. Vira sinal âmbar depois de duas
+    // semanas: é como o olho encontra o lead esquecido sem ler card por card.
+    const DIAS_PARADO = 14;
+
+    const diasDesde = (ts) => {
+        if (!ts) return null;
+        return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+    };
+    const idadeDe = (lead) => diasDesde(lead.ultimo_contato ?? lead.updated_at);
+    const idadeRotulo = (lead) => {
+        const d = idadeDe(lead);
+        if (d === null) return null;
+        return d === 0 ? 'hoje' : `${d}d`;
+    };
+    const estaParado = (lead) => (idadeDe(lead) ?? 0) >= DIAS_PARADO;
+
+    // Iniciais de nome e sobrenome. Cortar as duas primeiras letras do nome
+    // dava "DI" para Diego e "MA" para Marina — parece ruído, não identidade.
+    const iniciais = (nome) =>
+        (nome || '').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
+
+    // Entrada escalonada: teto de 8 para a última coluna não esperar a fila
+    // inteira. Depois disso tudo entra junto.
+    const atraso = (i) => Math.min(i, 8);
+
     onMounted(buscarKanban);
 </script>
 
 <template>
     <Head title="Pipeline — UserFlow" />
     <AuthenticatedLayout>
-        <div class="kb-page">
+        <div class="kb">
 
-            <!-- Topbar -->
-            <div class="kb-topbar">
-                <div class="kb-topbar-left">
-                    <h1 class="kb-title">Pipeline <span class="kb-accent">de Leads</span></h1>
-                    <span v-if="!isLoading" class="kb-total-badge">{{ leads.length }} lead{{ leads.length !== 1 ? 's' : '' }}</span>
-                </div>
+            <header class="kb-topo">
+                <h1 class="kb-h1">Pipeline</h1>
 
-                <div class="kb-topbar-right">
-                    <!-- Seletor de funil -->
+                <div v-if="funis.length > 1" class="kb-funil">
                     <select
-                        v-if="funis.length > 1"
-                        class="kb-select kb-select--funil"
+                        class="kb-funil-sel"
                         :value="funilId"
+                        aria-label="Funil exibido no quadro"
                         @change="trocarFunil(Number($event.target.value))"
-                        title="Funil exibido no quadro"
                     >
                         <option v-for="f in funis" :key="f.id" :value="f.id">{{ f.nome }}</option>
                     </select>
-
-                    <!-- Toggle Lista / Pipeline -->
-                    <div class="view-toggle">
-                        <Link :href="route('dashboard')" class="vt-btn">
-                            <LayoutList :size="14" /> Lista
-                        </Link>
-                        <button class="vt-btn vt-btn--active">
-                            <Columns :size="14" /> Pipeline
-                        </button>
-                    </div>
-
-                    <!-- Engrenagem de configurações -->
-                    <button @click="showSettings = !showSettings" class="kb-icon-btn" title="Configurações do Kanban">
-                        <Settings :size="16" />
-                    </button>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 9l-7 7-7-7"/></svg>
                 </div>
-            </div>
+                <span v-else-if="funilAtual" class="kb-funil-fixo">{{ funilAtual.nome }}</span>
 
-            <!-- Popover de configurações -->
-            <Transition name="kb-fade">
-                <div v-if="showSettings" class="kb-settings-overlay" @click.self="showSettings = false">
-                    <div class="kb-settings-panel">
-                        <div class="kb-settings-header">
-                            <span class="kb-settings-title">Configurações</span>
-                            <button @click="showSettings = false" class="kb-close-btn"><X :size="15" /></button>
-                        </div>
-                        <div class="kb-settings-body">
-                            <label class="kb-settings-label">Coluna padrão para novos leads</label>
-                            <select v-model="defaultEstagioId" class="kb-select">
-                                <option v-for="estagio in estagiosAtivos" :key="estagio.id" :value="estagio.id">{{ estagio.descricao }}</option>
-                            </select>
-                        </div>
-                        <div class="kb-settings-footer">
-                            <button @click="showSettings = false" class="kb-btn-ghost kb-btn-sm"><X :size="12" /> Cancelar</button>
-                            <button @click="salvarSettings" class="kb-btn-primary kb-btn-sm" :disabled="savingSettings">
-                                <Save :size="12" /> {{ savingSettings ? 'Salvando…' : 'Salvar' }}
-                            </button>
-                        </div>
+                <!-- Números como tipografia, não como quatro cartões: no quadro,
+                     altura economizada aqui é card de lead visível sem rolar. -->
+                <div class="kb-nums">
+                    <div class="kb-num">
+                        <b class="num">{{ Math.round(leadsExibidos) }}</b>
+                        <span>{{ totalLeads === 1 ? 'lead' : 'leads' }}</span>
+                    </div>
+                    <div class="kb-num">
+                        <b class="num">{{ formatBRL(valorExibido) }}</b>
+                        <span>em aberto</span>
                     </div>
                 </div>
-            </Transition>
 
-            <!-- Mover de funil -->
-            <Transition name="kb-fade">
-                <div v-if="moverAlvo" class="kb-settings-overlay" @click.self="fecharMover">
-                    <div class="kb-settings-panel">
-                        <div class="kb-settings-header">
-                            <span class="kb-settings-title">Mover "{{ moverAlvo.nome }}"</span>
-                            <button @click="fecharMover" class="kb-close-btn"><X :size="15" /></button>
-                        </div>
-                        <div class="kb-settings-body">
-                            <label class="kb-settings-label">Funil de destino</label>
-                            <select v-model.number="moverFunilId" class="kb-select" @change="carregarEstagiosDestino">
-                                <option v-for="f in funis.filter(f => f.id !== funilAtual?.id)" :key="f.id" :value="f.id">
-                                    {{ f.nome }}
-                                </option>
-                            </select>
-
-                            <label class="kb-settings-label" style="margin-top: 0.85rem;">Estágio de entrada</label>
-                            <select v-model.number="moverEstagioId" class="kb-select" :disabled="!moverEstagios.length">
-                                <option v-for="e in moverEstagios" :key="e.id" :value="e.id">{{ e.descricao }}</option>
-                            </select>
-
-                            <p v-if="moverErro" class="kb-mover-erro">{{ moverErro }}</p>
-                        </div>
-                        <div class="kb-settings-footer">
-                            <button @click="fecharMover" class="kb-btn-ghost kb-btn-sm"><X :size="12" /> Cancelar</button>
-                            <button @click="confirmarMover" class="kb-btn-primary kb-btn-sm" :disabled="movendo || !moverEstagioId">
-                                <ArrowRightLeft :size="12" /> {{ movendo ? 'Movendo…' : 'Mover' }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </Transition>
+                <Link :href="route('dashboard')" class="kb-btn-ghost">
+                    <LayoutList :size="14" /> Lista
+                </Link>
+            </header>
 
             <ModalMotivoPerda
                 :aberto="!!perdaPendente"
@@ -432,492 +414,366 @@
                 @cancelar="cancelarPerda"
             />
 
-            <!-- Loading -->
-            <div v-if="isLoading" class="kb-loading">
-                <div class="kb-spinner" />
-                <span>Carregando pipeline...</span>
+            <Transition name="kb-fade">
+                <div v-if="showSettings" class="kb-overlay" @click.self="showSettings = false">
+                    <div class="kb-dialogo">
+                        <header class="kb-dialogo-h">
+                            <span>Configurações do quadro</span>
+                            <button class="kb-x" aria-label="Fechar" @click="showSettings = false"><X :size="15" /></button>
+                        </header>
+                        <div class="kb-dialogo-b">
+                            <label class="kb-label">Coluna padrão para novos leads</label>
+                            <select v-model="defaultEstagioId" class="kb-input">
+                                <option v-for="e in estagiosAtivos" :key="e.id" :value="e.id">{{ e.descricao }}</option>
+                            </select>
+                        </div>
+                        <footer class="kb-dialogo-f">
+                            <button class="kb-btn-ghost" @click="showSettings = false"><X :size="12" /> Cancelar</button>
+                            <button class="kb-btn" :disabled="savingSettings" @click="salvarSettings">
+                                <Save :size="12" /> {{ savingSettings ? 'Salvando…' : 'Salvar' }}
+                            </button>
+                        </footer>
+                    </div>
+                </div>
+            </Transition>
+
+            <Transition name="kb-fade">
+                <div v-if="moverAlvo" class="kb-overlay" @click.self="fecharMover">
+                    <div class="kb-dialogo">
+                        <header class="kb-dialogo-h">
+                            <span>Mover “{{ moverAlvo.nome }}”</span>
+                            <button class="kb-x" aria-label="Fechar" @click="fecharMover"><X :size="15" /></button>
+                        </header>
+                        <div class="kb-dialogo-b">
+                            <label class="kb-label">Funil de destino</label>
+                            <select v-model.number="moverFunilId" class="kb-input" @change="carregarEstagiosDestino">
+                                <option v-for="f in funis.filter(f => f.id !== funilAtual?.id)" :key="f.id" :value="f.id">{{ f.nome }}</option>
+                            </select>
+
+                            <label class="kb-label kb-label--mt">Estágio de entrada</label>
+                            <select v-model.number="moverEstagioId" class="kb-input" :disabled="!moverEstagios.length">
+                                <option v-for="e in moverEstagios" :key="e.id" :value="e.id">{{ e.descricao }}</option>
+                            </select>
+
+                            <p v-if="moverErro" class="kb-erro">{{ moverErro }}</p>
+                        </div>
+                        <footer class="kb-dialogo-f">
+                            <button class="kb-btn-ghost" @click="fecharMover"><X :size="12" /> Cancelar</button>
+                            <button class="kb-btn" :disabled="movendo || !moverEstagioId" @click="confirmarMover">
+                                <ArrowRightLeft :size="12" /> {{ movendo ? 'Movendo…' : 'Mover' }}
+                            </button>
+                        </footer>
+                    </div>
+                </div>
+            </Transition>
+
+            <div v-if="isLoading" class="kb-esqueleto">
+                <div v-for="n in 4" :key="n" class="kb-col kb-col--fantasma">
+                    <div class="kb-sk kb-sk--h"></div>
+                    <div class="kb-sk" v-for="m in 3" :key="m"></div>
+                </div>
             </div>
 
-            <!-- Board -->
-            <div v-else class="kb-board">
-                <div
+            <div v-else-if="!estagios.length" class="kb-vazio">
+                Este funil ainda não tem estágios.
+                <Link v-if="$page.props.auth.permissions?.['configuracoes.manage']" :href="route('configuracoes.funis')" class="kb-link">Configurar funis</Link>
+            </div>
+
+            <div v-else class="kb-quadro">
+                <section
                     v-for="estagio in estagios"
                     :key="estagio.id"
-                    class="kb-column"
-                    :class="{ 'kb-column--over': dragOverEstagioId === estagio.id, 'kb-column--arquivada': estagio.arquivada }"
-                    :style="{ '--col-color': getPalette(estagio).color, '--col-bg': getPalette(estagio).bg, '--col-border': getPalette(estagio).border }"
+                    class="kb-col"
+                    :class="{ 'is-alvo': dragOverEstagioId === estagio.id, 'is-arquivada': estagio.arquivada }"
+                    :style="{ '--cor': estagio.cor || 'var(--fg-2)' }"
                     @dragover.prevent="onDragOver(estagio)"
                     @dragleave.self="dragOverEstagioId = null"
                     @drop="onDrop($event, estagio)"
                 >
-                    <!-- Header da coluna -->
-                    <div class="kb-col-header">
-                        <div class="kb-col-header-left">
-                            <span class="kb-col-dot" />
-                            <span class="kb-col-name">{{ estagio.descricao }}</span>
-                            <span
-                                v-if="estagio.arquivada"
-                                class="kb-col-arquivada"
-                                title="Estágio arquivado. Arraste os leads para outra coluna; quando esvaziar, ele some do quadro."
-                            >Arquivado</span>
-                            <span class="kb-col-count">{{ columnLeads(estagio.id).length }}</span>
+                    <header class="kb-col-h">
+                        <div class="kb-col-t">
+                            <span class="kb-regua" aria-hidden="true"></span>
+                            <span class="kb-col-n">{{ estagio.descricao }}</span>
+                            <span v-if="estagio.arquivada" class="kb-tag" title="Estágio arquivado: só saída. Some do quadro quando esvaziar.">arquivado</span>
+                            <span class="kb-col-c num">{{ columnLeads(estagio.id).length }}</span>
                         </div>
-                        <button
-                            v-if="!estagio.arquivada"
-                            @click="abrirQuickAdd(estagio.id)"
-                            class="kb-col-add"
-                            title="Adicionar lead nesta coluna"
-                        >
-                            <Plus :size="13" />
-                        </button>
-                    </div>
+                        <div v-if="valorDaColuna(estagio.id) > 0" class="kb-col-v num">{{ formatBRL(valorDaColuna(estagio.id)) }}</div>
+                    </header>
 
-                    <!-- Quick-add form -->
-                    <Transition name="kb-slide">
-                        <div v-if="quickAddEstagioId === estagio.id" class="kb-quick-add">
-                            <input
-                                v-model="quickAddForm.nome"
-                                type="text"
-                                placeholder="Nome *"
-                                class="kb-qa-input"
-                                autofocus
-                                @keydown.escape="cancelarQuickAdd"
-                            />
-                            <input
-                                v-model="quickAddForm.email"
-                                type="email"
-                                placeholder="E-mail *"
-                                class="kb-qa-input"
-                                @keydown.escape="cancelarQuickAdd"
-                            />
-                            <input
-                                v-model="quickAddForm.telefone"
-                                type="text"
-                                placeholder="Telefone *"
-                                class="kb-qa-input"
-                                @keydown.enter="salvarQuickAdd"
-                                @keydown.escape="cancelarQuickAdd"
-                            />
-                            <div class="kb-qa-actions">
-                                <button @click="cancelarQuickAdd" class="kb-btn-ghost kb-btn-sm"><X :size="11" /></button>
-                                <button
-                                    @click="salvarQuickAdd"
-                                    class="kb-btn-primary kb-btn-sm"
-                                    :disabled="!quickAddForm.nome.trim() || !quickAddForm.email.trim() || !quickAddForm.telefone.trim() || quickAdding"
-                                >
-                                    <Save :size="11" /> {{ quickAdding ? '…' : 'Adicionar' }}
-                                </button>
-                            </div>
-                        </div>
-                    </Transition>
-
-                    <!-- Cards -->
                     <div class="kb-cards">
-                        <div
-                            v-for="lead in columnLeads(estagio.id)"
+                        <Transition name="kb-ghost">
+                            <div v-if="dragOverEstagioId === estagio.id && !estagio.arquivada" class="kb-alvo">Soltar aqui</div>
+                        </Transition>
+
+                        <Transition name="kb-slide">
+                            <div v-if="quickAddEstagioId === estagio.id" class="kb-rapido">
+                                <input v-model="quickAddForm.nome" class="kb-input" placeholder="Nome *" autofocus @keydown.escape="cancelarQuickAdd" />
+                                <input v-model="quickAddForm.email" type="email" class="kb-input" placeholder="E-mail *" @keydown.escape="cancelarQuickAdd" />
+                                <input v-model="quickAddForm.telefone" class="kb-input" placeholder="Telefone *" @keydown.escape="cancelarQuickAdd" @keydown.enter="salvarQuickAdd" />
+                                <div class="kb-rapido-f">
+                                    <button class="kb-btn-ghost kb-btn--sm" @click="cancelarQuickAdd">Cancelar</button>
+                                    <button class="kb-btn kb-btn--sm" :disabled="quickAdding" @click="salvarQuickAdd">
+                                        {{ quickAdding ? 'Salvando…' : 'Adicionar' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </Transition>
+
+                        <article
+                            v-for="(lead, i) in columnLeads(estagio.id)"
                             :key="lead.id"
                             class="kb-card"
-                            :class="{ 'kb-card--dragging': draggingLead?.id === lead.id }"
+                            :class="{ 'is-arrastando': draggingLead?.id === lead.id }"
+                            :style="{ '--i': atraso(i) }"
                             draggable="true"
+                            tabindex="0"
                             @dragstart="onDragStart($event, lead)"
                             @dragend="onDragEnd"
                             @click="irParaLead(lead.id)"
+                            @keydown.enter="irParaLead(lead.id)"
                         >
-                            <div class="kb-card-top">
-                                <span class="kb-card-avatar">{{ lead.nome.charAt(0).toUpperCase() }}</span>
-                                <div class="kb-card-info">
-                                    <p class="kb-card-nome">{{ lead.nome }}</p>
-                                    <p class="kb-card-email">{{ lead.email }}</p>
+                            <div class="kb-card-t">
+                                <span class="kb-ini" aria-hidden="true">{{ iniciais(lead.nome) }}</span>
+                                <div class="kb-card-id">
+                                    <p class="kb-card-n">{{ lead.nome }}</p>
+                                    <p class="kb-card-e">{{ lead.email }}</p>
                                 </div>
                                 <button
                                     v-if="funis.length > 1"
-                                    class="kb-card-mover"
+                                    class="kb-mover"
                                     title="Mover para outro funil"
+                                    aria-label="Mover para outro funil"
                                     @click.stop="abrirMover(lead)"
                                 >
                                     <ArrowRightLeft :size="12" />
                                 </button>
                             </div>
-                            <div class="kb-card-bottom">
-                                <span v-if="lead.ultimo_contato" class="kb-card-meta">
-                                    {{ formatRelativo(lead.ultimo_contato) }}
+                            <div class="kb-card-b">
+                                <span v-if="idadeRotulo(lead)" class="kb-idade" :class="{ 'is-parado': estaParado(lead) }"
+                                      :title="estaParado(lead) ? 'Sem contato há mais de duas semanas' : 'Último contato'">
+                                    <Clock :size="11" /> {{ idadeRotulo(lead) }}
                                 </span>
-                                <span v-if="lead.valor_projetos > 0" class="kb-card-valor">
-                                    {{ formatBRL(lead.valor_projetos) }}
-                                </span>
+                                <span v-if="lead.valor_projetos > 0" class="kb-valor num">{{ formatBRL(lead.valor_projetos) }}</span>
                             </div>
-                        </div>
+                        </article>
 
-                        <!-- Drop placeholder quando a coluna está vazia -->
-                        <div v-if="!columnLeads(estagio.id).length && dragOverEstagioId === estagio.id" class="kb-drop-ghost">
-                            Solte aqui
-                        </div>
-                        <div v-else-if="!columnLeads(estagio.id).length" class="kb-col-empty">
+                        <p v-if="!columnLeads(estagio.id).length && dragOverEstagioId !== estagio.id" class="kb-col-vazia">
                             Nenhum lead
-                        </div>
+                        </p>
                     </div>
-                </div>
-            </div>
 
+                    <button v-if="!estagio.arquivada" class="kb-add" @click="abrirQuickAdd(estagio.id)">
+                        <Plus :size="12" /> Adicionar
+                    </button>
+                </section>
+
+                <button class="kb-cfg" title="Configurações do quadro" aria-label="Configurações do quadro" @click="showSettings = true">
+                    <Settings :size="15" />
+                </button>
+            </div>
         </div>
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
-    .kb-select--funil { width: auto; min-width: 150px; }
+    .kb { display: flex; flex-direction: column; min-height: 100vh; }
 
-    .kb-card-mover {
-        width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
-        border: 1px solid rgba(148,163,184,0.25); background: transparent;
-        color: #8892ab; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
-    .kb-card-mover:hover { color: #eaedf5; border-color: var(--col-color, #6d5dfc); }
-
-    .kb-mover-erro {
-        margin-top: 0.7rem; font-size: 0.78rem; color: #fca5a5;
-        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-        border-radius: 8px; padding: 0.5rem 0.65rem;
-    }
-
-    .kb-page {
-        --bg:      #0d1117;
-        --surface: #13192a;
-        --surface2: #0f1623;
-        --border:  #1e2840;
-        --border-h: #2a3758;
-        --accent:  #6d5dfc;
-        --glow:    rgba(109,93,252,0.2);
-        --t1: #eaedf5;
-        --t2: #8892ab;
-        --t3: #4a5470;
-        --inp-bg: #0b0f1a;
-        font-family: 'DM Sans', sans-serif;
-        min-height: 100vh;
-        padding: 1.75rem 1.5rem 2rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    /* ── Topbar ── */
-    .kb-topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+    /* ── Topo ──────────────────────────────────────── */
+    .kb-topo {
+        display: flex; align-items: center; gap: var(--s-3);
+        padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--line);
         flex-wrap: wrap;
-        gap: 0.75rem;
     }
-    .kb-topbar-left  { display: flex; align-items: center; gap: 0.75rem; }
-    .kb-topbar-right { display: flex; align-items: center; gap: 0.65rem; }
+    .kb-h1 { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.3px; }
 
-    .kb-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--t1);
-        margin: 0;
+    .kb-funil { position: relative; display: flex; align-items: center; }
+    .kb-funil svg { width: 13px; height: 13px; color: var(--fg-2); position: absolute; right: 9px; pointer-events: none; }
+    .kb-funil-sel {
+        appearance: none; background: var(--bg-1); border: 1px solid var(--line);
+        border-radius: var(--r-2); padding: 5px 28px 5px 10px; color: var(--fg-0);
+        font: inherit; font-size: var(--fs-md); cursor: pointer;
+        transition: border-color var(--d-1) var(--e);
     }
-    .kb-accent { color: var(--accent); }
-    .kb-total-badge {
-        font-size: 0.72rem; font-weight: 600;
-        padding: 0.2rem 0.65rem; border-radius: 100px;
-        background: rgba(109,93,252,0.1); border: 1px solid rgba(109,93,252,0.25);
-        color: var(--accent);
-    }
+    .kb-funil-sel:hover { border-color: var(--line-2); }
+    .kb-funil-fixo { font-size: var(--fs-md); color: var(--fg-1); }
 
-    /* ── View Toggle ── */
-    .view-toggle {
-        display: flex;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-        padding: 3px;
-        gap: 2px;
-    }
-    .vt-btn {
-        display: inline-flex; align-items: center; gap: 0.35rem;
-        font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
-        padding: 0.35rem 0.8rem; border-radius: 7px; cursor: pointer;
-        background: transparent; border: none; color: var(--t3);
-        text-decoration: none;
-        transition: color 0.15s, background 0.15s;
-    }
-    .vt-btn:hover:not(.vt-btn--active) { color: var(--t2); background: rgba(255,255,255,0.04); }
-    .vt-btn--active {
-        background: rgba(109,93,252,0.2);
-        color: var(--t1);
-        border: none;
+    .kb-nums { margin-left: auto; display: flex; align-items: center; gap: var(--s-5); }
+    .kb-num { text-align: right; line-height: 1.15; }
+    .kb-num b { display: block; font-size: var(--fs-lg); font-weight: 600; }
+    .kb-num span { display: block; font-size: var(--fs-xs); color: var(--fg-2); }
+
+    /* ── Quadro ────────────────────────────────────── */
+    .kb-quadro, .kb-esqueleto {
+        flex: 1; display: flex; gap: 11px; padding: var(--s-4) var(--s-5);
+        overflow-x: auto; align-items: flex-start;
     }
 
-    /* ── Icon button ── */
-    .kb-icon-btn {
-        width: 34px; height: 34px; border-radius: 9px;
-        border: 1px solid var(--border); background: var(--surface);
-        cursor: pointer; color: var(--t3);
-        display: flex; align-items: center; justify-content: center;
-        transition: color 0.15s, border-color 0.15s;
+    .kb-col {
+        width: 258px; flex-shrink: 0; display: flex; flex-direction: column;
+        background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-3);
+        max-height: calc(100vh - 118px);
+        transition: border-color var(--d-2) var(--e), background var(--d-2) var(--e);
     }
-    .kb-icon-btn:hover { color: var(--t2); border-color: var(--border-h); }
+    .kb-col.is-arquivada { opacity: .72; border-style: dashed; }
 
-    /* ── Settings ── */
-    .kb-settings-overlay {
-        position: fixed; inset: 0;
-        display: flex; align-items: flex-start; justify-content: flex-end;
-        padding: 4.5rem 1.5rem 0;
-        z-index: 500;
-    }
-    .kb-settings-panel {
-        background: #13192a;
-        border: 1px solid #1e2840;
-        border-radius: 14px;
-        width: 280px;
-        box-shadow: 0 16px 48px rgba(0,0,0,0.4);
-        overflow: hidden;
-    }
-    .kb-settings-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0.85rem 1rem 0.75rem;
-        border-bottom: 1px solid #1e2840;
-    }
-    .kb-settings-title { font-size: 0.85rem; font-weight: 600; color: #eaedf5; }
-    .kb-close-btn {
-        background: transparent; border: none; cursor: pointer;
-        color: #4a5470; padding: 0; line-height: 1;
-        transition: color 0.15s;
-    }
-    .kb-close-btn:hover { color: #8892ab; }
-
-    .kb-settings-body { padding: 0.85rem 1rem; }
-    .kb-settings-label { font-size: 0.76rem; color: #8892ab; display: block; margin-bottom: 0.45rem; }
-    .kb-select {
-        width: 100%; background: #0b0f1a; border: 1px solid #1e2840;
-        border-radius: 8px; color: #eaedf5;
-        font-family: 'DM Sans', sans-serif; font-size: 0.84rem;
-        padding: 0.5rem 0.75rem; outline: none;
-        transition: border-color 0.15s;
-    }
-    .kb-select:focus { border-color: #6d5dfc; }
-
-    .kb-settings-footer {
-        display: flex; justify-content: flex-end; gap: 0.4rem;
-        padding: 0.7rem 1rem;
-        border-top: 1px solid #1e2840;
+    /* A coluna de destino se anuncia: é como você vê para onde o card vai. */
+    .kb-col.is-alvo {
+        border-color: var(--accent);
+        background: linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-1);
     }
 
-    /* ── Shared small buttons ── */
-    .kb-btn-ghost {
-        display: inline-flex; align-items: center; gap: 0.35rem;
-        font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
-        padding: 0.4rem 0.85rem; border-radius: 8px; cursor: pointer;
-        background: transparent; border: 1px solid var(--border); color: var(--t3);
-        transition: border-color 0.15s, color 0.15s;
-    }
-    .kb-btn-ghost:hover { color: var(--t2); border-color: var(--border-h); }
-    .kb-btn-sm { padding: 0.3rem 0.65rem; font-size: 0.74rem; }
+    .kb-col-h { padding: 11px 12px 9px; border-bottom: 1px solid var(--line); }
+    .kb-col-t { display: flex; align-items: center; gap: 7px; }
 
-    .kb-btn-primary {
-        display: inline-flex; align-items: center; gap: 0.35rem;
-        font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
-        padding: 0.4rem 0.85rem; border-radius: 8px; cursor: pointer;
-        background: var(--accent); border: none; color: #fff;
-        transition: background 0.15s, box-shadow 0.15s;
-    }
-    .kb-btn-primary:hover:not(:disabled) { background: #7c6efd; box-shadow: 0 0 12px var(--glow); }
-    .kb-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-    .kb-btn-sm.kb-btn-primary { padding: 0.3rem 0.65rem; font-size: 0.74rem; }
+    /* Identidade do estágio é um filete na cor dele, não a coluna tingida:
+       assim a cor marca sem roubar contraste do que é clicável. */
+    .kb-regua { width: 3px; height: 13px; border-radius: 2px; background: var(--cor); flex-shrink: 0; }
 
-    /* ── Loading ── */
-    .kb-loading {
-        display: flex; align-items: center; gap: 0.75rem;
-        padding: 4rem 1rem; color: var(--t3); font-size: 0.84rem;
+    .kb-col-n { font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kb-col-c { margin-left: auto; font-size: var(--fs-sm); color: var(--fg-2); }
+    .kb-col-v { font-size: var(--fs-sm); color: var(--fg-2); margin-top: 5px; padding-left: 10px; }
+    .kb-tag {
+        font-size: 9.5px; color: var(--fg-2); border: 1px solid var(--line-2);
+        border-radius: var(--r-full); padding: 1px 6px; flex-shrink: 0;
     }
-    .kb-spinner {
-        width: 20px; height: 20px; flex-shrink: 0;
-        border: 2px solid var(--border); border-top-color: var(--accent);
-        border-radius: 50%; animation: kb-spin 0.65s linear infinite;
-    }
-    @keyframes kb-spin { to { transform: rotate(360deg); } }
 
-    /* ── Board (horizontal scroll) ── */
-    .kb-board {
-        display: flex;
-        gap: 0.9rem;
-        overflow-x: auto;
-        padding-bottom: 1rem;
-        align-items: flex-start;
-        flex: 1;
-    }
-    .kb-board::-webkit-scrollbar { height: 5px; }
-    .kb-board::-webkit-scrollbar-track { background: transparent; }
-    .kb-board::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    .kb-cards { padding: var(--s-2); display: flex; flex-direction: column; gap: 7px; overflow-y: auto; }
 
-    /* ── Column ── */
-    .kb-column {
-        flex: 0 0 272px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        display: flex;
-        flex-direction: column;
-        max-height: calc(100vh - 160px);
-        transition: border-color 0.18s, background 0.18s;
-    }
-    .kb-column--over {
-        border-color: var(--col-color) !important;
-        background: var(--col-bg) !important;
-    }
-    /* Estágio arquivado: presente só até esvaziar, e não aceita lead novo. */
-    .kb-column--arquivada {
-        border-style: dashed;
-        opacity: 0.72;
-    }
-    .kb-column--arquivada .kb-col-dot { background: var(--t3); }
-
-    /* Column header */
-    .kb-col-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.85rem 0.9rem 0.65rem;
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
-    }
-    .kb-col-header-left { display: flex; align-items: center; gap: 0.5rem; }
-    .kb-col-dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: var(--col-color); flex-shrink: 0;
-    }
-    .kb-col-name { font-size: 0.82rem; font-weight: 600; color: var(--t1); }
-    .kb-col-arquivada {
-        font-size: 0.6rem; font-weight: 600; letter-spacing: 0.04em;
-        text-transform: uppercase; white-space: nowrap;
-        padding: 0.1rem 0.4rem; border-radius: 4px;
-        color: var(--t3); border: 1px dashed var(--border);
-    }
-    .kb-col-count {
-        font-size: 0.68rem; font-weight: 600;
-        padding: 0.1rem 0.45rem; border-radius: 100px;
-        background: var(--col-bg); color: var(--col-color);
-        border: 1px solid var(--col-border);
-    }
-    .kb-col-add {
-        width: 24px; height: 24px; border-radius: 6px;
-        border: 1px solid var(--border); background: transparent;
-        cursor: pointer; color: var(--t3);
-        display: flex; align-items: center; justify-content: center;
-        transition: color 0.14s, border-color 0.14s, background 0.14s;
-    }
-    .kb-col-add:hover { color: var(--col-color); border-color: var(--col-border); background: var(--col-bg); }
-
-    /* Quick-add */
-    .kb-quick-add {
-        padding: 0.65rem 0.75rem;
-        border-bottom: 1px solid var(--border);
-        display: flex; flex-direction: column; gap: 0.4rem;
-        background: rgba(255,255,255,0.02);
-        flex-shrink: 0;
-    }
-    .kb-qa-input {
-        background: var(--inp-bg); border: 1px solid var(--border); border-radius: 7px;
-        color: var(--t1); font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
-        padding: 0.42rem 0.65rem; outline: none; width: 100%; box-sizing: border-box;
-        transition: border-color 0.15s;
-    }
-    .kb-qa-input:focus { border-color: var(--col-color, var(--accent)); }
-    .kb-qa-input::placeholder { color: var(--t3); }
-    .kb-qa-actions { display: flex; justify-content: flex-end; gap: 0.35rem; }
-
-    /* Cards scroll area */
-    .kb-cards {
-        overflow-y: auto;
-        padding: 0.55rem 0.65rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        flex: 1;
-        min-height: 60px;
-    }
-    .kb-cards::-webkit-scrollbar { width: 4px; }
-    .kb-cards::-webkit-scrollbar-track { background: transparent; }
-    .kb-cards::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-
-    /* Card */
+    /* ── Card ──────────────────────────────────────── */
     .kb-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 0.7rem 0.8rem;
-        cursor: grab;
-        transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s, opacity 0.15s;
-        user-select: none;
+        position: relative; background: var(--bg-2); border: 1px solid var(--line);
+        border-radius: var(--r-2); padding: 9px 10px; cursor: grab;
+        transition: border-color var(--d-1) var(--e), transform var(--d-1) var(--e);
+        animation: kb-entra var(--d-2) var(--e) backwards;
+        animation-delay: calc(var(--i, 0) * 20ms);
     }
-    .kb-card:hover {
-        border-color: var(--border-h);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-        transform: translateY(-1px);
+    /* Fio de luz no topo: o detalhe que o olho registra sem saber por quê. */
+    .kb-card::before {
+        content: ""; position: absolute; inset: 0 0 auto; height: 1px;
+        border-radius: var(--r-2) var(--r-2) 0 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
     }
-    .kb-card:active { cursor: grabbing; }
-    .kb-card--dragging { opacity: 0.35; transform: scale(0.97); }
+    .kb-card:hover { border-color: var(--line-2); transform: translateY(-1px); }
+    .kb-card.is-arrastando { opacity: .45; transform: rotate(-1.2deg) scale(.99); cursor: grabbing; }
 
-    .kb-card-top {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.6rem;
-        margin-bottom: 0.5rem;
-    }
-    .kb-card-avatar {
-        width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-        background: var(--col-bg, rgba(109,93,252,0.15));
-        border: 1px solid var(--col-border, rgba(109,93,252,0.3));
-        color: var(--col-color, var(--accent));
-        font-size: 0.75rem; font-weight: 700;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .kb-card-info { flex: 1; min-width: 0; }
-    .kb-card-nome {
-        font-size: 0.83rem; font-weight: 600; color: var(--t1);
-        margin: 0 0 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .kb-card-email {
-        font-size: 0.71rem; color: var(--t3);
-        margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    @keyframes kb-entra { from { opacity: 0; transform: translateY(4px); } }
 
-    .kb-card-bottom {
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 0.4rem; flex-wrap: wrap;
+    .kb-card-t { display: flex; align-items: center; gap: var(--s-2); }
+    .kb-ini {
+        width: 24px; height: 24px; border-radius: var(--r-1); flex-shrink: 0;
+        background: var(--bg-0); border: 1px solid var(--line);
+        display: grid; place-items: center; font-size: 10.5px; font-weight: 600; color: var(--fg-1);
     }
-    .kb-card-meta {
-        font-size: 0.68rem; color: var(--t3);
-    }
-    .kb-card-valor {
-        font-size: 0.7rem; font-weight: 600;
-        color: #34d399;
-        background: rgba(52,211,153,0.1);
-        border: 1px solid rgba(52,211,153,0.2);
-        padding: 0.1rem 0.45rem; border-radius: 100px;
-    }
+    .kb-card-id { min-width: 0; flex: 1; }
+    .kb-card-n { font-size: var(--fs-md); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kb-card-e { font-size: var(--fs-sm); color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* Empty / ghost */
-    .kb-col-empty {
-        font-size: 0.74rem; color: var(--t3); text-align: center;
-        padding: 1.5rem 0.5rem; opacity: 0.5;
+    .kb-mover {
+        width: 22px; height: 22px; flex-shrink: 0; border-radius: var(--r-1);
+        border: 1px solid var(--line); background: transparent; color: var(--fg-2);
+        display: grid; place-items: center; cursor: pointer; opacity: 0;
+        transition: opacity var(--d-1) var(--e), color var(--d-1) var(--e), border-color var(--d-1) var(--e);
     }
-    .kb-drop-ghost {
-        border: 2px dashed var(--col-color);
-        border-radius: 10px;
-        padding: 1.5rem 0.5rem;
-        text-align: center;
-        font-size: 0.74rem; color: var(--col-color);
-        opacity: 0.6;
-        background: var(--col-bg);
+    /* Ação secundária só aparece quando o card é o foco da atenção. */
+    .kb-card:hover .kb-mover, .kb-card:focus-within .kb-mover { opacity: 1; }
+    .kb-mover:hover { color: var(--fg-0); border-color: var(--accent); }
+
+    .kb-card-b {
+        display: flex; align-items: center; gap: var(--s-2);
+        margin-top: var(--s-2); padding-top: 7px; border-top: 1px solid var(--line);
+    }
+    .kb-idade { display: flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--fg-2); }
+    /* Sinal, não enfeite: encontra o lead esquecido sem ler card por card. */
+    .kb-idade.is-parado { color: var(--warn); }
+    .kb-valor { margin-left: auto; font-size: var(--fs-sm); font-weight: 600; color: var(--fg-1); }
+
+    .kb-col-vazia { font-size: var(--fs-sm); color: var(--fg-2); text-align: center; padding: var(--s-4) 0; }
+
+    .kb-alvo {
+        border: 1px dashed var(--accent); border-radius: var(--r-2); height: 58px;
+        display: grid; place-items: center; font-size: var(--fs-sm); color: var(--accent-hi);
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
     }
 
-    /* ── Transitions ── */
-    .kb-fade-enter-active, .kb-fade-leave-active { transition: opacity 0.18s; }
+    .kb-add {
+        margin: 0 var(--s-2) var(--s-2); display: flex; align-items: center; justify-content: center; gap: 5px;
+        background: transparent; border: 1px dashed var(--line-2); border-radius: var(--r-2);
+        color: var(--fg-2); font: inherit; font-size: var(--fs-sm); padding: 6px; cursor: pointer;
+        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
+    }
+    .kb-add:hover { color: var(--accent-hi); border-color: var(--accent); }
+
+    .kb-rapido { display: flex; flex-direction: column; gap: 6px; padding: var(--s-2); background: var(--bg-0); border: 1px solid var(--line); border-radius: var(--r-2); }
+    .kb-rapido-f { display: flex; gap: 5px; justify-content: flex-end; }
+
+    .kb-cfg {
+        width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--r-2);
+        border: 1px solid var(--line); background: var(--bg-1); color: var(--fg-2);
+        display: grid; place-items: center; cursor: pointer; margin-top: 2px;
+        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
+    }
+    .kb-cfg:hover { color: var(--fg-0); border-color: var(--line-2); }
+
+    /* ── Controles ─────────────────────────────────── */
+    .kb-input {
+        width: 100%; background: var(--bg-0); border: 1px solid var(--line);
+        border-radius: var(--r-2); padding: 7px 9px; color: var(--fg-0);
+        font: inherit; font-size: var(--fs-md); outline: none;
+        transition: border-color var(--d-1) var(--e);
+    }
+    .kb-input:focus { border-color: var(--accent); }
+    .kb-label { display: block; font-size: 12px; color: var(--fg-1); margin-bottom: 5px; }
+    .kb-label--mt { margin-top: var(--s-3); }
+
+    .kb-btn, .kb-btn-ghost {
+        display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-2);
+        padding: 7px 12px; font: inherit; font-size: var(--fs-md); cursor: pointer;
+        text-decoration: none; transition: background var(--d-1) var(--e), color var(--d-1) var(--e), border-color var(--d-1) var(--e);
+    }
+    .kb-btn { background: var(--accent); color: #fff; border: 0; }
+    .kb-btn:hover { background: var(--accent-hi); }
+    .kb-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .kb-btn-ghost { background: transparent; color: var(--fg-1); border: 1px solid var(--line); }
+    .kb-btn-ghost:hover { color: var(--fg-0); border-color: var(--line-2); }
+    .kb-btn--sm { padding: 5px 9px; font-size: var(--fs-sm); }
+
+    .kb-erro {
+        margin-top: var(--s-3); font-size: var(--fs-md); color: var(--danger);
+        background: var(--danger-dim); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+        border-radius: var(--r-2); padding: 7px 9px;
+    }
+
+    /* ── Diálogos ──────────────────────────────────── */
+    .kb-overlay {
+        position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.6);
+        backdrop-filter: blur(4px); display: grid; place-items: center; padding: var(--s-4);
+    }
+    .kb-dialogo { width: 100%; max-width: 400px; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
+    .kb-dialogo-h { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+    .kb-dialogo-b { padding: 14px; }
+    .kb-dialogo-f { display: flex; justify-content: flex-end; gap: 6px; padding: 12px 14px; border-top: 1px solid var(--line); }
+    .kb-x { background: 0; border: 0; color: var(--fg-2); cursor: pointer; display: flex; }
+    .kb-x:hover { color: var(--fg-0); }
+
+    /* ── Esqueleto ─────────────────────────────────── */
+    .kb-col--fantasma { padding: var(--s-2); gap: 7px; }
+    .kb-sk { height: 58px; border-radius: var(--r-2); background: var(--bg-2); animation: kb-pulsa 1.4s var(--e) infinite; }
+    .kb-sk--h { height: 34px; }
+    @keyframes kb-pulsa { 50% { opacity: .5; } }
+
+    .kb-vazio { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--fg-1); font-size: var(--fs-md); padding: var(--s-10) 0; }
+    .kb-link { color: var(--accent-hi); }
+
+    .kb-fade-enter-active, .kb-fade-leave-active { transition: opacity var(--d-2) var(--e); }
     .kb-fade-enter-from, .kb-fade-leave-to { opacity: 0; }
-
-    .kb-slide-enter-active, .kb-slide-leave-active { transition: opacity 0.18s, transform 0.18s; }
+    .kb-ghost-enter-active, .kb-ghost-leave-active { transition: opacity var(--d-1) var(--e), transform var(--d-1) var(--e); }
+    .kb-ghost-enter-from, .kb-ghost-leave-to { opacity: 0; transform: scaleY(.8); }
+    .kb-slide-enter-active, .kb-slide-leave-active { transition: opacity var(--d-2) var(--e), transform var(--d-2) var(--e); }
     .kb-slide-enter-from, .kb-slide-leave-to { opacity: 0; transform: translateY(-6px); }
+
+    @media (max-width: 860px) {
+        .kb-topo { padding: var(--s-3) var(--s-4); }
+        .kb-quadro, .kb-esqueleto { padding: var(--s-3) var(--s-4); }
+        .kb-nums { width: 100%; justify-content: flex-start; margin-left: 0; order: 9; }
+    }
 </style>

@@ -135,62 +135,62 @@
 
     .mp-panel {
         width: 100%; max-width: 420px;
-        background: #13192a; border: 1px solid #1e2840; border-radius: 14px;
-        color: #eaedf5; overflow: hidden;
+        background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-3);
+        color: var(--fg-0); overflow: hidden;
     }
 
     .mp-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.9rem 1.1rem; border-bottom: 1px solid #1e2840;
+        padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--line);
     }
     .mp-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; }
-    .mp-close { background: none; border: none; color: #8892ab; cursor: pointer; display: flex; }
-    .mp-close:hover { color: #eaedf5; }
+    .mp-close { background: none; border: none; color: var(--fg-1); cursor: pointer; display: flex; }
+    .mp-close:hover { color: var(--fg-0); }
 
     .mp-body { padding: 1.1rem; }
-    .mp-lead { font-size: 0.78rem; color: #8892ab; margin-bottom: 0.9rem; line-height: 1.5; }
+    .mp-lead { font-size: 0.78rem; color: var(--fg-1); margin-bottom: 0.9rem; line-height: 1.5; }
 
-    .mp-label { display: block; font-size: 0.76rem; color: #8892ab; margin-bottom: 0.35rem; }
+    .mp-label { display: block; font-size: 0.76rem; color: var(--fg-1); margin-bottom: 0.35rem; }
     .mp-label--mt { margin-top: 0.9rem; }
-    .mp-req { color: #f06292; }
+    .mp-req { color: var(--danger); }
 
     .mp-select, .mp-textarea {
-        width: 100%; background: rgba(13,17,23,0.7); border: 1px solid #1e2840;
-        border-radius: 9px; padding: 0.55rem 0.7rem; color: #eaedf5;
+        width: 100%; background: rgba(13,17,23,0.7); border: 1px solid var(--line);
+        border-radius: var(--r-2); padding: 0.55rem 0.7rem; color: var(--fg-0);
         font-size: 0.85rem; font-family: inherit; outline: none; resize: vertical;
     }
-    .mp-select:focus, .mp-textarea:focus { border-color: #6d5dfc; }
+    .mp-select:focus, .mp-textarea:focus { border-color: var(--accent); }
 
-    .mp-contador { display: block; text-align: right; font-size: 0.7rem; color: #4a5470; margin-top: 0.25rem; }
-    .mp-contador--baixo { color: #f59e0b; }
+    .mp-contador { display: block; text-align: right; font-size: 0.7rem; color: var(--fg-2); margin-top: 0.25rem; }
+    .mp-contador--baixo { color: var(--warn); }
 
     .mp-erro {
-        margin-top: 0.8rem; font-size: 0.78rem; color: #fca5a5;
+        margin-top: 0.8rem; font-size: 0.78rem; color: var(--danger);
         background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-        border-radius: 8px; padding: 0.5rem 0.65rem;
+        border-radius: var(--r-2); padding: 0.5rem 0.65rem;
     }
 
-    .mp-loading { display: flex; align-items: center; gap: 0.5rem; color: #8892ab; font-size: 0.85rem; padding: 1rem 0; }
+    .mp-loading { display: flex; align-items: center; gap: 0.5rem; color: var(--fg-1); font-size: 0.85rem; padding: 1rem 0; }
     .mp-spin { animation: mp-rot 1s linear infinite; }
     @keyframes mp-rot { to { transform: rotate(360deg); } }
 
     .mp-footer {
         display: flex; justify-content: flex-end; gap: 0.5rem;
-        padding: 0.85rem 1.1rem; border-top: 1px solid #1e2840;
+        padding: 0.85rem 1.1rem; border-top: 1px solid var(--line);
     }
 
     .mp-btn-primary {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        background: #6d5dfc; color: #fff; border: none; border-radius: 9px;
+        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
         padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
     .mp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .mp-btn-ghost {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        background: transparent; color: #8892ab; border: 1px solid #1e2840;
-        border-radius: 9px; padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
+        background: transparent; color: var(--fg-1); border: 1px solid var(--line);
+        border-radius: var(--r-2); padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
     }
 
-    .mp-fade-enter-active, .mp-fade-leave-active { transition: opacity .18s; }
+    .mp-fade-enter-active, .mp-fade-leave-active { transition: opacity var(--d-1); }
     .mp-fade-enter-from, .mp-fade-leave-to { opacity: 0; }
 </style>

@@ -1,0 +1,206 @@
+/*
+ * Fundação visual do UserFlow.
+ *
+ * Tudo o que é decisão de design — cor, tipo, espaço, raio, movimento — mora
+ * AQUI e em nenhum outro lugar. Antes desta base, sete tokens eram
+ * redeclarados em catorze arquivos, e a duplicação já tinha rendido dois
+ * verdes, dois vermelhos, dois `surface2` e quatro grafias do mesmo roxo.
+ *
+ * ── Cor: como foi escolhida ──
+ *
+ * Não no olho. Cada cor passou pelo validador de paleta contra a superfície
+ * real (#11151f), nos critérios de banda de luminosidade, piso de croma,
+ * separação para daltonismo e contraste:
+ *
+ *   texto      fg-0 15.4:1 · fg-1 7.0:1 · fg-2 4.8:1   (AA em todas as superfícies)
+ *   categórica deutan ΔE 9.3 · visão normal ΔE 17.4    (alvos: 8 e 15)
+ *
+ * `--fg-2` é #7683a6 e não o #4a5470 antigo por um motivo específico: o valor
+ * antigo dava 2.96:1 sobre a superfície elevada — reprovado em AA — e é
+ * justamente a cor de rótulo, contador e data, que são textos pequenos.
+ *
+ * ── Verde e vermelho não são cores categóricas ──
+ *
+ * Sob deuteranopia os dois colapsam, e a banda de luminosidade não deixa
+ * espaço para separá-los por claridade. Eles são STATUS: aparecem sempre
+ * acompanhados de rótulo em texto (nome do estágio, nome do status), nunca
+ * sozinhos carregando significado. A paleta categórica — a que a tela de
+ * funis oferece como sugestão de cor de estágio — exclui esse par de
+ * propósito.
+ */
+
+:root {
+    /* ── Superfícies: três degraus ────────────────────────────────
+       Três, e não dois, é o que permite hierarquia sem recorrer a sombra:
+       fundo, cartão e elevado (hover, campo, menu). */
+    --bg-0: #0b0e15;
+    --bg-1: #11151f;
+    --bg-2: #161b28;
+
+    --line:   #1f2636;
+    --line-2: #2b3448;
+
+    /* ── Texto ───────────────────────────────────────────────── */
+    --fg-0: #e8ecf5;
+    --fg-1: #97a1b8;
+    --fg-2: #7683a6;
+
+    /* ── Acento ──────────────────────────────────────────────── */
+    --accent:     #6d5dfc;
+    --accent-hi:  #8b7cff;
+    --accent-dim: color-mix(in srgb, var(--accent) 15%, transparent);
+
+    /* ── Status. Sempre com rótulo em texto ao lado. ──────────── */
+    --ok:     #30ae77;
+    --warn:   #bd8939;
+    --danger: #f15873;
+    --info:   #5197e9;
+
+    --ok-dim:     color-mix(in srgb, var(--ok) 14%, transparent);
+    --warn-dim:   color-mix(in srgb, var(--warn) 14%, transparent);
+    --danger-dim: color-mix(in srgb, var(--danger) 14%, transparent);
+    --info-dim:   color-mix(in srgb, var(--info) 14%, transparent);
+
+    /* ── Categórica: sugestões de cor de estágio ──────────────── */
+    --cat-1: #499fca;
+    --cat-2: #bd8939;
+    --cat-3: #9268f3;
+    --cat-4: #e5618d;
+
+    /* ── Raio ────────────────────────────────────────────────── */
+    --r-1: 6px;
+    --r-2: 9px;
+    --r-3: 13px;
+    --r-full: 999px;
+
+    /* ── Espaço: grade de 4px ────────────────────────────────── */
+    --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+    --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+
+    /* ── Tipografia ──────────────────────────────────────────── */
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --fs-xs: 10.5px; --fs-sm: 11.5px; --fs-md: 13px;
+    --fs-lg: 15px;   --fs-xl: 19px;   --fs-2xl: 24px;
+
+    /* ── Movimento ───────────────────────────────────────────────
+       Arranque rápido e pouso macio: é a curva que o cérebro lê como
+       "respondeu antes de eu pedir". */
+    --e:        cubic-bezier(.2, .8, .2, 1);
+    --e-spring: cubic-bezier(.34, 1.4, .64, 1);
+
+    --d-1: 120ms;   /* estado: hover, foco */
+    --d-2: 180ms;   /* entrada e saída de elemento */
+    --d-3: 260ms;   /* mudança de layout */
+
+    /* ══ Nomes antigos, apontando para os novos ══════════════════
+       As páginas escritas antes desta base seguem usando estes nomes. Manter
+       os aliases foi o que permitiu apagar as catorze declarações locais sem
+       reescrever cada regra de cada arquivo — e sem um "big bang" impossível
+       de revisar. Some conforme as telas forem migrando. */
+    --bg: var(--bg-0);
+    --surface: var(--bg-1);
+    --surface2: #0e121b;
+    --border: var(--line);
+    --border-h: var(--line-2);
+    --inp-bg: var(--bg-0);
+    --accent-h: var(--accent-hi);
+    --glow: var(--accent-dim);
+    --t1: var(--fg-0);
+    --t2: var(--fg-1);
+    --t3: var(--fg-2);
+
+    --green: var(--ok);
+    --red: var(--danger);
+    --purple: var(--cat-3);
+    --blue: var(--info);
+    --amber: var(--warn);
+    --orange: var(--warn);
+    --yellow: var(--warn);
+
+    --green-bg: var(--ok-dim);
+    --red-bg: var(--danger-dim);
+    --purple-bg: color-mix(in srgb, var(--cat-3) 14%, transparent);
+    --orange-bg: var(--warn-dim);
+    --yellow-bg: var(--warn-dim);
+
+    --sidebar-w: 212px;
+    --perigo: var(--danger);
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+
+html, body, #app {
+    background: var(--bg-0);
+    min-height: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--fg-0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Numerais tabulares em todo número.
+ *
+ * Sem isto, um contador que vai de 19 para 20 muda de largura e empurra o que
+ * está ao lado. Num quadro com contagem e valor em cada coluna, isso é a tela
+ * inteira tremendo a cada atualização.
+ */
+.num,
+input[type="number"],
+time {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/*
+ * Foco visível, uma vez, para o app inteiro.
+ *
+ * Antes existia em um único arquivo: quem navega por teclado ficava sem saber
+ * onde está. `:focus-visible` e não `:focus` para o anel não aparecer em
+ * clique de mouse.
+ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent-hi);
+    outline-offset: 2px;
+    border-radius: var(--r-1);
+}
+
+/* Barra de rolagem discreta: faz parte da superfície, não compete com ela. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+}
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: var(--r-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-clip: content-box; background-color: var(--fg-2); }
+
+/*
+ * Movimento reduzido.
+ *
+ * Quem marca essa preferência no sistema costuma ter sensibilidade
+ * vestibular: animação não é enfeite desagradável, é enjoo. Zerar a duração
+ * em vez de remover a transição preserva os estados finais — nada quebra,
+ * tudo chega instantâneo.
+ */
+@media (prefers-reduced-motion: reduce) {
+    :root { --d-1: 0.01ms; --d-2: 0.01ms; --d-3: 0.01ms; }
+
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
