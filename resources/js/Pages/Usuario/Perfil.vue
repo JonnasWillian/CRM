@@ -5,6 +5,7 @@
     import axios from 'axios';
     import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
     import { vMaska } from 'maska/vue';
+    import { ehTelefoneBrasileiro, formatarTelefone, MASCARA_TELEFONE } from '@/utils/telefone';
     import { PlusCircle, FileText, Paperclip, Trash2, Edit, Save, X, Download, Upload, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-vue-next';
     import Swal from 'sweetalert2';
     import ProjetoPanel from './ProjetoPanel.vue';
@@ -19,6 +20,7 @@
     const idPerfil = props.leadId;
 
     const user = computed(() => usePage().props.auth.user);
+    const limites = usePage().props.limites;
 
     const usuario = ref(null);
     const anotacoes = ref([]);
@@ -83,6 +85,7 @@
         try {
             const response = await axios.get(`/api/usuarioPerfil/${id}`);
             usuario.value = response.data[0];
+            usuario.value.telefone = formatarTelefone(usuario.value.telefone);
             estagioSelecionado.value = usuario.value?.estagio_id ?? null;
             funilSelecionado.value = usuario.value?.funil_id ?? null;
         } catch {
@@ -117,9 +120,7 @@
     };
 
     const editarUsuario = async () => {
-        usuario.value.telefone = usuario.value.telefone?.replace(/\D/g, '');
-
-        const enviar = (perda) => axios.put(`api/usuarios/${usuario.value.id}`, {
+        const enviar = (perda) => axios.put(`/api/usuarios/${usuario.value.id}`, {
             ...usuario.value,
             funil_id: funilSelecionado.value,
             estagio_id: estagioSelecionado.value,
@@ -152,7 +153,7 @@
             // Sem filtro de funil: a lista completa alimenta tanto o badge (que
             // precisa resolver a cor do estágio atual, seja de que funil for)
             // quanto o select, que é filtrado no cliente por estagiosDoFunil.
-            const response = await axios.post('/api/estagios');
+            const response = await axios.get('/api/estagios');
             estagios.value = response.data;
         } catch {
             messageError('Erro ao buscar estágios!');
@@ -191,7 +192,7 @@
     const cadastrarAnotacao = async () => {
         if (!noteForm.descricao.trim()) return;
         try {
-            await axios.post(`api/anotacao`, { ...noteForm });
+            await axios.post(`/api/anotacao`, { ...noteForm });
             showToast('Anotação criada com sucesso!');
             await buscarAnotacao(idPerfil);
             noteForm.descricao = '';
@@ -211,7 +212,7 @@
 
     const salvarEdicaoAnotacao = async () => {
         try {
-            await axios.put(`api/anotacao/${editNoteForm.id}`, editNoteForm);
+            await axios.put(`/api/anotacao/${editNoteForm.id}`, editNoteForm);
             showToast('Anotação atualizada!');
             buscarAnotacao(idPerfil);
             editingNoteId.value = null;
@@ -236,7 +237,7 @@
         });
         if (result.isConfirmed) {
             try {
-                await axios.delete(`api/anotacao/${id}`);
+                await axios.delete(`/api/anotacao/${id}`);
                 showToast('Anotação removida.');
                 buscarAnotacao(idPerfil);
             } catch {
@@ -248,7 +249,7 @@
     // ── Arquivos ──
     const buscarAnexo = async (id) => {
         try {
-            const response = await axios.post(`/api/buscarArquivo/`, { user_id: id });
+            const response = await axios.get('/api/arquivos', { params: { usuario_id: id } });
             arquivos.value = response.data;
         } catch {
             messageError('Erro ao buscar anexos!');
@@ -285,15 +286,22 @@
                 formData.append('arquivo', arq.file);
                 formData.append('nome', arq.name);
                 formData.append('usuario_id', idPerfil);
-                await axios.post('api/arquivos', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+                await axios.post('/api/arquivos', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
                 processados++;
                 uploadProgress.value = Math.round((processados / total) * 100);
             }
             arquivosPendentes.value = [];
             buscarAnexo(idPerfil);
             showToast(`${total} arquivo(s) enviado(s) com sucesso!`);
-        } catch {
-            messageError('Erro ao enviar arquivos!');
+        } catch (e) {
+            // O 422 da PoliticaDeUpload diz o porquê (tamanho, tipo); a
+            // mensagem genérica só quando não há resposta do servidor.
+            messageError(
+                e?.response?.data?.errors?.arquivo?.[0]
+                ?? e?.response?.data?.errors?.nome?.[0]
+                ?? e?.response?.data?.message
+                ?? 'Erro ao enviar arquivos!'
+            );
         } finally {
             isUploading.value = false;
         }
@@ -308,7 +316,7 @@
 
     const buscarProjetos = async (idPerfil) => {
         try {
-            const res = await axios.post('/api/projetos', { usuario_id: idPerfil });
+            const res = await axios.get('/api/projetos', { params: { usuario_id: idPerfil } });
             totalProjetos.value = res.data.length;
         } catch {
             showToast('Erro ao buscar projetos!', 'error');
@@ -331,7 +339,7 @@
         });
         if (result.isConfirmed) {
             try {
-                await axios.delete(`api/arquivos/${id}`);
+                await axios.delete(`/api/arquivos/${id}`);
                 showToast('Documento removido.');
                 buscarAnexo(idPerfil);
             } catch {
@@ -474,7 +482,7 @@
                                     v-model="usuario.telefone"
                                     class="edit-input"
                                     v-maska
-                                    data-maska="(##) #####-####"
+                                    :data-maska="ehTelefoneBrasileiro(usuario.telefone) ? MASCARA_TELEFONE : null"
                                     placeholder="(00) 00000-0000"
                                 />
                             </div>
@@ -485,6 +493,7 @@
                                     class="edit-input edit-textarea"
                                     rows="4"
                                     placeholder="Observações gerais..."
+                                    :maxlength="limites.descricao"
                                 />
                             </div>
                             <div class="edit-field">
@@ -586,7 +595,7 @@
                                         </div>
                                     </div>
                                     <div class="file-item-actions">
-                                        <a :href="`/storage/${arquivo.local}`" :download="arquivo.nome" class="icon-btn icon-btn--download"><Download :size="13" /></a>
+                                        <a :href="arquivo.url_download" :download="arquivo.nome" class="icon-btn icon-btn--download"><Download :size="13" /></a>
                                         <button @click="excluirArquivo(arquivo.id)" class="icon-btn icon-btn--delete"><Trash2 :size="13" /></button>
                                     </div>
                                 </div>
@@ -626,7 +635,8 @@
 
                         <Transition name="slide">
                             <div v-if="showAddNote" class="note-form-inline">
-                                <textarea v-model="noteForm.descricao" rows="3" placeholder="Digite sua anotação..." class="note-textarea" autofocus />
+                                <textarea v-model="noteForm.descricao" rows="3" placeholder="Digite sua anotação..." class="note-textarea" autofocus :maxlength="limites.anotacao" />
+                                <small class="edit-label">{{ (noteForm.descricao?.length ?? 0) }} / {{ limites.anotacao }}</small>
                                 <div class="note-form-actions">
                                     <button @click="showAddNote = false; noteForm.descricao = ''" class="btn-ghost btn-sm"><X :size="12" /> Cancelar</button>
                                     <button @click="cadastrarAnotacao" class="btn-primary btn-sm" :disabled="!noteForm.descricao.trim()">
@@ -647,7 +657,7 @@
                                         </div>
                                     </div>
                                     <div v-else class="note-edit">
-                                        <textarea v-model="editNoteForm.descricao" rows="3" class="note-textarea" />
+                                        <textarea v-model="editNoteForm.descricao" rows="3" class="note-textarea" :maxlength="limites.anotacao" />
                                         <div class="note-form-actions">
                                             <button @click="cancelarEdicaoAnotacao" class="btn-ghost btn-sm"><X :size="12" /> Cancelar</button>
                                             <button @click="salvarEdicaoAnotacao" class="btn-primary btn-sm"><Save :size="12" /> Salvar</button>

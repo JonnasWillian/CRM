@@ -6,6 +6,8 @@
     import { Settings, X, Save, Plus, LayoutList, ArrowRightLeft, Clock } from 'lucide-vue-next';
     import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
     import { useContador } from '@/Composables/useContador';
+    import { vMaska } from 'maska/vue';
+    import { MASCARA_TELEFONE } from '@/utils/telefone';
 
     const user = computed(() => usePage().props.auth.user);
 
@@ -108,10 +110,9 @@
     const buscarKanban = async () => {
         isLoading.value = true;
         try {
-            const payload = { user_id: user.value.id };
-            if (funilId.value) payload.funil_id = funilId.value;
+            const params = funilId.value ? { funil_id: funilId.value } : {};
 
-            const res = await axios.post('/api/kanban', payload);
+            const res = await axios.get('/api/kanban', { params });
             estagios.value = res.data.estagios;
             leads.value = res.data.leads;
             funis.value = res.data.funis ?? [];
@@ -196,7 +197,7 @@
     const cancelarQuickAdd = () => { quickAddEstagioId.value = null; };
 
     const salvarQuickAdd = async () => {
-        if (!quickAddForm.value.nome.trim() || !quickAddForm.value.email.trim() || !quickAddForm.value.telefone.trim()) return;
+        if (!quickAddForm.value.nome.trim() || !quickAddForm.value.email.trim()) return;
 
         const estagio = estagios.value.find(e => e.id === quickAddEstagioId.value);
         const payload = {
@@ -247,7 +248,7 @@
         moverEstagios.value = [];
         if (!moverFunilId.value) return;
         try {
-            const res = await axios.post('/api/estagios', { funil_id: moverFunilId.value });
+            const res = await axios.get('/api/estagios', { params: { funil_id: moverFunilId.value } });
             moverEstagios.value = res.data;
             moverEstagioId.value = res.data.find(e => e.tipo === 'aberto')?.id ?? res.data[0]?.id ?? null;
         } catch {
@@ -300,7 +301,6 @@
         savingSettings.value = true;
         try {
             await axios.patch('/api/kanban/settings', {
-                user_id:        user.value.id,
                 default_estagio_id: defaultEstagioId.value,
             });
             showSettings.value = false;
@@ -509,7 +509,7 @@
                             <div v-if="quickAddEstagioId === estagio.id" class="kb-rapido">
                                 <input v-model="quickAddForm.nome" class="kb-input" placeholder="Nome *" autofocus @keydown.escape="cancelarQuickAdd" />
                                 <input v-model="quickAddForm.email" type="email" class="kb-input" placeholder="E-mail *" @keydown.escape="cancelarQuickAdd" />
-                                <input v-model="quickAddForm.telefone" class="kb-input" placeholder="Telefone *" @keydown.escape="cancelarQuickAdd" @keydown.enter="salvarQuickAdd" />
+                                <input v-model="quickAddForm.telefone" class="kb-input" v-maska :data-maska="MASCARA_TELEFONE" placeholder="Telefone" @keydown.escape="cancelarQuickAdd" @keydown.enter="salvarQuickAdd" />
                                 <div class="kb-rapido-f">
                                     <button class="kb-btn-ghost kb-btn--sm" @click="cancelarQuickAdd">Cancelar</button>
                                     <button class="kb-btn kb-btn--sm" :disabled="quickAdding" @click="salvarQuickAdd">

@@ -2,6 +2,13 @@
 import { useForm } from '@inertiajs/vue3';
 import { nextTick, ref } from 'vue';
 
+const props = defineProps({
+    impedimentos: {
+        type: Array,
+        default: () => [],
+    },
+});
+
 const confirmingUserDeletion = ref(false);
 const passwordInput = ref(null);
 
@@ -36,12 +43,22 @@ const closeModal = () => {
     <section class="pf-card pf-card--perigo">
         <h2 class="pf-card-titulo">Excluir conta</h2>
         <p class="pf-card-desc">
-            Apagar a conta remove permanentemente todos os seus dados. Baixe antes o que
-            quiser guardar — não há como desfazer.
+            Excluir a conta encerra o seu acesso. Os leads são da empresa e não saem com você:
+            enquanto você for dono de algum, ou for o único admin, a conta não pode ser excluída.
         </p>
 
+        <ul v-if="props.impedimentos.length" class="pf-aviso" style="margin-top: 0.9rem">
+            <li v-for="motivo in props.impedimentos" :key="motivo">{{ motivo }}</li>
+        </ul>
+
         <div class="pf-acoes" style="margin-top: 1.1rem">
-            <button class="pf-btn-perigo" @click="confirmUserDeletion">Excluir conta</button>
+            <button
+                class="pf-btn-perigo"
+                :disabled="props.impedimentos.length > 0"
+                @click="confirmUserDeletion"
+            >
+                Excluir conta
+            </button>
         </div>
 
         <!--
@@ -55,8 +72,7 @@ const closeModal = () => {
                 <div class="pf-dialogo">
                     <h2 class="pf-card-titulo">Excluir sua conta?</h2>
                     <p class="pf-card-desc">
-                        Todos os seus dados são apagados permanentemente. Digite sua senha
-                        para confirmar.
+                        Seu acesso será encerrado. Digite sua senha para confirmar.
                     </p>
 
                     <div class="pf-campo" style="margin-top: 1.1rem">
@@ -72,6 +88,9 @@ const closeModal = () => {
                         />
                         <span v-if="form.errors.password" class="pf-erro">
                             {{ form.errors.password }}
+                        </span>
+                        <span v-if="form.errors.conta" class="pf-erro">
+                            {{ form.errors.conta }}
                         </span>
                     </div>
 

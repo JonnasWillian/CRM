@@ -12,6 +12,10 @@ defineProps({
     status: {
         type: String,
     },
+    impedimentosDeExclusao: {
+        type: Array,
+        default: () => [],
+    },
 });
 </script>
 
@@ -31,7 +35,7 @@ defineProps({
                     :status="status"
                 />
                 <UpdatePasswordForm />
-                <DeleteUserForm />
+                <DeleteUserForm :impedimentos="impedimentosDeExclusao" />
             </div>
         </div>
     </AuthenticatedLayout>

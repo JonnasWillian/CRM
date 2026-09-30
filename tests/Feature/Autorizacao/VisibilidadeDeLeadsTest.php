@@ -51,7 +51,7 @@ class VisibilidadeDeLeadsTest extends TestCase
 
     public function test_vendedor_lista_apenas_a_propria_carteira(): void
     {
-        $ids = collect($this->actingAs($this->vendedor)->postJson('/api/pegarUsuarios')->assertOk()->json())
+        $ids = collect($this->actingAs($this->vendedor)->getJson('/api/leads')->assertOk()->json('data'))
             ->pluck('id')->all();
 
         $this->assertContains($this->leadDoVendedor->id, $ids);
@@ -60,7 +60,7 @@ class VisibilidadeDeLeadsTest extends TestCase
 
     public function test_gestor_lista_a_carteira_inteira_do_tenant(): void
     {
-        $ids = collect($this->actingAs($this->gestor)->postJson('/api/pegarUsuarios')->assertOk()->json())
+        $ids = collect($this->actingAs($this->gestor)->getJson('/api/leads')->assertOk()->json('data'))
             ->pluck('id')->all();
 
         $this->assertContains($this->leadDoGestor->id, $ids);
@@ -69,7 +69,7 @@ class VisibilidadeDeLeadsTest extends TestCase
 
     public function test_o_kanban_segue_a_mesma_regra(): void
     {
-        $dados = $this->actingAs($this->gestor)->postJson('/api/kanban')->assertOk()->json();
+        $dados = $this->actingAs($this->gestor)->getJson('/api/kanban')->assertOk()->json();
         $ids = array_column($dados['leads'], 'id');
 
         $this->assertContains($this->leadDoVendedor->id, $ids);
@@ -77,8 +77,8 @@ class VisibilidadeDeLeadsTest extends TestCase
 
     public function test_as_metricas_seguem_a_mesma_regra(): void
     {
-        $vendedor = $this->actingAs($this->vendedor)->postJson('/api/metricas')->assertOk()->json();
-        $gestor = $this->actingAs($this->gestor)->postJson('/api/metricas')->assertOk()->json();
+        $vendedor = $this->actingAs($this->vendedor)->getJson('/api/metricas')->assertOk()->json();
+        $gestor = $this->actingAs($this->gestor)->getJson('/api/metricas')->assertOk()->json();
 
         $this->assertSame(1, $vendedor['total_leads']);
         $this->assertSame(2, $gestor['total_leads']);

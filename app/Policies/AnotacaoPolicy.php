@@ -4,11 +4,14 @@ namespace App\Policies;
 
 use App\Models\Anotacao;
 use App\Models\User;
+use App\Policies\Concerns\DonoDoLead;
 use Illuminate\Auth\Access\Response;
 
 /** Um salto até o dono: anotação -> usuario.user_id. */
 class AnotacaoPolicy
 {
+    use DonoDoLead;
+
     public function view(User $user, Anotacao $anotacao): Response
     {
         return $this->doDono($user, $anotacao);
@@ -26,12 +29,6 @@ class AnotacaoPolicy
 
     private function doDono(User $user, Anotacao $anotacao): Response
     {
-        if ($user->can('leads.view-all')) {
-            return Response::allow();
-        }
-
-        return $anotacao->usuario?->user_id === $user->id
-            ? Response::allow()
-            : Response::denyAsNotFound();
+        return $this->doDonoDoLead($user, $anotacao->usuario);
     }
 }

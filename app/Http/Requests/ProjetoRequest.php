@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\LimitesDeTexto;
 use App\Support\Perdas\RegrasDePerda;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -102,8 +103,8 @@ class ProjetoRequest extends FormRequest
     private function storeRules()
     {
         return [
-            'nome' => 'required|string|min:5',
-            'descricao' => 'nullable|string',
+            'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
+            'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'preco' => 'nullable|numeric',
             'data_inicial' => 'nullable|date',
             'data_final' => 'nullable|date',
@@ -118,8 +119,8 @@ class ProjetoRequest extends FormRequest
     private function updateRules()
     {
         return [
-            'nome' => 'required|string|min:5',
-            'descricao' => 'nullable|string',
+            'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
+            'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'preco' => 'nullable|numeric',
             'data_inicial' => 'nullable|date',
             'data_final' => 'nullable|date',
@@ -165,8 +166,10 @@ class ProjetoRequest extends FormRequest
             'nome.required' => 'O campo nome é obrigatório.',
             'nome.min' => 'O nome deve ter no mínimo :min caracteres.',
             'nome.string' => 'O nome deve ser um texto válido.',
+            'nome.max' => 'O nome pode ter no máximo :max caracteres.',
 
             'descricao.string' => 'A descrição deve ser um texto válido.',
+            'descricao.max' => 'A descrição pode ter no máximo :max caracteres.',
 
             'usuario_id.required' => 'O usuário responsável é obrigatório.',
             'status_id.required' => 'O Status é obrigatório.',

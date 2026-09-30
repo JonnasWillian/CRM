@@ -8,10 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Perdas\Perdivel;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Projeto extends Model implements Perdivel
 {
-    use HasFactory, Notifiable, BelongsToTenant;
+    use HasFactory, Notifiable, BelongsToTenant, SoftDeletes;
 
     protected $fillable = [
         'nome',

@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\ProjetoRequest;
 use App\Http\Requests\ProjetoAnexoRequest;
+use App\Support\LimitesDeTexto;
 
-use App\Service\ArquivoService;
+use App\Services\Arquivos\ArquivoService;
 
 use App\Models\Statu;
 use App\Models\Projeto;
@@ -111,7 +112,7 @@ class ProjetoController extends Controller
 
             $this->authorize('update', $projeto);
 
-            $validated = $request->validate(['descricao' => 'required|string']);
+            $validated = $request->validate(['descricao' => ['required', 'string', 'max:'.LimitesDeTexto::ANOTACAO]]);
 
             ProjetoAnotacao::create([
                 'descricao' => $validated['descricao'],
@@ -133,7 +134,7 @@ class ProjetoController extends Controller
 
         try {
             $validateRequest = $request->validate([
-                'descricao' => 'required|string',
+                'descricao' => ['required', 'string', 'max:'.LimitesDeTexto::ANOTACAO],
             ]);
 
             $projetoAnotacao->update($validateRequest);
@@ -169,35 +170,27 @@ class ProjetoController extends Controller
 
     public function createAnexo(ProjetoAnexoRequest $request)
     {
-        // O id que vai para o banco é o do model que
-        // ProjetoAnexoRequest::authorize() já resolveu e autorizou (via
-        // integer()), não o texto cru do corpo — que pode trazer lixo
-        // depois do número ("1abc") e quebrar o INSERT em sql_mode
-        // estrito, ou simplesmente divergir do que foi checado.
-        //
-        // Fora do try/catch, igual ao irmão arquivo::store(): dentro dele, um
-        // catch(\Exception) genérico transformaria o 404 do findOrFail em 500
-        // com mensagem enganosa. Hoje o ramo é inalcançável (o id já foi
-        // validado e autorizado antes de chegar aqui), mas se deixar de ser,
-        // a resposta certa continua sendo 404, não 500.
+        // Mesmo motivo do irmão arquivo::store(): o id é o que
+        // ProjetoAnexoRequest::authorize() já resolveu e autorizou.
         $projeto = Projeto::findOrFail($request->integer('usuario_id'));
 
-        try {
-            $caminho = $this->arquivoService->salveFile($request->file('arquivo'));
-
-            $anexo = ProjetoAnexo::create([
-                'nome' => $request->nome ?: '',
-                'local' => $caminho,
+        $anexo = $this->arquivoService->guardarComRegistro(
+            $request->file('arquivo'),
+            ArquivoService::pastaDoProjeto($projeto->tenant_id, $projeto->id),
+            // input() e não validated(): mesmo motivo do irmão
+            // arquivo::store() — FormRequestsTest chama este método direto,
+            // sem passar $request pelo ciclo de validação.
+            fn (array $dados) => ProjetoAnexo::create([
+                ...$dados,
+                'nome' => $request->input('nome') ?: '',
                 'projeto_id' => $projeto->id,
-            ]);
+            ]),
+        );
 
-            return response()->json([
-                'success' => true,
-                'data' => $anexo,
-            ], 201);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Erro ao salvar anexo'], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => $anexo,
+        ], 201);
     }
 
 
@@ -208,5 +201,23 @@ class ProjetoController extends Controller
         $projetoAnexo->delete();
 
         return response()->json(['message' => 'Anexo deletado com sucesso'], 200);
+    }
+
+    public function destroy(Projeto $projeto)
+    {
+        $this->authorize('delete', $projeto);
+
+        $projeto->delete();
+
+        return response()->json(['message' => 'Projeto movido para a lixeira']);
+    }
+
+    public function restaurar(Projeto $projeto)
+    {
+        $this->authorize('restore', $projeto);
+
+        $projeto->restore();
+
+        return response()->json(['message' => 'Projeto restaurado']);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Contas\ExclusaoDeConta;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,11 +17,12 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): Response
+    public function edit(Request $request, ExclusaoDeConta $exclusao): Response
     {
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'impedimentosDeExclusao' => $exclusao->impedimentos($request->user()),
         ]);
     }
 
@@ -42,8 +44,12 @@ class ProfileController extends Controller
 
     /**
      * Delete the user's account.
+     *
+     * A senha é conferida primeiro (um impedimento não deve ser revelado a
+     * quem só está com a sessão aberta de outra pessoa); depois a regra de
+     * negócio. Só então a sessão é encerrada.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, ExclusaoDeConta $exclusao): RedirectResponse
     {
         $request->validate([
             'password' => ['required', 'current_password'],
@@ -51,9 +57,9 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        $exclusao->excluir($user);
 
-        $user->delete();
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -33,7 +33,10 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Sem rota de URL assinada do Laravel: ninguém gera temporaryUrl
+            // para este disco, e todo download passa pelo controller, que
+            // autentica e pergunta à policy (ArquivoService::baixar).
+            'serve' => false,
             'throw' => false,
         ],
 

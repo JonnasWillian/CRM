@@ -56,7 +56,7 @@ class KanbanArchivedEstagioTest extends TestCase
 
         $estagio->delete();
 
-        $dados = $this->actingAs($staff)->postJson('/api/kanban')->assertOk()->json();
+        $dados = $this->actingAs($staff)->getJson('/api/kanban')->assertOk()->json();
 
         $coluna = collect($dados['estagios'])->firstWhere('id', $estagio->id);
 
@@ -72,7 +72,7 @@ class KanbanArchivedEstagioTest extends TestCase
         $estagio = Estagio::factory()->create(['tenant_id' => $tenant->id, 'funil_id' => $funil->id]);
         $estagio->delete();
 
-        $dados = $this->actingAs($staff)->postJson('/api/kanban')->assertOk()->json();
+        $dados = $this->actingAs($staff)->getJson('/api/kanban')->assertOk()->json();
 
         $this->assertNotContains($estagio->id, array_column($dados['estagios'], 'id'));
     }
@@ -83,7 +83,7 @@ class KanbanArchivedEstagioTest extends TestCase
 
         $estagio = Estagio::factory()->create(['tenant_id' => $tenant->id, 'funil_id' => $funil->id]);
 
-        $dados = $this->actingAs($staff)->postJson('/api/kanban')->assertOk()->json();
+        $dados = $this->actingAs($staff)->getJson('/api/kanban')->assertOk()->json();
 
         $coluna = collect($dados['estagios'])->firstWhere('id', $estagio->id);
 
@@ -105,7 +105,7 @@ class KanbanArchivedEstagioTest extends TestCase
         $outroFunil = Funil::factory()->create(['tenant_id' => $tenant->id]);
         $dela = Estagio::factory()->create(['tenant_id' => $tenant->id, 'funil_id' => $outroFunil->id]);
 
-        $dados = $this->actingAs($staff)->postJson('/api/kanban', ['funil_id' => $funil->id])->assertOk()->json();
+        $dados = $this->actingAs($staff)->getJson('/api/kanban?'.http_build_query(['funil_id' => $funil->id]))->assertOk()->json();
 
         $ids = array_column($dados['estagios'], 'id');
         $this->assertContains($daqui->id, $ids);

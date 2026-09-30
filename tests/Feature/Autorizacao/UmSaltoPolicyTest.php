@@ -130,14 +130,12 @@ class UmSaltoPolicyTest extends TestCase
      */
     public function test_buscar_arquivo_nao_entrega_anexos_de_lead_alheio(): void
     {
-        // A chave é `user_id`, não `usuario_id`: é o que o frontend
-        // (Perfil.vue::buscarAnexo) de fato envia. Ver nota em arquivo::index.
         $this->actingAs($this->intruso)
-            ->postJson('/api/buscarArquivo', ['user_id' => $this->lead->id])
+            ->getJson('/api/arquivos?usuario_id='.$this->lead->id)
             ->assertNotFound();
 
         $this->actingAs($this->dono)
-            ->postJson('/api/buscarArquivo', ['user_id' => $this->lead->id])
+            ->getJson('/api/arquivos?usuario_id='.$this->lead->id)
             ->assertOk();
     }
 }

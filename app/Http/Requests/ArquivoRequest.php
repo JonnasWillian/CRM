@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Arquivos\PoliticaDeUpload;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -53,7 +54,8 @@ class ArquivoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'arquivo' => ['required', 'file'],
+            'arquivo' => PoliticaDeUpload::regras(),
+            'nome' => ['nullable', 'string', 'max:255'],
             'usuario_id' => [
                 'required',
                 'integer',
@@ -65,10 +67,10 @@ class ArquivoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...PoliticaDeUpload::mensagens(),
+            'nome.max' => 'O nome do arquivo pode ter no máximo 255 caracteres.',
             'usuario_id.required' => 'O usuário detentor do arquivo é obrigatório',
             'usuario_id.exists' => 'Usuário inválido.',
-            'arquivo.required' => 'O campo arquivo é obrigatorio',
-            'arquivo.file' => 'Deve ser enviado um arquivo',
         ];
     }
 }

@@ -4,11 +4,14 @@ namespace App\Policies;
 
 use App\Models\arquivo;
 use App\Models\User;
+use App\Policies\Concerns\DonoDoLead;
 use Illuminate\Auth\Access\Response;
 
 /** Um salto até o dono: arquivo -> usuario.user_id. */
 class ArquivoPolicy
 {
+    use DonoDoLead;
+
     public function view(User $user, arquivo $arquivo): Response
     {
         return $this->doDono($user, $arquivo);
@@ -21,12 +24,6 @@ class ArquivoPolicy
 
     private function doDono(User $user, arquivo $arquivo): Response
     {
-        if ($user->can('leads.view-all')) {
-            return Response::allow();
-        }
-
-        return $arquivo->usuario?->user_id === $user->id
-            ? Response::allow()
-            : Response::denyAsNotFound();
+        return $this->doDonoDoLead($user, $arquivo->usuario);
     }
 }

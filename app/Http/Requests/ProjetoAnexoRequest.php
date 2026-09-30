@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Arquivos\PoliticaDeUpload;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -54,7 +55,8 @@ class ProjetoAnexoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'arquivo' => ['required', 'file'],
+            'arquivo' => PoliticaDeUpload::regras(),
+            'nome' => ['nullable', 'string', 'max:255'],
             'usuario_id' => [
                 'required',
                 'integer',
@@ -66,10 +68,10 @@ class ProjetoAnexoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...PoliticaDeUpload::mensagens(),
+            'nome.max' => 'O nome do arquivo pode ter no máximo 255 caracteres.',
             'usuario_id.required' => 'O projeto do anexo é obrigatório.',
             'usuario_id.exists' => 'Projeto inválido.',
-            'arquivo.required' => 'O campo arquivo é obrigatório.',
-            'arquivo.file' => 'Deve ser enviado um arquivo.',
         ];
     }
 }

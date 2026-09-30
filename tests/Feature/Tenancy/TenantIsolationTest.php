@@ -28,7 +28,7 @@ class TenantIsolationTest extends TestCase
         $leadB = Usuario::factory()->create(['user_id' => $staffB->id, 'tenant_id' => $tenantB->id]);
 
         // Caminho HTTP real, passando por auth+tenant middleware e pelo controller já hardened (Task 14)
-        $response = $this->actingAs($staffA)->postJson('/api/pegarUsuarios');
+        $response = $this->actingAs($staffA)->getJson('/api/leads');
         $response->assertOk();
         $response->assertJsonFragment(['id' => $leadA->id]);
         $response->assertJsonMissing(['id' => $leadB->id]);

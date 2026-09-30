@@ -60,11 +60,11 @@ class DonoNoCorpoTest extends TestCase
     public function test_listar_projetos_exige_posse_do_lead(): void
     {
         $this->actingAs($this->colega)
-            ->postJson('/api/projetos', ['usuario_id' => $this->lead->id])
+            ->getJson('/api/projetos?'.http_build_query(['usuario_id' => $this->lead->id]))
             ->assertNotFound();
 
         $this->actingAs($this->dono)
-            ->postJson('/api/projetos', ['usuario_id' => $this->lead->id])
+            ->getJson('/api/projetos?'.http_build_query(['usuario_id' => $this->lead->id]))
             ->assertOk();
     }
 

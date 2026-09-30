@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -88,7 +90,71 @@ class TimelineParityTest extends TestCase
         $resposta = $this->actingAs($this->staff)->getJson("/api/leads/{$this->lead->id}/atividades");
         $resposta->assertOk();
 
-        return collect($resposta->json('data'))->pluck('event')->sort()->values()->all();
+        return collect($resposta->json('data'))->pluck('tipo')->sort()->values()->all();
+    }
+
+    /**
+     * O que a tela mostra de cada evento: tipo, instante e os campos que o
+     * TimelinePanel lê para aquele tipo. É isto que precisa bater entre o
+     * timeline() antigo e o endpoint novo — não só a lista de tipos.
+     */
+    private function vista(array $evento): array
+    {
+        $campos = match ($evento['tipo']) {
+            'anotacao' => ['descricao'],
+            'projeto_anotacao' => ['descricao', 'projeto_nome'],
+            'arquivo', 'projeto' => ['nome'],
+            'projeto_anexo' => ['nome', 'projeto_nome'],
+            'status_alterado' => ['estagio_anterior', 'estagio_novo'],
+            'tarefa_criada', 'tarefa_concluida' => ['titulo'],
+            default => [],
+        };
+
+        $vista = ['tipo' => $evento['tipo'], 'instante' => Carbon::parse($evento['data'])->timestamp]
+            + Arr::only($evento, $campos);
+
+        // A ordem das chaves no JSON não significa nada, mas assertSame a
+        // compara; sem isto o teste acusaria diferença com valores iguais.
+        ksort($vista);
+
+        return $vista;
+    }
+
+    private function ordenar(array $vistas): array
+    {
+        // Desempate pelo conteúdo: dois eventos do mesmo tipo no mesmo
+        // segundo não podem depender da ordem em que cada caminho os devolve.
+        usort($vistas, fn ($a, $b) => [$a['tipo'], $a['instante'], json_encode($a)] <=> [$b['tipo'], $b['instante'], json_encode($b)]);
+
+        return $vistas;
+    }
+
+    public function test_os_dois_caminhos_mostram_o_mesmo_conteudo_e_a_mesma_data(): void
+    {
+        $antigo = $this->actingAs($this->staff)->getJson("/api/timeline/{$this->lead->id}")->json();
+        $novo = $this->actingAs($this->staff)->getJson("/api/leads/{$this->lead->id}/atividades")->json('data');
+
+        $this->assertSame(
+            $this->ordenar(array_map(fn ($e) => $this->vista($e), $antigo)),
+            $this->ordenar(array_map(fn ($e) => $this->vista($e), $novo)),
+        );
+    }
+
+    public function test_arquivo_sem_nome_aparece_igual_nos_dois_caminhos(): void
+    {
+        // arquivos.nome é nullable. O timeline antigo e os observers mostram
+        // 'Arquivo sem nome'; a linha do backfill só tem o subject, e o
+        // Resource precisa aplicar o mesmo rótulo.
+        arquivo::create(['nome' => null, 'local' => 'arquivos/x.pdf', 'usuario_id' => $this->lead->id]);
+        DB::table('activity_log')->delete();
+        $this->artisan('activities:backfill-leads')->assertSuccessful();
+        app(CurrentTenant::class)->set($this->tenant);
+
+        $novo = collect($this->actingAs($this->staff)->getJson("/api/leads/{$this->lead->id}/atividades")->json('data'))
+            ->where('tipo', 'arquivo')->pluck('nome')->sort()->values()->all();
+
+        $this->assertSame(['Arquivo sem nome', 'rg.pdf'], $novo);
+        $this->test_os_dois_caminhos_mostram_o_mesmo_conteudo_e_a_mesma_data();
     }
 
     public function test_sem_registros_apagados_os_dois_caminhos_produzem_os_mesmos_eventos(): void
@@ -140,7 +206,7 @@ class TimelineParityTest extends TestCase
 
         $resposta->assertOk()->assertJsonStructure(['data', 'current_page', 'last_page', 'total']);
 
-        $datas = collect($resposta->json('data'))->pluck('created_at')->all();
+        $datas = collect($resposta->json('data'))->pluck('data')->all();
         $ordenadas = collect($datas)->sortDesc()->values()->all();
 
         $this->assertSame($ordenadas, $datas);

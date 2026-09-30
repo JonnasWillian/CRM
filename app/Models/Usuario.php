@@ -6,13 +6,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Perdas\Perdivel;
 
 class Usuario extends Model implements Perdivel
 {
-    use HasFactory, Notifiable, BelongsToTenant;
+    use HasFactory, Notifiable, BelongsToTenant, SoftDeletes;
 
     protected $fillable = [
         'nome',
@@ -37,6 +38,11 @@ class Usuario extends Model implements Perdivel
     public function perdas(): MorphMany
     {
         return $this->morphMany(Perda::class, 'perdivel');
+    }
+
+    public function projetos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Projeto::class, 'usuario_id');
     }
 
     /**

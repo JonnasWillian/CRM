@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadDeArquivoController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,18 @@ Route::get('/dashboard', function () {
 Route::get('/leads/{usuario}', function (App\Models\Usuario $usuario) {
     return Inertia::render('Usuario/Perfil', ['leadId' => $usuario->id]);
 })->middleware(['auth', 'verified', 'tenant'])->can('view', 'usuario')->name('leads.show');
+
+/*
+ * Download de anexos. Ver DownloadDeArquivoController: é a única saída do
+ * conteúdo, e passa por auth, tenant e policy. O disco `public` não guarda
+ * mais anexo nenhum.
+ */
+Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
+    Route::get('/arquivos/{arquivo}/download', [DownloadDeArquivoController::class, 'lead'])
+        ->name('arquivos.download');
+    Route::get('/projeto-anexos/{projetoAnexo}/download', [DownloadDeArquivoController::class, 'projeto'])
+        ->name('projetoAnexos.download');
+});
 
 Route::get('/modelos-tarefa', function () {
     return Inertia::render('ModelosTarefa');

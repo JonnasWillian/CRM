@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\ProjetoAnexo;
+use App\Services\Arquivos\ArquivoService;
 use App\Support\ActivityLog\LeadActivity;
 
 /**
@@ -23,6 +24,15 @@ class ProjetoAnexoObserver
         LeadActivity::registrar($anexo, static::leadId($anexo), 'projeto_anexo_removido', 'Anexo de projeto removido', [
             'nome' => $anexo->nome ?: 'Arquivo sem nome',
         ]);
+    }
+
+    /**
+     * O soft delete mantém o arquivo (restaurável). Só a exclusão definitiva
+     * o remove — e é o único ponto do sistema que faz isso.
+     */
+    public function forceDeleted(ProjetoAnexo $anexo): void
+    {
+        app(ArquivoService::class)->remover($anexo->local);
     }
 
     private static function leadId(ProjetoAnexo $anexo): ?int

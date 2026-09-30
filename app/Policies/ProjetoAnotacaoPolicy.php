@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\ProjetoAnotacao;
 use App\Models\User;
+use App\Policies\Concerns\DonoDoLead;
 use Illuminate\Auth\Access\Response;
 
 /**
@@ -11,6 +12,8 @@ use Illuminate\Auth\Access\Response;
  */
 class ProjetoAnotacaoPolicy
 {
+    use DonoDoLead;
+
     public function update(User $user, ProjetoAnotacao $anotacao): Response
     {
         return $this->doDono($user, $anotacao);
@@ -23,12 +26,6 @@ class ProjetoAnotacaoPolicy
 
     private function doDono(User $user, ProjetoAnotacao $anotacao): Response
     {
-        if ($user->can('leads.view-all')) {
-            return Response::allow();
-        }
-
-        return $anotacao->projeto?->usuario?->user_id === $user->id
-            ? Response::allow()
-            : Response::denyAsNotFound();
+        return $this->doDonoDoLead($user, $anotacao->projeto?->usuario);
     }
 }

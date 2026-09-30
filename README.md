@@ -17,6 +17,9 @@ apenas os próprios dados.
 ## Requisitos
 
 - PHP **8.2** com as extensões `mbstring`, `pdo_mysql` e `intl`
+- `php.ini`: `upload_max_filesize = 12M` e `post_max_size = 16M`. O limite do sistema é 10 MB por anexo
+  (`App\Support\Arquivos\PoliticaDeUpload::MAX_KB`); com os valores padrão do PHP (2M/8M) o arquivo é
+  descartado antes da validação e o usuário recebe "passa do limite de upload do servidor".
 - Composer 2
 - Node 20 e npm
 - MySQL 8 acessível (o projeto assume `127.0.0.1:3306`)
@@ -32,6 +35,9 @@ npm install
 cp .env.example .env
 php artisan key:generate
 ```
+
+> Em desenvolvimento, ligue `APP_DEBUG=true` no seu `.env`. O exemplo vem com `false` para que um
+> ambiente novo (inclusive produção copiada do exemplo) não exponha stack trace.
 
 Edite o `.env`: troque `DB_CONNECTION=sqlite` por `mysql` e **descomente** as
 linhas `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD`, que
@@ -84,6 +90,50 @@ php artisan key:generate --env=testing
 
 O CI (GitHub Actions, `.github/workflows/tests.yml`) roda a suíte a cada push e
 pull request, contra um MySQL 8 de serviço.
+
+## Atualização a partir da versão anterior (correções P1–P8)
+
+Quem já roda a versão anterior em produção precisa destes passos, **nesta
+ordem**. Instalação nova não precisa: basta a seção [Instalação](#instalação).
+
+1. **Backup** do banco e da pasta `storage/app/public/arquivos`. A migration de
+   telefone reescreve dados e o passo 4 move arquivos de lugar.
+
+   ```bash
+   mysqldump -u root -p CRMLeader > backup-antes-p1-p8.sql
+   tar czf backup-arquivos.tgz storage/app/public/arquivos
+   ```
+
+2. **`php.ini`**: `upload_max_filesize = 12M` e `post_max_size = 16M` (ver
+   [Requisitos](#requisitos)). Reinicie o PHP-FPM/servidor web depois.
+
+3. **Migrations.** A de telefone converte a coluna para texto e normaliza os
+   números para E.164. Antes, veja o que vai mudar e o que não é reconhecido:
+
+   ```bash
+   php artisan telefones:normalizar --dry-run
+   php artisan migrate
+   ```
+
+4. **Anexos para o disco privado.** Os anexos antigos estão no disco público;
+   até este passo rodar, o download deles dá 404. Confira o relatório do
+   `--dry-run` antes de rodar de verdade:
+
+   ```bash
+   php artisan arquivos:migrar-para-privado --dry-run
+   php artisan arquivos:migrar-para-privado
+   ```
+
+5. **Órfãos.** Arquivos do disco público sem linha no banco não são movidos e
+   **continuam públicos em `/storage`** até alguém decidir o que fazer com eles.
+   Depois de conferir a lista do passo 4 (e com o backup do passo 1 em mãos),
+   apague-os com `php artisan arquivos:migrar-para-privado --limpar-orfaos`.
+
+6. **Assets do front:**
+
+   ```bash
+   npm run build
+   ```
 
 ## Arquitetura
 

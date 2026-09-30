@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\Estagio;
 use App\Models\EstagioHistorico;
 use App\Models\Usuario;
 use App\Support\ActivityLog\LeadActivity;
@@ -56,7 +57,28 @@ class UsuarioObserver
                 'estagio_novo_id' => $usuario->estagio_id,
                 'funil_anterior_id' => $funilAnterior,
                 'funil_novo_id' => $usuario->funil_id,
+                // Nome gravado junto com o id: o histórico mostra o estágio
+                // como ele se chamava no momento, mesmo que seja renomeado ou
+                // arquivado depois.
+                'estagio_anterior' => $estagioAnterior ? Estagio::withTrashed()->whereKey($estagioAnterior)->value('descricao') : null,
+                'estagio_novo' => $usuario->estagio_id ? Estagio::withTrashed()->whereKey($usuario->estagio_id)->value('descricao') : null,
             ],
         );
+    }
+
+    public function deleted(Usuario $usuario): void
+    {
+        // forceDelete também dispara `deleted`; com RESTRICT ele só passa em
+        // lead sem filhos, e o log não deve chamá-lo de "lixeira".
+        if ($usuario->isForceDeleting()) {
+            return;
+        }
+
+        LeadActivity::registrar($usuario, $usuario->id, 'lead_removido', 'Lead movido para a lixeira');
+    }
+
+    public function restored(Usuario $usuario): void
+    {
+        LeadActivity::registrar($usuario, $usuario->id, 'lead_restaurado', 'Lead restaurado da lixeira');
     }
 }

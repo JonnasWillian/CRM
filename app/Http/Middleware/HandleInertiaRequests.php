@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\LimitesDeTexto;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -45,6 +46,9 @@ class HandleInertiaRequests extends Middleware
                     'leads.view-all' => (bool) $request->user()?->can('leads.view-all'),
                 ],
             ],
+            // Fonte única de limites de texto (validação e colunas), para o
+            // front aplicar o mesmo `maxlength` sem duplicar o número.
+            'limites' => LimitesDeTexto::paraOFront(),
         ];
     }
 }

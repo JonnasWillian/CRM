@@ -1,0 +1,10 @@
+[75885571ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8000/dashboard:0
+[75885614ms] fe
+[75886738ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8000/dashboard:0
+[75886739ms] fe
+[75887646ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8000/kanban:0
+[75887648ms] fe
+[75889916ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8000/dashboard:0
+[75889919ms] fe
+[75890313ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8000/kanban:0
+[75890315ms] fe

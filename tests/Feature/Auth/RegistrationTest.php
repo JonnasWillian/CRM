@@ -41,11 +41,11 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
 
-        $estagios = $this->postJson('/api/estagios');
+        $estagios = $this->getJson('/api/estagios');
         $estagios->assertOk();
         $this->assertNotEmpty($estagios->json());
 
-        $status = $this->postJson('/api/status');
+        $status = $this->getJson('/api/status');
         $status->assertOk();
         $this->assertNotEmpty($status->json());
     }

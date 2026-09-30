@@ -17,7 +17,22 @@ class ProjetoAnexo extends Model
         'nome',
         'local',
         'projeto_id',
+        'tamanho',
+        'mime',
     ];
+
+    /**
+     * O caminho no disco é detalhe interno. O cliente recebe a URL que passa
+     * pela policy (DownloadDeArquivoController), nunca o caminho.
+     */
+    protected $hidden = ['local'];
+
+    protected $appends = ['url_download'];
+
+    public function getUrlDownloadAttribute(): string
+    {
+        return route('projetoAnexos.download', $this);
+    }
 
     public function projeto()
     {

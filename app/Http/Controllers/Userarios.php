@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\UsuarioRequest;
+use App\Support\LimitesDeTexto;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -25,21 +26,15 @@ use App\Models\Tarefa;
 
 class Userarios extends Controller
 {
-    public function view(Request $request)
+    /**
+     * Lista de leads do Dashboard: visibilidade, filtros, ordem e paginação
+     * ficam em ListagemDeLeads (Tarefa 14) — substitui o antigo `view()`, que
+     * devolvia a carteira inteira e deixava busca/filtro/paginação por conta
+     * do navegador.
+     */
+    public function index(\App\Http\Requests\ListagemDeLeadsRequest $request, \App\Queries\Leads\ListagemDeLeads $listagem)
     {
-        $usuarios = Usuario::visibleTo(auth()->user())
-            ->with('estagio')
-            ->addSelect([
-                '*',
-                'tem_projeto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
-                    ->selectRaw('COUNT(*) > 0'),
-                'tem_projeto_aberto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
-                    ->whereHas('status', fn ($q) => $q->open())
-                    ->selectRaw('COUNT(*) > 0'),
-            ])
-            ->get();
-
-        return response()->json($usuarios);
+        return response()->json($listagem($request->user(), $request->validated()));
     }
 
     public function estagios(Request $request)
@@ -128,6 +123,12 @@ class Userarios extends Controller
         }
     }
 
+    /**
+     * @deprecated Substituído por LeadAtividadeController::index (activity
+     *             log paginado). Mantido só para o teste de paridade; remover
+     *             depois que o endpoint novo rodar em produção (spec
+     *             2026-09-20-activity-log-design, fase 4).
+     */
     public function timeline(Usuario $usuario)
     {
         $this->authorize('view', $usuario);
@@ -217,9 +218,19 @@ class Userarios extends Controller
     {
         $this->authorize('delete', $usuario);
 
+        // Soft delete: vai para a lixeira. Filhos, perdas e histórico ficam.
         $usuario->delete();
 
-        return response()->json(['message' => 'Usuário deletado com sucesso'], 201);
+        return response()->json(['message' => 'Lead movido para a lixeira']);
+    }
+
+    public function restaurar(Usuario $usuario)
+    {
+        $this->authorize('restore', $usuario);
+
+        $usuario->restore();
+
+        return response()->json(['message' => 'Lead restaurado']);
     }
 
     public function viewAnotacao(Usuario $usuario)
@@ -243,7 +254,7 @@ class Userarios extends Controller
 
             $this->authorize('update', $lead);
 
-            $validated = $request->validate(['descricao' => 'required|string']);
+            $validated = $request->validate(['descricao' => ['required', 'string', 'max:'.LimitesDeTexto::ANOTACAO]]);
 
             Anotacao::create([
                 'descricao' => $validated['descricao'],
@@ -263,7 +274,7 @@ class Userarios extends Controller
     {
         $this->authorize('update', $anotacao);
 
-        $anotacao->update($request->validate(['descricao' => 'required|string']));
+        $anotacao->update($request->validate(['descricao' => ['required', 'string', 'max:'.LimitesDeTexto::ANOTACAO]]));
 
         return response()->json(['message' => 'Anotação atualizada']);
     }
@@ -423,35 +434,47 @@ class Userarios extends Controller
 
     public function kanbanSettings(Request $request)
     {
-        try {
-            auth()->user()->update(['kanban_default_estagio_id' => $request->default_estagio_id]);
-            return response()->json(['message' => 'Preferência salva']);
-        } catch (\Exception $error) {
-            return response()->json(['error' => 'Usuário não encontrado'], 404);
-        }
+        // Sem try/catch: o catch(\Exception) anterior transformava qualquer
+        // falha — inclusive a FK recusando um id — em 404 "Usuário não
+        // encontrado", o que também servia de oráculo de ids entre tenants.
+        $validated = $request->validate([
+            'default_estagio_id' => [
+                'present',
+                'nullable',
+                'integer',
+                Rule::exists('estagios', 'id')
+                    ->where('tenant_id', app(CurrentTenant::class)->id())
+                    ->whereNull('deleted_at'),
+            ],
+        ]);
+
+        auth()->user()->update(['kanban_default_estagio_id' => $validated['default_estagio_id']]);
+
+        return response()->json(['message' => 'Preferência salva']);
     }
 
     public function metricas(Request $request)
     {
-        $leadIds = Usuario::visibleTo(auth()->user())->pluck('id');
+        // Subconsulta, não lista: o banco resolve "quais leads este agente vê"
+        // dentro da própria consulta. pluck('id') + whereIn mandava a carteira
+        // inteira como bindings.
+        $visiveis = fn () => Usuario::visibleTo(auth()->user())->select('usuarios.id');
         // `is_active` foi removida: o que separa lead em pipeline de lead
         // encerrado agora é o tipo do estágio. "Aberto" é o que antes era
         // is_active = true; ganho e perdido, juntos, são o que era false.
         $leadsAtivos     = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->aberto())->count();
         $leadsArquivados = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->fechado())->count();
         $leads30Dias     = Usuario::visibleTo(auth()->user())->where('created_at', '>=', now()->subDays(30))->count();
-        $valorAberto = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
-        $valorFechadoMes = Projeto::whereIn('usuario_id', $leadIds)->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
+        $valorAberto = Projeto::whereIn('usuario_id', $visiveis())->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
+        $valorFechadoMes = Projeto::whereIn('usuario_id', $visiveis())->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
         $leadsPorEstagio = Usuario::visibleTo(auth()->user())->select('estagio_id', DB::raw('count(*) as total'))->with('estagio')->groupBy('estagio_id')->get()
             ->map(fn($row) => [
                 'id'        => $row->estagio_id,
                 'descricao' => $row->estagio->descricao ?? 'Sem estágio',
                 'total'     => (int) $row->total,
             ]);
-        $totalLeads      = $leadIds->count();
-        $leadsComProjeto = $leadIds->isNotEmpty()
-            ? Projeto::whereIn('usuario_id', $leadIds)->distinct('usuario_id')->count('usuario_id')
-            : 0;
+        $totalLeads      = Usuario::visibleTo(auth()->user())->count();
+        $leadsComProjeto = Projeto::whereIn('usuario_id', $visiveis())->distinct('usuario_id')->count('usuario_id');
         $taxaConversao   = $totalLeads > 0 ? round($leadsComProjeto / $totalLeads * 100, 1) : 0;
 
         return response()->json([

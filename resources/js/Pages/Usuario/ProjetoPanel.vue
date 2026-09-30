@@ -1,5 +1,6 @@
 <script setup>
     import { ref, watch, onMounted, reactive } from 'vue';
+    import { usePage } from '@inertiajs/vue3';
     import axios from 'axios';
     import {
         PlusCircle, FolderOpen, Save, X, Edit, Trash2, AlertCircle, CheckCircle2,
@@ -11,6 +12,8 @@
 
     const props = defineProps({ usuarioId: { type: [Number, String], required: true } });
     const emit  = defineEmits(['update:total']);
+
+    const limites = usePage().props.limites;
 
     // ── Projetos ──
     const projetos  = ref([]);
@@ -138,14 +141,14 @@
     // ── API: Projetos ──
     const buscarStatus = async () => {
         try {
-            const res = await axios.post('/api/status');
+            const res = await axios.get('/api/status');
             status.value = res.data;
         } catch { showToast('Erro ao buscar status!', 'error'); }
     };
     const buscarProjetos = async () => {
         isLoading.value = true;
         try {
-            const res = await axios.post('/api/projetos', { usuario_id: props.usuarioId });
+            const res = await axios.get('/api/projetos', { params: { usuario_id: props.usuarioId } });
             projetos.value = res.data;
             emit('update:total', projetos.value.length);
         } catch { showToast('Erro ao buscar projetos!', 'error'); }
@@ -221,7 +224,7 @@
     };
     const excluirProjeto = async (id) => {
         const result = await Swal.fire({
-            title: 'Apagar projeto?', text: 'Esta ação não pode ser desfeita.', icon: 'warning',
+            title: 'Apagar projeto?', text: 'O projeto vai para a lixeira.', icon: 'warning',
             showCancelButton: true, confirmButtonText: 'Excluir', cancelButtonText: 'Cancelar',
             reverseButtons: true, background: '#13192a', color: '#eaedf5',
             confirmButtonColor: '#f06292', cancelButtonColor: '#1e2840',
@@ -329,7 +332,17 @@
             anexosPendentes[projetoId] = [];
             await carregarDetalhes(projetoId);
             showToast(`${total} arquivo(s) enviado(s)!`);
-        } catch { showToast('Erro ao enviar arquivos!', 'error'); }
+        } catch (e) {
+            // O 422 da PoliticaDeUpload diz o porquê (tamanho, tipo); a
+            // mensagem genérica só quando não há resposta do servidor.
+            showToast(
+                e?.response?.data?.errors?.arquivo?.[0]
+                ?? e?.response?.data?.errors?.nome?.[0]
+                ?? e?.response?.data?.message
+                ?? 'Erro ao enviar arquivos!',
+                'error'
+            );
+        }
         finally   { isUploadingAnexo[projetoId] = false; }
     };
     const excluirAnexo = async (anexoId, projetoId) => {
@@ -406,7 +419,7 @@
                 </div>
                 <div class="proj-field">
                     <label class="proj-label">Descrição</label>
-                    <textarea v-model="form.descricao" rows="2" class="proj-input proj-textarea" placeholder="Descreva brevemente o projeto..." />
+                    <textarea v-model="form.descricao" rows="2" class="proj-input proj-textarea" placeholder="Descreva brevemente o projeto..." :maxlength="limites.descricao" />
                 </div>
                 <div class="proj-grid proj-grid--3">
                     <div class="proj-field">
@@ -556,8 +569,10 @@
                                                     rows="2"
                                                     class="proj-detail-textarea"
                                                     placeholder="Registre um acontecimento ou observação..."
+                                                    :maxlength="limites.anotacao"
                                                     @click.stop
                                                 />
+                                                <small class="proj-note-date">{{ (noteText[projeto.id]?.length ?? 0) }} / {{ limites.anotacao }}</small>
                                                 <div class="proj-inline-form-actions">
                                                     <button @click.stop="cancelarAddNota(projeto.id)" class="proj-btn-ghost proj-btn-xs">
                                                         <X :size="10" /> Cancelar
@@ -591,7 +606,7 @@
                                                     </div>
                                                 </div>
                                                 <div v-else class="proj-note-edit-zone">
-                                                    <textarea v-model="editNoteText" rows="2" class="proj-detail-textarea" @click.stop />
+                                                    <textarea v-model="editNoteText" rows="2" class="proj-detail-textarea" :maxlength="limites.anotacao" @click.stop />
                                                     <div class="proj-inline-form-actions">
                                                         <button @click.stop="cancelarEdicaoNota"             class="proj-btn-ghost  proj-btn-xs"><X    :size="10" /> Cancelar</button>
                                                         <button @click.stop="salvarEdicaoNota(projeto.id)"   class="proj-btn-purple proj-btn-xs"><Save :size="10" /> Salvar</button>
@@ -667,7 +682,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="proj-file-actions">
-                                                    <a :href="`/storage/${anexo.local}`" :download="anexo.nome" class="proj-icon-btn proj-icon-btn--download" title="Baixar"><Download :size="11" /></a>
+                                                    <a :href="anexo.url_download" :download="anexo.nome" class="proj-icon-btn proj-icon-btn--download" title="Baixar"><Download :size="11" /></a>
                                                     <button @click.stop="excluirAnexo(anexo.id, projeto.id)" class="proj-icon-btn proj-icon-btn--delete" title="Excluir"><Trash2 :size="11" /></button>
                                                 </div>
                                             </div>
@@ -691,7 +706,7 @@
                             <div class="proj-grid proj-grid--2">
                                 <div class="proj-field">
                                     <label class="proj-label">Nome *</label>
-                                    <input v-model="editForm.nome" type="text" class="proj-input" />
+                                    <input v-model="editForm.nome" type="text" class="proj-input" :maxlength="limites.nome" />
                                 </div>
                                 <div class="proj-field">
                                     <label class="proj-label">Status *</label>
@@ -705,7 +720,7 @@
                             </div>
                             <div class="proj-field">
                                 <label class="proj-label">Descrição</label>
-                                <textarea v-model="editForm.descricao" rows="2" class="proj-input proj-textarea" />
+                                <textarea v-model="editForm.descricao" rows="2" class="proj-input proj-textarea" :maxlength="limites.descricao" />
                             </div>
                             <div class="proj-grid proj-grid--3">
                                 <div class="proj-field">

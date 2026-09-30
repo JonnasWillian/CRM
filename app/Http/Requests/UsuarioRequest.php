@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\EmailDeLeadDisponivel;
+use App\Rules\TelefoneE164;
+use App\Support\LimitesDeTexto;
 use App\Support\Perdas\RegrasDePerda;
+use App\Support\Telefone;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
-use Illuminate\Validation\Rules\Unique;
 
 class UsuarioRequest extends FormRequest
 {
@@ -65,6 +68,23 @@ class UsuarioRequest extends FormRequest
         throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
 
+    /**
+     * O telefone chega em qualquer forma — com máscara (Dashboard, Perfil),
+     * sem máscara (quick-add do Kanban) — e é normalizado aqui, antes das
+     * regras. Nenhuma tela precisa mais tirar a máscara.
+     *
+     * Só texto é normalizado: um array segue como veio e a regra `string`
+     * recusa, sem erro 500.
+     */
+    protected function prepareForValidation(): void
+    {
+        $telefone = $this->input('telefone');
+
+        if ($telefone === null || is_string($telefone) || is_int($telefone)) {
+            $this->merge(['telefone' => Telefone::normalizar($telefone === null ? null : (string) $telefone)]);
+        }
+    }
+
     public function rules(): array
     {
         if ($this->isMethod('post')) {
@@ -81,10 +101,10 @@ class UsuarioRequest extends FormRequest
     private function storeRules()
     {
         return [
-            'nome' => 'required|string|min:5',
-            'email' => ['required', 'email', $this->emailUnicoNoTenant()],
-            'telefone' => 'required|string',
-            'descricao' => 'nullable|string',
+            'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
+            'email' => ['required', 'email', 'max:'.LimitesDeTexto::EMAIL, new EmailDeLeadDisponivel()],
+            'telefone' => ['nullable', 'string', new TelefoneE164()],
+            'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'funil_id' => ['nullable', $this->funilDoTenant()],
             'estagio_id' => ['nullable', $this->estagioDoTenant()],
             ...RegrasDePerda::campos(),
@@ -94,17 +114,18 @@ class UsuarioRequest extends FormRequest
     private function updateRules()
     {
         return [
-            'nome' => 'required|string|min:5',
+            'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
             'email' => [
                 'required',
                 'email',
+                'max:'.LimitesDeTexto::EMAIL,
                 // O model vem do route model binding, não do corpo: é o mesmo
                 // lead que o controller autoriza via policy, e não depende do
                 // cliente reenviar 'id' no payload.
-                $this->emailUnicoNoTenant()->ignore($this->route('usuario')?->id),
+                new EmailDeLeadDisponivel($this->route('usuario')?->id),
             ],
-            'telefone' => 'required|string|min:7',
-            'descricao' => 'nullable|string',
+            'telefone' => ['nullable', 'string', new TelefoneE164()],
+            'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'funil_id' => ['nullable', $this->funilDoTenant()],
             'estagio_id' => ['nullable', $this->estagioDoTenant()],
             ...RegrasDePerda::campos(),
@@ -144,18 +165,6 @@ class UsuarioRequest extends FormRequest
         return $regra;
     }
 
-    /**
-     * Regras `unique:` consultam o banco diretamente e não passam pelo
-     * Eloquent, portanto o TenantScope não se aplica a elas. O filtro por
-     * tenant precisa ser explícito, ou um lead de outro tenant bloquearia
-     * o cadastro aqui (e a mensagem de erro denunciaria sua existência).
-     */
-    private function emailUnicoNoTenant(): Unique
-    {
-        return Rule::unique('usuarios', 'email')
-            ->where('tenant_id', app(CurrentTenant::class)->id());
-    }
-
     public function messages(): array
     {
         return [
@@ -163,16 +172,16 @@ class UsuarioRequest extends FormRequest
             'nome.required' => 'O campo nome é obrigatório.',
             'nome.min' => 'O nome deve ter no mínimo :min caracteres.',
             'nome.string' => 'O nome deve ser um texto válido.',
+            'nome.max' => 'O nome pode ter no máximo :max caracteres.',
 
             'email.required' => 'O email é obrigatório.',
             'email.email' => 'Informe um email válido.',
-            'email.unique' => 'Este email já está sendo utilizado.',
+            'email.max' => 'O email pode ter no máximo :max caracteres.',
 
-            'telefone.required' => 'O telefone é obrigatório.',
-            'telefone.min' => 'O telefone deve ter pelo menos :min caracteres.',
             'telefone.string' => 'O telefone deve ser um texto válido.',
 
             'descricao.string' => 'A descrição deve ser um texto válido.',
+            'descricao.max' => 'A descrição pode ter no máximo :max caracteres.',
         ];
     }
 

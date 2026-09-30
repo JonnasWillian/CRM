@@ -26,7 +26,7 @@ class UsuarioFactory extends Factory
             'nome' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'descricao' => fake()->optional()->sentence(),
-            'telefone' => fake()->numberBetween(1000000000, 9999999999),
+            'telefone' => '+55'.fake()->numerify('119########'),
             'user_id' => User::factory()->create(['tenant_id' => $tenant->id])->id,
             'tenant_id' => $tenant->id,
         ];

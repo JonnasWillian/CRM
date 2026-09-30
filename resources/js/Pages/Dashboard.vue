@@ -1,15 +1,17 @@
 <script setup>
-    import { ref, onMounted, computed } from 'vue';
+    import { ref, onMounted, computed, watch } from 'vue';
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import { Head, Link, router, usePage } from '@inertiajs/vue3';
     import axios from 'axios';
     import { vMaska } from 'maska/vue';
+    import { formatarTelefone, MASCARA_TELEFONE } from '@/utils/telefone';
 
     const usuarios = ref([]);
     const isModalOpen = ref(false);
     const isLoading = ref(false);
     const search = ref('');
     const user = computed(() => usePage().props.auth.user);
+    const limites = usePage().props.limites;
 
     const form = ref({
         nome: '',
@@ -50,7 +52,7 @@
     const buscarMetricas = async () => {
         isLoadingMetricas.value = true;
         try {
-            const res = await axios.post('/api/metricas', { user_id: user.value.id });
+            const res = await axios.get('/api/metricas');
             metricas.value = res.data;
         } catch {  }
         finally { isLoadingMetricas.value = false; }
@@ -60,7 +62,7 @@
 
     const buscarTarefasPendentes = async () => {
         try {
-            const res = await axios.post('/api/tarefasPendentes', { user_id: user.value.id });
+            const res = await axios.get('/api/tarefasPendentes');
             tarefasPendentes.value = res.data;
         } catch {  }
     };
@@ -79,7 +81,7 @@
 
     const buscarEstagios = async () => {
         try {
-            const res = await axios.post('/api/estagios');
+            const res = await axios.get('/api/estagios');
             estagios.value = res.data;
         } catch { /* silencioso */ }
     };
@@ -116,42 +118,34 @@
         else filterEstagios.value.splice(idx, 1);
     };
 
-    const filteredUsuarios = computed(() => {
-        const q = search.value?.toLowerCase().trim();
-        return usuarios.value.filter(u => {
-            if (q) {
-                const pass = u.nome?.toLowerCase().includes(q)
-                    || u.email?.toLowerCase().includes(q)
-                    || String(u.telefone || '').includes(q)
-                    || u.descricao?.toLowerCase().includes(q);
-                if (!pass) return false;
-            }
-            if (filterEstagios.value.length && !filterEstagios.value.includes(u.estagio?.id)) return false;
-            if (dateFromComputed.value && new Date(u.created_at) < dateFromComputed.value) return false;
-            if (dateToComputed.value   && new Date(u.created_at) > dateToComputed.value)   return false;
-            // Antes: ![3,4,5].includes(id) — os ids dos estágios "arquivados" do
-            // conjunto fixo. Agora é o tipo do estágio que responde isso, e ele
-            // vale para qualquer funil de qualquer tenant.
-            if (filterStatus.value === 'arquivado'   && u.estagio?.tipo === 'aberto')  return false;
-            if (filterStatus.value === 'arquivado'   && !u.estagio)                    return false;
-            if (filterStatus.value === 'aberto'      && !u.tem_projeto_aberto)          return false;
-            if (filterStatus.value === 'sem_projeto' && !!u.tem_projeto)                return false;
-            return true;
-        });
+    const paginacao = ref({ pagina: 1, ultimaPagina: 1, total: 0 });
+
+    // Instante completo, não só a data: as datas acima já são início/fim do
+    // dia LOCAL, e cortar para YYYY-MM-DD (em UTC) deslocava o período em um
+    // dia no fuso do Brasil. O servidor usa o instante como veio.
+    const dataISO = (d) => d ? d.toISOString() : undefined;
+
+    // Os filtros que antes rodavam no navegador sobre a carteira inteira agora
+    // viram parâmetros da consulta (ListagemDeLeads, no servidor).
+    const parametrosDaLista = (pagina) => ({
+        page: pagina,
+        per_page: 25,
+        busca: search.value?.trim() || undefined,
+        estagios: filterEstagios.value.length ? filterEstagios.value : undefined,
+        de: dataISO(dateFromComputed.value),
+        ate: dataISO(dateToComputed.value),
+        status: filterStatus.value !== 'todos' ? filterStatus.value : undefined,
     });
 
-    const buscarUsuarios = async () => {
+    const buscarUsuarios = async (pagina = 1) => {
         isLoading.value = true;
         try {
-            const resposta = await axios.post('/api/pegarUsuarios', { 
-                user_id: user.value.id 
-            });
-
-            usuarios.value = resposta.data.map(usuario => ({
+            const { data } = await axios.get('/api/leads', { params: parametrosDaLista(pagina) });
+            usuarios.value = data.data.map(usuario => ({
                 ...usuario,
-                telefone: String(usuario.telefone || '')
+                telefone: usuario.telefone ?? ''
             }));
-            
+            paginacao.value = { pagina: data.current_page, ultimaPagina: data.last_page, total: data.total };
         } catch (error) {
             console.error('Erro ao buscar leads:', error);
         } finally {
@@ -159,15 +153,27 @@
         }
     };
 
+    // Nenhum lead na base inteira (sem filtro/busca ativos) é diferente de
+    // nenhum resultado PARA os filtros escolhidos — a mensagem e o botão de
+    // atalho mudam conforme o caso.
+    const nenhumLeadCadastrado = computed(() =>
+        paginacao.value.total === 0 && activeFiltersCount.value === 0 && !search.value
+    );
+
+    // Filtro mudou: volta para a primeira página. Busca por texto espera o
+    // usuário parar de digitar (300 ms) para não disparar uma consulta por tecla.
+    let atrasoDaBusca = null;
+    watch(search, () => {
+        clearTimeout(atrasoDaBusca);
+        atrasoDaBusca = setTimeout(() => buscarUsuarios(1), 300);
+    });
+    watch([filterEstagios, filterStatus, filterDatePreset, filterDateFrom, filterDateTo], () => buscarUsuarios(1), { deep: true });
+
     const addUsuario = async () => {
         formErrors.value = {};
 
-        const payload = {
-            ...form.value,
-            user_id: user.value.id
-        };
+        const payload = { ...form.value };
 
-        payload.telefone = payload.telefone.replace(/\D/g, '');
         // O funil e o estágio de entrada são resolvidos pelo backend, a partir
         // do funil padrão do tenant. O `estagio_id = 1` que ficava aqui era um
         // id chutado — válido só enquanto todo tenant tinha os mesmos estágios.
@@ -378,7 +384,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </div>
                                 <div>
-                                    <p class="summary-value num">{{ usuarios.length }}</p>
+                                    <p class="summary-value num">{{ paginacao.total }}</p>
                                     <p class="summary-label">Total de Leads</p>
                                 </div>
                             </div>
@@ -432,7 +438,7 @@
                     <div class="panel-header">
                         <div class="panel-title-row">
                             <h2 class="panel-title">Leads cadastrados</h2>
-                            <span class="badge">{{ filteredUsuarios.length }}</span>
+                            <span class="badge">{{ paginacao.total }}</span>
                         </div>
 
                         <div class="search-box">
@@ -514,7 +520,7 @@
                                     <button @click="clearFilters" class="fb-clear-btn">
                                         ✕ Limpar filtros ({{ activeFiltersCount }})
                                     </button>
-                                    <span class="fb-result-count">{{ filteredUsuarios.length }} resultado{{ filteredUsuarios.length !== 1 ? 's' : '' }}</span>
+                                    <span class="fb-result-count">{{ paginacao.total }} resultado{{ paginacao.total !== 1 ? 's' : '' }}</span>
                                 </div>
                             </Transition>
 
@@ -533,15 +539,15 @@
                         <p class="state-text">Carregando leads...</p>
                     </div>
 
-                    <div v-else-if="filteredUsuarios.length === 0" class="state-center">
+                    <div v-else-if="paginacao.total === 0" class="state-center">
                         <div class="empty-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
                         </div>
-                        <p class="state-title">{{ search ? 'Nenhum resultado encontrado' : 'Nenhum lead cadastrado' }}</p>
-                        <p class="state-sub">{{ search ? 'Tente buscar por outro termo' : 'Clique em "Novo Lead" para começar' }}</p>
-                        <button v-if="!search" @click="openModal" class="btn-primary btn-sm">
+                        <p class="state-title">{{ nenhumLeadCadastrado ? 'Nenhum lead cadastrado' : 'Nenhum resultado encontrado' }}</p>
+                        <p class="state-sub">{{ nenhumLeadCadastrado ? 'Clique em "Novo Lead" para começar' : 'Tente buscar por outro termo' }}</p>
+                        <button v-if="nenhumLeadCadastrado" @click="openModal" class="btn-primary btn-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                             </svg>
@@ -551,7 +557,7 @@
 
                     <div v-else class="table-body">
                         <div
-                            v-for="(usuario, i) in filteredUsuarios"
+                            v-for="(usuario, i) in usuarios"
                             :key="usuario.id"
                             class="table-row"
                             :style="{ '--i': Math.min(i, 8) }"
@@ -571,7 +577,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                                     </svg>
-                                    {{ usuario.telefone || '—' }}
+                                    {{ formatarTelefone(usuario.telefone) || '—' }}
                                 </span>
                             </div>
 
@@ -587,6 +593,12 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+
+                    <div v-if="paginacao.ultimaPagina > 1" class="db-paginacao">
+                        <button class="btn-ghost" :disabled="paginacao.pagina <= 1 || isLoading" @click="buscarUsuarios(paginacao.pagina - 1)">Anterior</button>
+                        <span>Página {{ paginacao.pagina }} de {{ paginacao.ultimaPagina }} · {{ paginacao.total }} leads</span>
+                        <button class="btn-ghost" :disabled="paginacao.pagina >= paginacao.ultimaPagina || isLoading" @click="buscarUsuarios(paginacao.pagina + 1)">Próxima</button>
                     </div>
                 </div>
 
@@ -637,16 +649,15 @@
 
                             <div class="field-row">
                                 <div class="field">
-                                    <label class="field-label">Telefone*</label>
+                                    <label class="field-label">Telefone</label>
                                     <input
                                         type="tel"
                                         v-model="form.telefone"
                                         placeholder="(00) 00000-0000"
                                         v-maska
-                                        data-maska="(##) #####-####"
+                                        :data-maska="MASCARA_TELEFONE"
                                         class="field-input"
                                         :class="{ 'field-input--error': formErrors.telefone }"
-                                        required
                                     />
                                     <p v-if="formErrors.telefone" class="field-error">{{ formErrors.telefone[0] }}</p>
                                 </div>
@@ -657,6 +668,7 @@
                                         v-model="form.descricao"
                                         placeholder="Observação rápida"
                                         class="field-input"
+                                        :maxlength="limites.descricao"
                                         :class="{ 'field-input--error': formErrors.descricao }"
                                     />
                                     <p v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao[0] }}</p>
@@ -1532,5 +1544,8 @@
        uma coluna de botões repetidos descendo a tela inteira. */
     .row-action { opacity: 0; transition: opacity var(--d-1) var(--e), color var(--d-1) var(--e); }
     .table-row:hover .row-action, .table-row:focus-within .row-action { opacity: 1; }
+
+    /* Paginação da listagem (ListagemDeLeads, no servidor). */
+    .db-paginacao { display:flex; align-items:center; justify-content:flex-end; gap:0.75rem; margin-top:1rem; font-size:0.8rem; color:var(--t2); }
 
 </style>

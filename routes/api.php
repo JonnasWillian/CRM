@@ -18,8 +18,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::middleware(['auth', 'tenant'])->group(function () {
-    Route::post('/estagios', [Userarios::class, 'estagios']);
-    Route::post('/status', [ProjetoController::class, 'getStatus']);
+    Route::get('/estagios', [Userarios::class, 'estagios']);
+    Route::get('/status', [ProjetoController::class, 'getStatus']);
 
     // Funis — leitura é de todo agente (Kanban, cadastro de lead e o diálogo
     // de mover de funil precisam saber quais existem); escrita exige
@@ -64,17 +64,19 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     });
 
     // Leads (usuarios)
-    Route::post('/pegarUsuarios', [Userarios::class, 'view']);
+    Route::get('/leads', [Userarios::class, 'index']);
     Route::post('/usuarios', [Userarios::class, 'create']);
     Route::get('/usuarioPerfil/{usuario}', [Userarios::class, 'viewUsuario']);
     Route::put('/usuarios/{usuario}', [Userarios::class, 'update']);
     Route::delete('/usuarios/{usuario}', [Userarios::class, 'destroy']);
-    // Timeline montada em runtime. Substituída pelo activity log abaixo;
-    // mantida durante a transição, até o frontend trocar.
+    // withTrashed: sem ele o binding esconde justamente o lead que se quer
+    // restaurar. A policy (restore) é quem decide.
+    Route::patch('/usuarios/{usuario}/restaurar', [Userarios::class, 'restaurar'])->withTrashed();
+    // Deprecado: sem consumidor no front desde a fase 4 do activity log. Só o TimelineParityTest usa.
     Route::get('/timeline/{usuario}', [Userarios::class, 'timeline']);
     Route::get('/leads/{usuario}/atividades', [LeadAtividadeController::class, 'index']);
-    Route::post('/metricas', [Userarios::class, 'metricas']);
-    Route::post('/kanban', [Userarios::class, 'kanban']);
+    Route::get('/metricas', [Userarios::class, 'metricas']);
+    Route::get('/kanban', [Userarios::class, 'kanban']);
     Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings']);
     Route::patch('/usuarios/{usuario}/estagio', [Userarios::class, 'patchEstagio']);
     Route::patch('/usuarios/{usuario}/funil', [Userarios::class, 'moverFunil']);
@@ -91,13 +93,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // apontava para um método inexistente: GET /api/arquivos/{arquivo} batia
     // em "Call to undefined method" e virava 500 a cada chamada.
     Route::apiResource('arquivos', arquivo::class)->only(['index', 'store', 'destroy']);
-    Route::post('buscarArquivo', [arquivo::class, 'index']);
 
     // Projetos
-    Route::post('/projetos', [ProjetoController::class, 'view']);
+    Route::get('/projetos', [ProjetoController::class, 'view']);
     Route::post('/projeto', [ProjetoController::class, 'create']);
     Route::get('/projeto/{projeto}', [ProjetoController::class, 'viewProjeto']);
     Route::put('/projeto/{projeto}', [ProjetoController::class, 'update']);
+    Route::delete('/projeto/{projeto}', [ProjetoController::class, 'destroy']);
+    Route::patch('/projeto/{projeto}/restaurar', [ProjetoController::class, 'restaurar'])->withTrashed();
 
     // Anotações de Projeto
     // {id} por verbo: no GET o id é do PROJETO, no PUT/DELETE é da própria
@@ -117,7 +120,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/tarefas', [TarefaController::class, 'store']);
     Route::put('/tarefas/{tarefa}', [TarefaController::class, 'update']);
     Route::delete('/tarefas/{tarefa}', [TarefaController::class, 'destroy']);
-    Route::post('/tarefasPendentes', [TarefaController::class, 'pendentes']);
+    Route::get('/tarefasPendentes', [TarefaController::class, 'pendentes']);
 
     // Modelos de Tarefa
     Route::get('/tarefa-padroes',          [TarefaPadraoController::class, 'index']);

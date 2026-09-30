@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Usuario;
+use App\Policies\Concerns\DonoDoLead;
 use Illuminate\Auth\Access\Response;
 
 /**
@@ -18,6 +19,8 @@ use Illuminate\Auth\Access\Response;
  */
 class UsuarioPolicy
 {
+    use DonoDoLead;
+
     public function view(User $user, Usuario $usuario): Response
     {
         return $this->doDono($user, $usuario);
@@ -33,12 +36,13 @@ class UsuarioPolicy
         return $this->doDono($user, $usuario);
     }
 
+    public function restore(User $user, Usuario $usuario): Response
+    {
+        return $this->doDono($user, $usuario);
+    }
+
     private function doDono(User $user, Usuario $usuario): Response
     {
-        if ($user->can('leads.view-all') || $usuario->user_id === $user->id) {
-            return Response::allow();
-        }
-
-        return Response::denyAsNotFound();
+        return $this->doDonoDoLead($user, $usuario);
     }
 }

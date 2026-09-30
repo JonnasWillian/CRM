@@ -5,9 +5,16 @@
 
     const props = defineProps({ usuarioId: { type: [Number, String], required: true } });
 
-    const eventos    = ref([]);
-    const isLoading  = ref(false);
+    const eventos     = ref([]);
+    const isLoading   = ref(false);
     const filtroAtivo = ref('todos');
+    const pagina      = ref(0);
+    const ultimaPagina = ref(1);
+    // Total do servidor, não só o que já foi carregado: o contador de "Todos"
+    // não pode encolher para 20 só porque o resto está em outra página.
+    const total       = ref(0);
+
+    const temMais = computed(() => pagina.value < ultimaPagina.value);
 
     const filtros = [
         { key: 'todos',           label: 'Todos' },
@@ -18,13 +25,14 @@
         { key: 'status_alterado', label: 'Status' },
     ];
 
-    const gruposProjeto = new Set(['projeto', 'projeto_anotacao', 'projeto_anexo']);
+    const gruposProjeto = new Set(['projeto', 'projeto_anotacao', 'projeto_anexo', 'projeto_anotacao_removida', 'projeto_anexo_removido', 'projeto_removido', 'projeto_restaurado']);
     const gruposTarefa  = new Set(['tarefa_criada', 'tarefa_concluida']);
 
     const eventosFiltrados = computed(() => {
         if (filtroAtivo.value === 'todos') return eventos.value;
         if (filtroAtivo.value === 'projeto') return eventos.value.filter(e => gruposProjeto.has(e.tipo));
         if (filtroAtivo.value === 'tarefa')  return eventos.value.filter(e => gruposTarefa.has(e.tipo));
+        if (filtroAtivo.value === 'status_alterado') return eventos.value.filter(e => e.tipo === 'status_alterado' || e.tipo === 'funil_alterado');
         return eventos.value.filter(e => e.tipo === filtroAtivo.value);
     });
 
@@ -44,6 +52,15 @@
         status_alterado:  { cor: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  label: 'Status alterado' },
         tarefa_criada:    { cor: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  label: 'Tarefa criada' },
         tarefa_concluida: { cor: '#34d399', bg: 'rgba(52,211,153,0.12)',  label: 'Tarefa concluída' },
+        funil_alterado:            { cor: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  label: 'Funil alterado' },
+        anotacao_removida:         { cor: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: 'Anotação removida' },
+        arquivo_removido:          { cor: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: 'Arquivo removido' },
+        projeto_anotacao_removida: { cor: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: 'Anotação de projeto removida' },
+        projeto_anexo_removido:    { cor: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: 'Anexo de projeto removido' },
+        projeto_removido:          { cor: '#f06292', bg: 'rgba(240,98,146,0.12)',  label: 'Projeto na lixeira' },
+        projeto_restaurado:        { cor: '#a78bfa', bg: 'rgba(167,139,250,0.12)', label: 'Projeto restaurado' },
+        lead_removido:             { cor: '#f06292', bg: 'rgba(240,98,146,0.12)',  label: 'Lead na lixeira' },
+        lead_restaurado:           { cor: '#94a3b8', bg: 'rgba(148,163,184,0.12)', label: 'Lead restaurado' },
     };
 
     const getConfig = (tipo) => tipoConfig[tipo] || tipoConfig.lead_criado;
@@ -54,11 +71,20 @@
             case 'anotacao':         return 'Anotação registrada';
             case 'arquivo':          return evento.nome || 'Arquivo enviado';
             case 'projeto':          return evento.nome || 'Projeto aberto';
-            case 'projeto_anotacao': return `Anotação em "${evento.projeto_nome}"`;
-            case 'projeto_anexo':    return `Arquivo em "${evento.projeto_nome}"`;
+            case 'projeto_anotacao': return `Anotação em "${evento.projeto_nome ?? 'projeto'}"`;
+            case 'projeto_anexo':    return `Arquivo em "${evento.projeto_nome ?? 'projeto'}"`;
             case 'status_alterado':  return `Status: ${evento.estagio_anterior} → ${evento.estagio_novo}`;
             case 'tarefa_criada':    return `Tarefa criada: "${evento.titulo}"`;
             case 'tarefa_concluida': return `Tarefa concluída: "${evento.titulo}"`;
+            case 'funil_alterado':            return `Funil: ${evento.estagio_anterior} → ${evento.estagio_novo}`;
+            case 'anotacao_removida':         return 'Anotação removida';
+            case 'arquivo_removido':          return `Arquivo removido: ${evento.nome ?? ''}`.trim();
+            case 'projeto_anotacao_removida': return 'Anotação de projeto removida';
+            case 'projeto_anexo_removido':    return `Anexo removido: ${evento.nome ?? ''}`.trim();
+            case 'projeto_removido':          return `Projeto na lixeira: "${evento.nome ?? ''}"`;
+            case 'projeto_restaurado':        return `Projeto restaurado: "${evento.nome ?? ''}"`;
+            case 'lead_removido':             return 'Lead movido para a lixeira';
+            case 'lead_restaurado':           return 'Lead restaurado';
             default: return '';
         }
     };
@@ -69,19 +95,24 @@
         return null;
     };
 
-    const buscarTimeline = async () => {
+    // Activity log paginado (substitui o timeline antigo, que trazia tudo de uma
+    // vez). Os filtros seguem no navegador, sobre o que já foi carregado.
+    const buscarTimeline = async (proxima = 1) => {
         isLoading.value = true;
         try {
-            const res = await axios.get(`/api/timeline/${props.usuarioId}`);
-            eventos.value = res.data;
+            const { data } = await axios.get(`/api/leads/${props.usuarioId}/atividades`, { params: { page: proxima } });
+            eventos.value = proxima === 1 ? data.data : [...eventos.value, ...data.data];
+            pagina.value = data.current_page;
+            ultimaPagina.value = data.last_page;
+            total.value = data.total;
         } catch {
-            eventos.value = [];
+            if (proxima === 1) eventos.value = [];
         } finally {
             isLoading.value = false;
         }
     };
 
-    onMounted(buscarTimeline);
+    onMounted(() => buscarTimeline(1));
 </script>
 
 <template>
@@ -97,12 +128,12 @@
                 @click="filtroAtivo = f.key"
             >
                 {{ f.label }}
-                <span v-if="f.key === 'todos'" class="tl-chip-count">{{ eventos.length }}</span>
+                <span v-if="f.key === 'todos'" class="tl-chip-count">{{ total }}</span>
             </button>
         </div>
 
         <!-- Loading -->
-        <div v-if="isLoading" class="tl-loading">
+        <div v-if="isLoading && eventos.length === 0" class="tl-loading">
             <div class="tl-spinner" />
             <span>Carregando timeline...</span>
         </div>
@@ -118,7 +149,7 @@
         <div v-else class="tl-list">
             <div
                 v-for="(evento, i) in eventosFiltrados"
-                :key="i"
+                :key="evento.id"
                 class="tl-item"
                 :style="{ '--dot-color': getConfig(evento.tipo).cor, animationDelay: `${i * 0.03}s` }"
             >
@@ -134,7 +165,7 @@
                         <Briefcase     v-else-if="evento.tipo === 'projeto'"     :size="11" />
                         <FileText      v-else-if="evento.tipo === 'projeto_anotacao'" :size="11" />
                         <Upload        v-else-if="evento.tipo === 'projeto_anexo'"    :size="11" />
-                        <Tag           v-else-if="evento.tipo === 'status_alterado'"  :size="11" />
+                        <Tag           v-else-if="evento.tipo === 'status_alterado' || evento.tipo === 'funil_alterado'" :size="11" />
                         <CalendarClock v-else-if="evento.tipo === 'tarefa_criada'"    :size="11" />
                         <CheckCircle2  v-else-if="evento.tipo === 'tarefa_concluida'" :size="11" />
                     </div>
@@ -157,6 +188,10 @@
                 </div>
             </div>
         </div>
+
+        <button v-if="temMais" class="tl-mais" :disabled="isLoading" @click="buscarTimeline(pagina + 1)">
+            {{ isLoading ? 'Carregando…' : 'Carregar mais' }}
+        </button>
 
     </div>
 </template>
@@ -321,6 +356,8 @@
         margin: 0;
         word-break: break-word;
     }
+
+    .tl-mais { display:block; margin:0.75rem auto 0; background:transparent; border:1px solid var(--border); color:var(--t2); border-radius:var(--r-2); padding:0.4rem 0.9rem; font-size:0.78rem; cursor:pointer; }
 
     /* ── Responsive ── */
     @media (max-width: 600px) {

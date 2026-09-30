@@ -14,9 +14,11 @@ use Illuminate\Support\Facades\Schema;
  * consultas. O subject continua sendo a linha de origem — o lead_id é só o
  * agrupamento.
  *
- * `lead_id` não recebe foreign key de propósito: nenhuma das tabelas filhas de
- * `usuarios` (anotacaos, tarefas, arquivos, projetos) tem FK para ela neste
- * schema, e criar uma só aqui, com restrict, impediria excluir um lead.
+ * `lead_id` não recebe foreign key de propósito: as tabelas filhas de
+ * `usuarios` (anotacaos, tarefas, arquivos, projetos, estagio_historicos) TÊM
+ * FK para ela — RESTRICT desde 2026_09_28_110002, CASCADE antes disso.
+ * `activity_log.lead_id` fica sem FK de propósito: o log é append-only e
+ * sobrevive à linha que descreve.
  */
 return new class extends Migration
 {

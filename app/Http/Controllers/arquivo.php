@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\ArquivoRequest;
-use App\Service\ArquivoService;
+use App\Services\Arquivos\ArquivoService;
 use App\Models\arquivo AS ArquivoModel;
 use App\Models\Usuario;
 
@@ -27,11 +27,9 @@ class arquivo extends Controller
         // Uma regra de validação daria 422 para "não existe" e 404 para
         // "existe mas não é seu" — a diferença revelaria quais ids existem.
         //
-        // Chave do payload é `user_id`, não `usuario_id`: é o nome que o
-        // frontend (Perfil.vue::buscarAnexo) já envia e que o código anterior
-        // já lia (`$request->user_id`). Usar `usuario_id` aqui devolveria 404
-        // pra toda chamada legítima da tela de perfil do lead.
-        $lead = Usuario::findOrFail($request->integer('user_id'));
+        // `usuario_id` (id do LEAD), por query string: GET /api/arquivos?usuario_id=.
+        // Era `user_id` no corpo de um POST, nome que sugeria o agente.
+        $lead = Usuario::findOrFail($request->integer('usuario_id'));
 
         $this->authorize('view', $lead);
 
@@ -41,23 +39,28 @@ class arquivo extends Controller
     public function store(ArquivoRequest $request)
     {
         // O id que vai para o banco é o do model que ArquivoRequest::authorize()
-        // já resolveu e autorizou (via integer()), não o texto cru do corpo —
-        // que pode trazer lixo depois do número ("1abc") e quebrar o INSERT em
-        // sql_mode estrito, ou simplesmente divergir do que foi checado.
+        // já resolveu e autorizou (via integer()), não o texto cru do corpo.
         $lead = Usuario::findOrFail($request->integer('usuario_id'));
 
-        $caminho = $this->arquivoService->salveFile($request->file('arquivo'));
-
-        $arquivoSalvo = ArquivoModel::create([
-            'nome' => $request->nome ?: '',
-            'local' => $caminho,
-            'usuario_id' => $lead->id
-        ]);
+        $arquivoSalvo = $this->arquivoService->guardarComRegistro(
+            $request->file('arquivo'),
+            ArquivoService::pastaDoLead($lead->tenant_id, $lead->id),
+            // input() e não validated(): FormRequestsTest chama este método
+            // direto, sem passar $request pelo ciclo de validação (só o
+            // authorize() resolvido manualmente) — validated() lançaria
+            // "member function validated() on null" nesse caminho. O valor
+            // já chega validado (nullable|string|max:255) em toda chamada
+            // real via HTTP, então não perde a garantia.
+            fn (array $dados) => ArquivoModel::create([
+                ...$dados,
+                'nome' => $request->input('nome') ?: '',
+                'usuario_id' => $lead->id,
+            ]),
+        );
 
         return response()->json([
             'success' => true,
             'data' => $arquivoSalvo,
-            'Arquivo salvo:'  => $caminho
         ]);
     }
 

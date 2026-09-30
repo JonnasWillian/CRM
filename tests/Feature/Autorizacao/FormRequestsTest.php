@@ -32,9 +32,8 @@ class FormRequestsTest extends TestCase
     {
         parent::setUp();
 
-        // O ArquivoService grava em disco ('public'); um teste de unidade não
-        // deve depender do disco configurado no ambiente que o roda.
-        Storage::fake('public');
+        // O ArquivoService grava no disco privado ('local').
+        Storage::fake('local');
     }
 
     /**

@@ -12,6 +12,7 @@ use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
@@ -61,6 +62,10 @@ class GuardaDeArrayNoUsuarioIdTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Hoje, se uma daquelas requisições passasse, ela escreveria no
+        // disco real.
+        Storage::fake('local');
 
         $tenant = Tenant::factory()->create();
 

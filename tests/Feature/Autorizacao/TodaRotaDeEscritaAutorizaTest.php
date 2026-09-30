@@ -81,22 +81,6 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         // terceiro a proteger.
         'PATCH api/kanban/settings',
 
-        // Leitura disfarçada de POST por convenção antiga do projeto: o corpo
-        // carrega filtros, não identificador de dono. A visibilidade é
-        // garantida por Usuario::scopeVisibleTo dentro do método.
-        'POST api/pegarUsuarios',
-        'POST api/kanban',
-        'POST api/metricas',
-        'POST api/tarefasPendentes',
-
-        // Leitura disfarçada de POST, mas por outro motivo: são catálogo do
-        // tenant (estágios e status), não dado de agente — todo mundo no
-        // tenant vê a lista inteira, não existe "meu estágio" e "estágio do
-        // colega". Não chamam Usuario::scopeVisibleTo; a proteção é o escopo
-        // de tenant do próprio model (BelongsToTenant em Estagio e Statu).
-        'POST api/estagios',
-        'POST api/status',
-
         // Cria modelo de tarefa do próprio agente: user_id vem de auth(),
         // nunca do corpo.
         'POST api/tarefa-padroes',
@@ -116,7 +100,7 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         // ($request->user()), nunca num id vindo do corpo ou da URL — não há
         // recurso de terceiro para proteger. Conferido lendo cada método:
         'PATCH profile',   // ProfileController::update  -> $request->user()->fill(...)->save()
-        'DELETE profile',  // ProfileController::destroy -> $request->user()->delete()
+        'DELETE profile',  // ProfileController::destroy -> ExclusaoDeConta::excluir($request->user()): só o próprio usuário, com impedimentos de carteira e último admin
         'POST email/verification-notification', // EmailVerificationNotificationController::store -> $request->user()->sendEmailVerificationNotification()
         'POST confirm-password', // ConfirmablePasswordController::store -> valida a senha do próprio $request->user()
         'PUT password', // PasswordController::update -> $request->user()->update(['password' => ...])
