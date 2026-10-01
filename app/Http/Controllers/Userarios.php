@@ -228,6 +228,14 @@ class Userarios extends Controller
     {
         $this->authorize('restore', $usuario);
 
+        // restore() não verifica se o registro estava na lixeira: chamado
+        // num lead ativo, ele só reatribui deleted_at = null (sem efeito) e
+        // ainda assim dispara o evento `restored`, gravando um
+        // "lead_restaurado" falso no histórico.
+        if (! $usuario->trashed()) {
+            return response()->json(['message' => 'Este lead não está na lixeira.'], 409);
+        }
+
         $usuario->restore();
 
         return response()->json(['message' => 'Lead restaurado']);
@@ -455,10 +463,10 @@ class Userarios extends Controller
 
     public function metricas(Request $request)
     {
-        // Subconsulta, não lista: o banco resolve "quais leads este agente vê"
-        // dentro da própria consulta. pluck('id') + whereIn mandava a carteira
-        // inteira como bindings.
-        $visiveis = fn () => Usuario::visibleTo(auth()->user())->select('usuarios.id');
+        // Subconsulta, não lista: Usuario::idsVisiveisPara devolve um Builder
+        // para o banco resolver "quais leads este agente vê" dentro da
+        // própria consulta, sem mandar a carteira inteira como bindings.
+        $visiveis = fn () => Usuario::idsVisiveisPara(auth()->user());
         // `is_active` foi removida: o que separa lead em pipeline de lead
         // encerrado agora é o tipo do estágio. "Aberto" é o que antes era
         // is_active = true; ganho e perdido, juntos, são o que era false.

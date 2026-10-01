@@ -216,6 +216,14 @@ class ProjetoController extends Controller
     {
         $this->authorize('restore', $projeto);
 
+        // restore() não verifica se o registro estava na lixeira: chamado
+        // num projeto ativo, ele só reatribui deleted_at = null (sem efeito)
+        // e ainda assim dispara o evento `restored`, gravando um
+        // "projeto_restaurado" falso no histórico.
+        if (! $projeto->trashed()) {
+            return response()->json(['message' => 'Este projeto não está na lixeira.'], 409);
+        }
+
         $projeto->restore();
 
         return response()->json(['message' => 'Projeto restaurado']);

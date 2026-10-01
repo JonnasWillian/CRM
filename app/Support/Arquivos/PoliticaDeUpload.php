@@ -40,6 +40,10 @@ final class PoliticaDeUpload
             "{$campo}.uploaded" => 'O arquivo passa do limite de upload do servidor. Envie um arquivo menor.',
             "{$campo}.mimes" => 'Tipo de arquivo não permitido. Envie PDF, imagem, documento, planilha, apresentação, TXT ou CSV.',
             "{$campo}.max" => 'O arquivo pode ter no máximo '.intdiv(self::MAX_KB, 1024).' MB.',
+            // O nome de exibição do arquivo também é regra de upload (mesmo
+            // limite nas duas requests que aceitam anexo), por isso mora aqui
+            // e não repetido em cada FormRequest.
+            'nome.max' => 'O nome do arquivo pode ter no máximo 255 caracteres.',
         ];
     }
 }

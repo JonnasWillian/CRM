@@ -129,7 +129,13 @@ class TimelineParityTest extends TestCase
         return $vistas;
     }
 
-    public function test_os_dois_caminhos_mostram_o_mesmo_conteudo_e_a_mesma_data(): void
+    /**
+     * O conteúdo (não só a lista de tipos) tem de bater entre o timeline()
+     * antigo e o endpoint novo. Extraído para método próprio porque dois
+     * testes precisam da mesma comparação — um teste chamando outro
+     * disfarçava a dependência e duplicava a execução.
+     */
+    private function assertParidade(): void
     {
         $antigo = $this->actingAs($this->staff)->getJson("/api/timeline/{$this->lead->id}")->json();
         $novo = $this->actingAs($this->staff)->getJson("/api/leads/{$this->lead->id}/atividades")->json('data');
@@ -138,6 +144,11 @@ class TimelineParityTest extends TestCase
             $this->ordenar(array_map(fn ($e) => $this->vista($e), $antigo)),
             $this->ordenar(array_map(fn ($e) => $this->vista($e), $novo)),
         );
+    }
+
+    public function test_os_dois_caminhos_mostram_o_mesmo_conteudo_e_a_mesma_data(): void
+    {
+        $this->assertParidade();
     }
 
     public function test_arquivo_sem_nome_aparece_igual_nos_dois_caminhos(): void
@@ -154,7 +165,7 @@ class TimelineParityTest extends TestCase
             ->where('tipo', 'arquivo')->pluck('nome')->sort()->values()->all();
 
         $this->assertSame(['Arquivo sem nome', 'rg.pdf'], $novo);
-        $this->test_os_dois_caminhos_mostram_o_mesmo_conteudo_e_a_mesma_data();
+        $this->assertParidade();
     }
 
     public function test_sem_registros_apagados_os_dois_caminhos_produzem_os_mesmos_eventos(): void

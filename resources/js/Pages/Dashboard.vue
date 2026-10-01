@@ -137,10 +137,18 @@
         status: filterStatus.value !== 'todos' ? filterStatus.value : undefined,
     });
 
+    // Duas buscas em sequência rápida (digitação + filtro, por exemplo) podem
+    // ter suas respostas resolvidas fora de ordem; sem este contador, a busca
+    // mais antiga chegando por último sobrescreveria o resultado da mais
+    // nova. `minha` trava qual era a busca corrente no instante do disparo;
+    // se outra busca começou nesse meio tempo, esta resposta é descartada.
+    let ultimaBusca = 0;
     const buscarUsuarios = async (pagina = 1) => {
+        const minha = ++ultimaBusca;
         isLoading.value = true;
         try {
             const { data } = await axios.get('/api/leads', { params: parametrosDaLista(pagina) });
+            if (minha !== ultimaBusca) return;
             usuarios.value = data.data.map(usuario => ({
                 ...usuario,
                 telefone: usuario.telefone ?? ''
@@ -149,7 +157,10 @@
         } catch (error) {
             console.error('Erro ao buscar leads:', error);
         } finally {
-            isLoading.value = false;
+            // Só a busca mais recente desliga o loading: uma busca antiga que
+            // termina depois de já ter sido descartada não pode reabilitar
+            // filtros e paginação enquanto a busca nova ainda está em voo.
+            if (minha === ultimaBusca) isLoading.value = false;
         }
     };
 
@@ -180,9 +191,18 @@
 
         try {
             await axios.post('/api/usuarios', payload);
-            await buscarUsuarios();
             closeModal();
+
+            // search.value = '' dispara o watcher de busca (com debounce)
+            // quando a busca não estava vazia — chamar buscarUsuarios()
+            // aqui também duplicaria a requisição. Só buscamos explicitamente
+            // quando search já estava vazio, caso em que a atribuição abaixo
+            // não muda o valor e o watcher não dispara sozinho.
+            const watcherVaiBuscar = search.value !== '';
             search.value = '';
+            if (! watcherVaiBuscar) {
+                await buscarUsuarios();
+            }
         } catch (error) {
             const data = error?.response?.data;
             const erros = data?.errors ?? data?.erros ?? {};

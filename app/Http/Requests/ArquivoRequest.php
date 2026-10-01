@@ -59,7 +59,9 @@ class ArquivoRequest extends FormRequest
             'usuario_id' => [
                 'required',
                 'integer',
-                Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                Rule::exists('usuarios', 'id')
+                    ->where('tenant_id', app(CurrentTenant::class)->id())
+                    ->whereNull('deleted_at'),
             ],
         ];
     }
@@ -68,7 +70,6 @@ class ArquivoRequest extends FormRequest
     {
         return [
             ...PoliticaDeUpload::mensagens(),
-            'nome.max' => 'O nome do arquivo pode ter no máximo 255 caracteres.',
             'usuario_id.required' => 'O usuário detentor do arquivo é obrigatório',
             'usuario_id.exists' => 'Usuário inválido.',
         ];

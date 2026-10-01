@@ -60,7 +60,9 @@ class ProjetoAnexoRequest extends FormRequest
             'usuario_id' => [
                 'required',
                 'integer',
-                Rule::exists('projetos', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
+                Rule::exists('projetos', 'id')
+                    ->where('tenant_id', app(CurrentTenant::class)->id())
+                    ->whereNull('deleted_at'),
             ],
         ];
     }
@@ -69,7 +71,6 @@ class ProjetoAnexoRequest extends FormRequest
     {
         return [
             ...PoliticaDeUpload::mensagens(),
-            'nome.max' => 'O nome do arquivo pode ter no máximo 255 caracteres.',
             'usuario_id.required' => 'O projeto do anexo é obrigatório.',
             'usuario_id.exists' => 'Projeto inválido.',
         ];

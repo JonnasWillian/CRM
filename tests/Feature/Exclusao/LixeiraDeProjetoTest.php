@@ -61,6 +61,16 @@ class LixeiraDeProjetoTest extends TestCase
         $this->assertDatabaseHas('activity_log', ['lead_id' => $this->lead->id, 'event' => 'projeto_restaurado']);
     }
 
+    /** Restaurar algo que não está na lixeira não deve gravar um "restaurado" falso. */
+    public function test_restaurar_projeto_ativo_da_409_e_nao_grava_atividade(): void
+    {
+        $this->actingAs($this->dono)->patchJson("/api/projeto/{$this->projeto->id}/restaurar")
+            ->assertStatus(409)
+            ->assertJson(['message' => 'Este projeto não está na lixeira.']);
+
+        $this->assertDatabaseMissing('activity_log', ['lead_id' => $this->lead->id, 'event' => 'projeto_restaurado']);
+    }
+
     public function test_colega_nao_exclui_nem_restaura_projeto(): void
     {
         $this->actingAs($this->intruso)->deleteJson("/api/projeto/{$this->projeto->id}")->assertNotFound();

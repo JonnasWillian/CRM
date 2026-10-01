@@ -17,6 +17,10 @@ class TelefoneTest extends TestCase
             'fixo com máscara' => ['(11) 3333-4444', '+551133334444'],
             'com zero de tronco' => ['011999998888', '+5511999998888'],
             'com 55 sem mais' => ['5511999998888', '+5511999998888'],
+            // DDD 55 é do Rio Grande do Sul e coincide com o DDI do Brasil:
+            // com 11 dígitos (sem "+") o número é tratado como DDD + linha,
+            // nunca como DDI + número de 9 dígitos (que não existe no Brasil).
+            'DDD 55 (RS) colide com DDI' => ['55 99999-8888', '+5555999998888'],
             'já em E.164 com espaços' => ['+55 11 99999-8888', '+5511999998888'],
             'internacional' => ['+1 (415) 555-2671', '+14155552671'],
             'curto demais' => ['123', '123'],

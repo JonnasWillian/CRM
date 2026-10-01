@@ -79,9 +79,17 @@ class ExclusaoDeContaTest extends TestCase
         $this->assertNull($vendedor->fresh());
     }
 
+    /**
+     * Com o vendedor SEM leads, uma senha errada e um impedimento de
+     * negócio dariam o mesmo resultado (erro em 'password'), então o teste
+     * não provava qual checagem roda primeiro. Dando um lead ao vendedor,
+     * se a ordem estivesse invertida o erro viria em 'conta', não em
+     * 'password' — é essa distinção que prova a ordem.
+     */
     public function test_senha_errada_continua_sendo_checada_antes(): void
     {
         $vendedor = $this->agente($this->tenant);
+        $this->lead($this->tenant, $vendedor);
 
         $this->actingAs($vendedor)->from('/profile')->delete('/profile', ['password' => 'errada'])
             ->assertSessionHasErrors('password')

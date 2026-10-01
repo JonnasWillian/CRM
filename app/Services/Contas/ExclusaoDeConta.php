@@ -47,16 +47,6 @@ class ExclusaoDeConta
             throw ValidationException::withMessages(['conta' => $impedimentos]);
         }
 
-        // Só na memória do objeto, sem persistir: o controller chama
-        // Auth::logout() logo depois deste método, e o guard de sessão
-        // reemite o remember_token quando ele não está vazio
-        // (SessionGuard::cycleRememberToken -> Eloquent Provider::
-        // updateRememberToken -> $user->save()). Como a linha já foi apagada,
-        // esse save() encontraria exists=false e faria um INSERT — um
-        // usuário "excluído" ressuscitava sozinho, com um novo token, assim
-        // que a sessão era encerrada.
-        $user->setRememberToken(null);
-
         DB::transaction(fn () => $user->delete());
     }
 

@@ -88,10 +88,10 @@ class TarefaController extends Controller
 
     public function pendentes(Request $request)
     {
-        // Subconsulta, não lista: o banco resolve "quais leads este agente vê"
-        // dentro da própria consulta. pluck('id') + whereIn mandava a carteira
-        // inteira como bindings.
-        $visiveis = fn () => Usuario::visibleTo(auth()->user())->select('usuarios.id');
+        // Subconsulta, não lista: Usuario::idsVisiveisPara devolve um Builder
+        // para o banco resolver "quais leads este agente vê" dentro da
+        // própria consulta, sem mandar a carteira inteira como bindings.
+        $visiveis = fn () => Usuario::idsVisiveisPara(auth()->user());
 
         $hoje = Tarefa::whereIn('usuario_id', $visiveis())
             ->whereDate('data_limite', today())

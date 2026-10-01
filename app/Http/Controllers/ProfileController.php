@@ -59,7 +59,12 @@ class ProfileController extends Controller
 
         $exclusao->excluir($user);
 
-        Auth::logout();
+        // logoutCurrentDevice() e não logout(): este último cicla o
+        // remember_token (SessionGuard::cycleRememberToken -> $user->save()),
+        // e como a linha já foi apagada esse save() faria um INSERT — o
+        // usuário "excluído" ressuscitava sozinho assim que a sessão era
+        // encerrada. logoutCurrentDevice() não mexe no remember_token.
+        Auth::logoutCurrentDevice();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

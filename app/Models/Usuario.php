@@ -104,4 +104,17 @@ class Usuario extends Model implements Perdivel
 
         return $query->where('usuarios.user_id', $user->id);
     }
+
+    /**
+     * Os ids que o agente enxerga, para usar como subconsulta de um
+     * `whereIn('usuario_id', ...)` noutra tabela (projetos, tarefas, etc).
+     *
+     * Devolve o Builder, não a lista: passado direto a `whereIn`, o banco
+     * resolve a visibilidade dentro da própria consulta. Resolver antes com
+     * `pluck('id')` manda a carteira inteira como bindings.
+     */
+    public static function idsVisiveisPara(User $user): Builder
+    {
+        return static::visibleTo($user)->select('usuarios.id');
+    }
 }

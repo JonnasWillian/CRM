@@ -1,7 +1,7 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue';
     import axios from 'axios';
-    import { UserPlus, MessageSquare, Paperclip, Briefcase, FileText, Upload, Tag, Clock, CalendarClock, CheckCircle2 } from 'lucide-vue-next';
+    import { UserPlus, MessageSquare, Paperclip, Briefcase, FileText, Upload, Tag, Clock, CalendarClock, CheckCircle2, Trash2, RotateCcw } from 'lucide-vue-next';
 
     const props = defineProps({ usuarioId: { type: [Number, String], required: true } });
 
@@ -78,9 +78,9 @@
             case 'tarefa_concluida': return `Tarefa concluída: "${evento.titulo}"`;
             case 'funil_alterado':            return `Funil: ${evento.estagio_anterior} → ${evento.estagio_novo}`;
             case 'anotacao_removida':         return 'Anotação removida';
-            case 'arquivo_removido':          return `Arquivo removido: ${evento.nome ?? ''}`.trim();
+            case 'arquivo_removido':          return evento.nome ? `Arquivo removido: ${evento.nome}` : 'Arquivo removido';
             case 'projeto_anotacao_removida': return 'Anotação de projeto removida';
-            case 'projeto_anexo_removido':    return `Anexo removido: ${evento.nome ?? ''}`.trim();
+            case 'projeto_anexo_removido':    return evento.nome ? `Anexo removido: ${evento.nome}` : 'Anexo removido';
             case 'projeto_removido':          return `Projeto na lixeira: "${evento.nome ?? ''}"`;
             case 'projeto_restaurado':        return `Projeto restaurado: "${evento.nome ?? ''}"`;
             case 'lead_removido':             return 'Lead movido para a lixeira';
@@ -141,8 +141,13 @@
         <!-- Vazio -->
         <div v-else-if="eventosFiltrados.length === 0" class="tl-empty">
             <Clock :size="28" />
-            <p class="tl-empty-title">Nenhum evento registrado</p>
-            <p class="tl-empty-sub">Os eventos aparecerão aqui conforme o lead evoluir.</p>
+            <!-- Sem resultado para o filtro mas com páginas ainda não carregadas:
+                 "nenhum evento registrado" seria enganoso, o evento pode estar
+                 numa página seguinte que o usuário ainda não pediu. -->
+            <p class="tl-empty-title">
+                {{ temMais ? 'Nenhum evento deste tipo nas páginas carregadas. Carregue mais para ver o restante.' : 'Nenhum evento registrado' }}
+            </p>
+            <p v-if="!temMais" class="tl-empty-sub">Os eventos aparecerão aqui conforme o lead evoluir.</p>
         </div>
 
         <!-- Lista -->
@@ -168,6 +173,8 @@
                         <Tag           v-else-if="evento.tipo === 'status_alterado' || evento.tipo === 'funil_alterado'" :size="11" />
                         <CalendarClock v-else-if="evento.tipo === 'tarefa_criada'"    :size="11" />
                         <CheckCircle2  v-else-if="evento.tipo === 'tarefa_concluida'" :size="11" />
+                        <RotateCcw     v-else-if="evento.tipo === 'projeto_restaurado' || evento.tipo === 'lead_restaurado'" :size="11" />
+                        <Trash2        v-else-if="['projeto_removido', 'lead_removido', 'anotacao_removida', 'arquivo_removido', 'projeto_anotacao_removida', 'projeto_anexo_removido'].includes(evento.tipo)" :size="11" />
                     </div>
                     <div class="tl-line" />
                 </div>
