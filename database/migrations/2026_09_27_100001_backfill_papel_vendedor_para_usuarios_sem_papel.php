@@ -94,7 +94,7 @@ return new class extends Migration
                     ->from('model_has_roles')
                     ->whereColumn('model_has_roles.model_id', 'users.id')
                     ->whereColumn('model_has_roles.tenant_id', 'users.tenant_id')
-                    ->where('model_has_roles.model_type', User::class);
+                    ->where('model_has_roles.model_type', (new User)->getMorphClass());
             })
             ->get(['id', 'tenant_id']);
 
@@ -103,7 +103,7 @@ return new class extends Migration
             // suspensório, caso a migration rode duas vezes em paralelo.
             DB::table('model_has_roles')->insertOrIgnore([
                 'role_id' => $vendedorId,
-                'model_type' => User::class,
+                'model_type' => (new User)->getMorphClass(),
                 'model_id' => $usuario->id,
                 'tenant_id' => $usuario->tenant_id,
             ]);

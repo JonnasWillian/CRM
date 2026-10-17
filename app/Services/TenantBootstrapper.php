@@ -81,12 +81,12 @@ class TenantBootstrapper
     protected static function defaultEstagios(): array
     {
         return [
-            ['descricao' => 'Em captação',        'ordem' => 1, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#499fca'],
-            ['descricao' => 'Em negociacao',      'ordem' => 2, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#e5618d'],
-            ['descricao' => 'Em desenvolvimento', 'ordem' => 3, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#bd8939'],
-            ['descricao' => 'Concluído',          'ordem' => 4, 'tipo' => Estagio::TIPO_GANHO,   'cor' => '#30ae77'],
-            ['descricao' => 'Pausado',            'ordem' => 5, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#9268f3'],
-            ['descricao' => 'Cancelado',          'ordem' => 6, 'tipo' => Estagio::TIPO_PERDIDO, 'cor' => '#f15873'],
+            ['descricao' => 'Em captação',        'ordem' => 1, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#2b6cb0'],
+            ['descricao' => 'Em negociacao',      'ordem' => 2, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#b83280'],
+            ['descricao' => 'Em desenvolvimento', 'ordem' => 3, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#9c6612'],
+            ['descricao' => 'Concluído',          'ordem' => 4, 'tipo' => Estagio::TIPO_GANHO,   'cor' => '#1a7544'],
+            ['descricao' => 'Pausado',            'ordem' => 5, 'tipo' => Estagio::TIPO_ABERTO,  'cor' => '#6b46c1'],
+            ['descricao' => 'Cancelado',          'ordem' => 6, 'tipo' => Estagio::TIPO_PERDIDO, 'cor' => '#b42318'],
         ];
     }
 

@@ -8,11 +8,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Notifications\Notifiable;
 
 class Projeto extends Model implements Perdivel
 {
-    use BelongsToTenant, HasFactory, Notifiable, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'nome',
@@ -25,6 +24,18 @@ class Projeto extends Model implements Perdivel
         'usuario_id',
         'status_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'preco' => 'decimal:2',
+            'data_inicial' => 'date:Y-m-d',
+            'data_final' => 'date:Y-m-d',
+            'parcelas' => 'boolean',
+            'qtd_parcelas' => 'integer',
+            'fechado_em' => 'datetime',
+        ];
+    }
 
     public function status()
     {

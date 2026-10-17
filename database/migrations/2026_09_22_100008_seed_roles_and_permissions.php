@@ -85,7 +85,7 @@ return new class extends Migration
         foreach ($primeiros as $linha) {
             DB::table('model_has_roles')->insert([
                 'role_id' => $roleIds['admin'],
-                'model_type' => \App\Models\User::class,
+                'model_type' => (new \App\Models\User)->getMorphClass(),
                 'model_id' => $linha->user_id,
                 'tenant_id' => $linha->tenant_id,
             ]);

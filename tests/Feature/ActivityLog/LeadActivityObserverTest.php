@@ -71,7 +71,8 @@ class LeadActivityObserverTest extends TestCase
         $this->assertNotNull($atividade);
         $this->assertSame($this->lead->id, $atividade->lead_id);
         $this->assertSame($this->tenant->id, $atividade->tenant_id);
-        $this->assertSame(Anotacao::class, $atividade->subject_type);
+        // Morph map: a coluna guarda o alias, não o nome da classe.
+        $this->assertSame((new Anotacao)->getMorphClass(), $atividade->subject_type);
         $this->assertSame($anotacao->id, $atividade->subject_id);
     }
 

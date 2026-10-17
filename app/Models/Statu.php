@@ -12,7 +12,6 @@ class Statu extends Model
     use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'id',
         'descricao',
         'ordem',
     ];

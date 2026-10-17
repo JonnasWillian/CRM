@@ -27,6 +27,7 @@ use App\Policies\TarefaPolicy;
 use App\Policies\UsuarioPolicy;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -49,6 +50,23 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // As colunas polimórficas (activity_log, perdas) guardam estes aliases,
+        // nunca o nome da classe — renomear um model não migra dados de log.
+        // `enforce`: uma classe fora do mapa lança em vez de gravar o FQCN.
+        // Migration 2026_10_17_100007 converteu as linhas antigas.
+        Relation::enforceMorphMap([
+            'lead' => Usuario::class,
+            'projeto' => Projeto::class,
+            'anotacao' => Anotacao::class,
+            'arquivo' => arquivo::class,
+            'projeto_anotacao' => ProjetoAnotacao::class,
+            'projeto_anexo' => ProjetoAnexo::class,
+            'tarefa' => Tarefa::class,
+            'tarefa_padrao' => TarefaPadrao::class,
+            'estagio_historico' => \App\Models\EstagioHistorico::class,
+            'user' => \App\Models\User::class,
+        ]);
 
         // Alimentam o activity log de lead. Observers só disparam em operações
         // de model. Não há escrita em massa (query builder) em Usuario/Projeto

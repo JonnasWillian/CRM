@@ -6,23 +6,71 @@ use App\Models\Estagio;
 use App\Models\EstagioHistorico;
 use App\Models\Usuario;
 use App\Support\ActivityLog\LeadActivity;
+use App\Support\Reports\MetricasCache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Observa o próprio lead: criação, mudança de estágio e mudança de funil.
  *
- * Este observer é também o único lugar que grava EstagioHistorico. O mesmo
- * bloco vivia duplicado em Userarios::update() e Userarios::patchEstagio();
- * aqui ele cobre qualquer caminho que altere estágio ou funil.
+ * Mantém também as colunas de evento do lead:
+ * - `ultimo_contato_em`: toda mudança de estágio conta como contato (a
+ *   anotação é tratada em AnotacaoObserver);
+ * - `fechado_em`: preenchido ao entrar em estágio ganho/perdido, zerado ao
+ *   voltar para aberto;
+ * - `probabilidade`: preenchida pela sugestão do estágio só quando vazia —
+ *   um valor que o vendedor digitou nunca é sobrescrito.
+ *
+ * As consultas de estágio usam DB::table de propósito: `saving` roda antes
+ * do BelongsToTenant preencher tenant_id num lead novo, e o TenantScope é
+ * fail-closed. O estagio_id já foi validado contra o tenant pelo request.
+ *
+ * Este observer é também o único lugar que grava EstagioHistorico.
  */
 class UsuarioObserver
 {
+    public function saving(Usuario $usuario): void
+    {
+        if (! $usuario->exists && $usuario->ultimo_contato_em === null) {
+            $usuario->ultimo_contato_em = now();
+        }
+
+        if (! $usuario->isDirty('estagio_id')) {
+            return;
+        }
+
+        if ($usuario->exists) {
+            $usuario->ultimo_contato_em = now();
+        }
+
+        $estagio = $usuario->estagio_id
+            ? DB::table('estagios')->where('id', $usuario->estagio_id)->first(['tipo', 'probabilidade_padrao'])
+            : null;
+
+        if ($estagio === null) {
+            return;
+        }
+
+        if ($estagio->tipo === Estagio::TIPO_ABERTO) {
+            $usuario->fechado_em = null;
+        } elseif ($usuario->fechado_em === null) {
+            $usuario->fechado_em = now();
+        }
+
+        if ($usuario->probabilidade === null && $estagio->probabilidade_padrao !== null) {
+            $usuario->probabilidade = (int) $estagio->probabilidade_padrao;
+        }
+    }
+
     public function created(Usuario $usuario): void
     {
         LeadActivity::registrar($usuario, $usuario->id, 'lead_criado', 'Lead cadastrado no sistema');
+        MetricasCache::invalidar($usuario->tenant_id);
     }
 
     public function updated(Usuario $usuario): void
     {
+        MetricasCache::invalidar($usuario->tenant_id);
+
         $mudouEstagio = $usuario->wasChanged('estagio_id');
         $mudouFunil = $usuario->wasChanged('funil_id');
 
@@ -44,9 +92,13 @@ class UsuarioObserver
             'funil_novo_id' => $usuario->funil_id,
         ]);
 
-        // As chaves gravadas aqui mudaram de nome junto com as colunas. Linhas
-        // JÁ existentes no activity log seguem com `tag_id_anterior`/`tag_id_novo`
-        // — histórico é imutável e não é reescrito.
+        // Nome gravado junto com o id: o histórico mostra o estágio como ele se
+        // chamava no momento, mesmo que seja renomeado ou arquivado depois.
+        // Uma consulta para os dois ids, não uma por id.
+        $nomes = DB::table('estagios')
+            ->whereIn('id', array_filter([$estagioAnterior, $usuario->estagio_id]))
+            ->pluck('descricao', 'id');
+
         LeadActivity::registrar(
             $usuario,
             $usuario->id,
@@ -57,17 +109,16 @@ class UsuarioObserver
                 'estagio_novo_id' => $usuario->estagio_id,
                 'funil_anterior_id' => $funilAnterior,
                 'funil_novo_id' => $usuario->funil_id,
-                // Nome gravado junto com o id: o histórico mostra o estágio
-                // como ele se chamava no momento, mesmo que seja renomeado ou
-                // arquivado depois.
-                'estagio_anterior' => $estagioAnterior ? Estagio::withTrashed()->whereKey($estagioAnterior)->value('descricao') : null,
-                'estagio_novo' => $usuario->estagio_id ? Estagio::withTrashed()->whereKey($usuario->estagio_id)->value('descricao') : null,
+                'estagio_anterior' => $estagioAnterior ? $nomes[$estagioAnterior] ?? null : null,
+                'estagio_novo' => $usuario->estagio_id ? $nomes[$usuario->estagio_id] ?? null : null,
             ],
         );
     }
 
     public function deleted(Usuario $usuario): void
     {
+        MetricasCache::invalidar($usuario->tenant_id);
+
         // forceDelete também dispara `deleted`; com RESTRICT ele só passa em
         // lead sem filhos, e o log não deve chamá-lo de "lixeira".
         if ($usuario->isForceDeleting()) {
@@ -79,6 +130,7 @@ class UsuarioObserver
 
     public function restored(Usuario $usuario): void
     {
+        MetricasCache::invalidar($usuario->tenant_id);
         LeadActivity::registrar($usuario, $usuario->id, 'lead_restaurado', 'Lead restaurado da lixeira');
     }
 }

@@ -99,6 +99,26 @@ class FunilService
     }
 
     /**
+     * Desarquivar o funil e os estágios que foram arquivados junto com ele.
+     * Estágio arquivado antes, por decisão própria, continua arquivado.
+     */
+    public function restaurar(Funil $funil): void
+    {
+        if (! $funil->trashed()) {
+            throw new RegraDeFunilException('Este funil não está arquivado.');
+        }
+
+        DB::transaction(function () use ($funil) {
+            $arquivadoEm = $funil->deleted_at;
+            $funil->restore();
+            Estagio::onlyTrashed()
+                ->where('funil_id', $funil->id)
+                ->where('deleted_at', '>=', $arquivadoEm)
+                ->restore();
+        });
+    }
+
+    /**
      * @param  array<int, int>  $idsNaOrdem
      */
     public function reordenar(array $idsNaOrdem): void

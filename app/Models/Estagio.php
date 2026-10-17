@@ -6,7 +6,6 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Notifications\Notifiable;
 
 /**
  * Estágio de um funil (antes: Tags, quando o conjunto era fixo).
@@ -22,7 +21,7 @@ use Illuminate\Notifications\Notifiable;
  */
 class Estagio extends Model
 {
-    use BelongsToTenant, HasFactory, Notifiable, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     public const TIPO_ABERTO = 'aberto';
 
@@ -49,7 +48,15 @@ class Estagio extends Model
         'ordem',
         'tipo',
         'cor',
+        'probabilidade_padrao',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'probabilidade_padrao' => 'integer',
+        ];
+    }
 
     public function funil()
     {

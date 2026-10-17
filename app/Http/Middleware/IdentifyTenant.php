@@ -19,6 +19,13 @@ class IdentifyTenant
 
         $user = auth()->user();
 
+        // Desativado com sessão aberta: perde o acesso na requisição seguinte.
+        // `=== false`, não `! $user->ativo`: uma instância recém-criada em
+        // memória (factory, sem refresh) ainda não tem o default do banco.
+        if ($user->ativo === false) {
+            abort(403, 'Conta desativada.');
+        }
+
         if ($user->tenant_id === null) {
             abort(403, 'Usuário sem tenant associado.');
         }

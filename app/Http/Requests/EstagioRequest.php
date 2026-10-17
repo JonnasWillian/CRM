@@ -31,6 +31,9 @@ class EstagioRequest extends FormRequest
             // validação aceita qualquer cor válida — o campo é do tenant.
             'cor' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'ordem' => ['nullable', 'integer', 'min:1'],
+            // Sugestão de probabilidade para quem entra no estágio (só preenche
+            // lead sem probabilidade informada).
+            'probabilidade_padrao' => ['nullable', 'integer', 'between:0,100'],
         ];
     }
 
@@ -42,6 +45,7 @@ class EstagioRequest extends FormRequest
             'tipo.required' => 'Escolha o tipo do estágio: aberto, ganho ou perdido.',
             'tipo.in' => 'Tipo inválido. Use aberto, ganho ou perdido.',
             'cor.regex' => 'Informe a cor no formato #rrggbb.',
+            'probabilidade_padrao.between' => 'A probabilidade padrão vai de 0 a 100.',
         ];
     }
 }

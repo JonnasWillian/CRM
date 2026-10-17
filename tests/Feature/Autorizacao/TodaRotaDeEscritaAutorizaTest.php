@@ -66,6 +66,7 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         'DELETE api/funis/{funil}',
         'PATCH api/funis/reordenar',
         'PATCH api/funis/{funil}/padrao',
+        'PATCH api/funis/{funil}/restaurar',
         'POST api/funis/{funil}/estagios',
         'PATCH api/funis/{funil}/estagios/reordenar',
         'PUT api/estagios/{estagio}',

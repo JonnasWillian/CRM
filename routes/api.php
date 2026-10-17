@@ -46,6 +46,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
         Route::put('/funis/{funil}', [FunilController::class, 'update'])->name('funis.update');
         Route::delete('/funis/{funil}', [FunilController::class, 'destroy'])->name('funis.destroy');
         Route::patch('/funis/{funil}/padrao', [FunilController::class, 'definirPadrao'])->name('funis.padrao');
+        Route::patch('/funis/{funil}/restaurar', [FunilController::class, 'restaurar'])->withTrashed()->name('funis.restaurar');
 
         Route::patch('/funis/{funil}/estagios/reordenar', [FunilController::class, 'reordenarEstagios'])->name('funis.estagios.reordenar');
         Route::post('/funis/{funil}/estagios', [FunilController::class, 'storeEstagio'])->name('funis.estagios.store');

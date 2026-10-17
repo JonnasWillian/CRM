@@ -66,6 +66,15 @@ class FunilController extends Controller
         return response()->json(['message' => 'Funil arquivado.']);
     }
 
+    public function restaurar(Funil $funil): JsonResponse
+    {
+        $this->funis->restaurar($funil);
+
+        return response()->json($this->serializar(
+            $funil->fresh()->load(['estagios' => fn ($q) => $q->withTrashed()->orderBy('ordem')->orderBy('id')])
+        ));
+    }
+
     public function definirPadrao(Funil $funil): JsonResponse
     {
         $this->funis->definirPadrao($funil);
@@ -147,6 +156,7 @@ class FunilController extends Controller
             'ordem' => $estagio->ordem,
             'tipo' => $estagio->tipo,
             'cor' => $estagio->cor,
+            'probabilidade_padrao' => $estagio->probabilidade_padrao,
             'arquivada' => $estagio->trashed(),
         ];
     }

@@ -49,7 +49,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         $usuario = User::factory()->create(['tenant_id' => $tenant->id]);
 
         $this->assertDatabaseMissing('model_has_roles', [
-            'model_type' => User::class, 'model_id' => $usuario->id,
+            'model_type' => (new User)->getMorphClass(), 'model_id' => $usuario->id,
         ]);
 
         return $usuario;
@@ -69,7 +69,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         // si é global. Trocar os dois é o erro clássico aqui.
         $this->assertDatabaseHas('model_has_roles', [
             'role_id' => $vendedorId,
-            'model_type' => User::class,
+            'model_type' => (new User)->getMorphClass(),
             'model_id' => $orfao->id,
             'tenant_id' => $tenant->id,
         ]);
@@ -88,7 +88,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         $this->backfill();
 
         $papeis = DB::table('model_has_roles')
-            ->where('model_type', User::class)->where('model_id', $admin->id)
+            ->where('model_type', (new User)->getMorphClass())->where('model_id', $admin->id)
             ->count();
 
         $this->assertSame(1, $papeis, 'quem ja era admin nao pode virar admin+vendedor');
@@ -105,7 +105,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         $this->backfill();
 
         $this->assertSame(1, DB::table('model_has_roles')
-            ->where('model_type', User::class)->where('model_id', $orfao->id)->count());
+            ->where('model_type', (new User)->getMorphClass())->where('model_id', $orfao->id)->count());
     }
 
     /**
@@ -196,7 +196,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         $this->backfill();
 
         $this->assertDatabaseMissing('model_has_roles', [
-            'model_type' => User::class, 'model_id' => $orfao->id,
+            'model_type' => (new User)->getMorphClass(), 'model_id' => $orfao->id,
         ]);
     }
 
@@ -225,7 +225,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         $papelDeOutroTenant = DB::table('roles')->where('name', 'admin')->whereNull('tenant_id')->value('id');
         DB::table('model_has_roles')->insert([
             'role_id' => $papelDeOutroTenant,
-            'model_type' => User::class,
+            'model_type' => (new User)->getMorphClass(),
             'model_id' => $usuario->id,
             'tenant_id' => $tenantB->id,
         ]);
@@ -236,7 +236,7 @@ class PapelParaTodoUsuarioTest extends TestCase
 
         $this->assertDatabaseHas('model_has_roles', [
             'role_id' => $vendedorId,
-            'model_type' => User::class,
+            'model_type' => (new User)->getMorphClass(),
             'model_id' => $usuario->id,
             'tenant_id' => $tenantA->id,
         ]);

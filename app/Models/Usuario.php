@@ -9,11 +9,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Notifications\Notifiable;
 
 class Usuario extends Model implements Perdivel
 {
-    use BelongsToTenant, HasFactory, Notifiable, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'nome',
@@ -23,7 +22,29 @@ class Usuario extends Model implements Perdivel
         'user_id',
         'funil_id',
         'estagio_id',
+        'valor_estimado',
+        'valor_fechado',
+        'probabilidade',
+        'previsao_fechamento',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'valor_estimado' => 'decimal:2',
+            'valor_fechado' => 'decimal:2',
+            'probabilidade' => 'integer',
+            'previsao_fechamento' => 'date:Y-m-d',
+            'ultimo_contato_em' => 'datetime',
+            'fechado_em' => 'datetime',
+        ];
+    }
+
+    /** O agente dono do lead (`usuarios.user_id`). */
+    public function responsavel()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function estagio()
     {

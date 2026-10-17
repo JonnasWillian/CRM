@@ -14,6 +14,7 @@ use App\Models\Tenant;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -139,7 +140,9 @@ class BackfillLeadActivities extends Command
                 'lead_id' => $leadId,
                 'log_name' => 'default',
                 'description' => $descricao,
-                'subject_type' => $tipo,
+                // Alias do morph map ('lead', 'anotacao'…), nunca a classe: é o
+                // que os observers gravam e o que a chave de idempotência compara.
+                'subject_type' => Relation::getMorphAlias($tipo),
                 'subject_id' => $id,
                 'event' => $event,
                 'causer_type' => null,

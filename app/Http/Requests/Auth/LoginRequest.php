@@ -41,7 +41,10 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        // `ativo` entra como credencial: membro desativado recebe a mesma
+        // mensagem genérica de quem errou a senha — não revela que a conta
+        // existe e foi desligada.
+        if (! Auth::attempt([...$this->only('email', 'password'), 'ativo' => true], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

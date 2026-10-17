@@ -14,4 +14,9 @@ class TarefaPadrao extends Model
     protected $table = 'tarefa_padroes';
 
     protected $fillable = ['user_id', 'titulo', 'anotacao', 'prazo_dias'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
