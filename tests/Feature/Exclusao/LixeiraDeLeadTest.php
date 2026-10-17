@@ -57,7 +57,7 @@ class LixeiraDeLeadTest extends TestCase
 
         $this->assertSame($antes - 1, $this->actingAs($this->dono)->getJson('/api/metricas')->json('total_leads'));
         $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/leads')->json('data'))->pluck('id'));
-        $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/kanban')->json('leads'))->pluck('id'));
+        $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/kanban')->json('estagios'))->flatMap(fn ($e) => $e['leads'])->pluck('id'));
     }
 
     /** Review Focus 2 */

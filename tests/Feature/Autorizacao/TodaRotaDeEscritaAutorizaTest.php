@@ -127,7 +127,10 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
      * lendo o método, não suposto.
      */
     private const ISENTAS_LEITURA = [
-        //
+        // O estágio é configuração da empresa (TenantScope resolve o de outro
+        // tenant como 404); não há "meu estágio" e "estágio do colega". Os
+        // leads da coluna passam por Usuario::visibleTo, como no quadro.
+        'GET api/kanban/colunas/{estagio}', // KanbanController::coluna
     ];
 
     /**

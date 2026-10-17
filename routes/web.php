@@ -69,9 +69,7 @@ Route::get('/modelos-tarefa', function () {
     return Inertia::render('ModelosTarefa');
 })->middleware(['auth', 'tenant'])->name('modelosTarefa');
 
-Route::get('/kanban', function () {
-    return Inertia::render('Kanban');
-})->middleware(['auth', 'tenant'])->name('kanban');
+Route::get('/kanban', [\App\Http\Controllers\Web\KanbanController::class, 'index'])->middleware(['auth', 'tenant'])->name('kanban');
 
 Route::get('/configuracoes/funis', function () {
     return Inertia::render('Configuracoes/Funis');

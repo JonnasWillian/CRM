@@ -5,6 +5,7 @@ namespace App\Queries\Leads;
 use App\Models\Estagio;
 use App\Models\User;
 use App\Models\Usuario;
+use App\Support\Leads\BuscaDeLeads;
 use App\Support\Listagem\Ordenacao;
 use App\Support\Listagem\Paginacao;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -34,7 +35,7 @@ class ListagemDeLeads
                 'projetos as tem_projeto',
                 'projetos as tem_projeto_aberto' => fn ($p) => $p->whereHas('status', fn ($s) => $s->open()),
             ])
-            ->when($filtros['busca'] ?? null, fn (Builder $q, string $busca) => $this->buscar($q, $busca))
+            ->when($filtros['busca'] ?? null, fn (Builder $q, string $busca) => BuscaDeLeads::aplicar($q, $busca))
             ->when($filtros['estagios'] ?? null, fn (Builder $q, array $ids) => $q->whereIn('usuarios.estagio_id', $ids))
             ->when($filtros['de'] ?? null, fn (Builder $q, string $de) => $q->where('usuarios.created_at', '>=', $this->limite($de, 'inicio')))
             ->when($filtros['ate'] ?? null, fn (Builder $q, string $ate) => $q->where('usuarios.created_at', '<=', $this->limite($ate, 'fim')))
@@ -79,24 +80,6 @@ class ListagemDeLeads
         }
 
         return $lado === 'inicio' ? $instante->startOfDay() : $instante->endOfDay();
-    }
-
-    private function buscar(Builder $q, string $busca): void
-    {
-        // % e _ do usuário são texto, não curinga.
-        $termo = '%'.addcslashes($busca, '%_\\').'%';
-        $digitos = preg_replace('/\D/', '', $busca);
-
-        $q->where(function (Builder $w) use ($termo, $digitos) {
-            $w->where('usuarios.nome', 'like', $termo)
-                ->orWhere('usuarios.email', 'like', $termo)
-                ->orWhere('usuarios.descricao', 'like', $termo);
-
-            // Telefone é E.164 no banco: "(11) 98888" vira "1198888".
-            if (strlen($digitos) >= 3) {
-                $w->orWhere('usuarios.telefone', 'like', '%'.$digitos.'%');
-            }
-        });
     }
 
     private function situacao(Builder $q, string $situacao): void

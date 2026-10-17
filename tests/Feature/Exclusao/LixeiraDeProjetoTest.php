@@ -51,7 +51,7 @@ class LixeiraDeProjetoTest extends TestCase
 
         $this->assertSame([], $this->actingAs($this->dono)->getJson("/api/leads/{$this->lead->id}/projetos")->json('data'));
 
-        $card = collect($this->actingAs($this->dono)->getJson('/api/kanban')->json('leads'))->firstWhere('id', $this->lead->id);
+        $card = collect($this->actingAs($this->dono)->getJson('/api/kanban')->json('estagios'))->flatMap(fn ($e) => $e['leads'])->firstWhere('id', $this->lead->id);
         $this->assertEquals(0, $card['valor_projetos'] ?? 0);
     }
 

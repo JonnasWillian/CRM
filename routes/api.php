@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AnotacaoController;
 use App\Http\Controllers\Api\ArquivoController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\KanbanController;
 use App\Http\Controllers\Api\LeadAtividadeController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\ProjetoAnexoController;
@@ -121,9 +122,11 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::put('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'update'])->name('tarefa-padroes.update');
     Route::delete('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'destroy'])->name('tarefa-padroes.destroy');
 
-    // ── Kanban (sai para Api\KanbanController na Fase 3c) ──
-    Route::get('/kanban', [Userarios::class, 'kanban'])->name('kanban.index');
-    Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings'])->name('kanban.settings');
+    // ── Kanban: quadro agrupado, página de uma coluna e coluna padrão ──
+    Route::get('/kanban', [KanbanController::class, 'index'])->name('kanban.index');
+    // withTrashed: uma coluna arquivada ainda em uso continua no quadro e pode "carregar mais".
+    Route::get('/kanban/colunas/{estagio}', [KanbanController::class, 'coluna'])->withTrashed()->name('kanban.coluna');
+    Route::patch('/kanban/settings', [KanbanController::class, 'settings'])->name('kanban.settings');
 
     // Deprecado: sem consumidor no front. Só o TimelineParityTest usa (sai na Fase 5).
     Route::get('/timeline/{usuario}', [Userarios::class, 'timeline'])->name('timeline.show');

@@ -62,7 +62,7 @@ class KanbanArchivedEstagioTest extends TestCase
 
         $this->assertNotNull($coluna, 'a coluna arquivada sumiu e levou o lead junto');
         $this->assertTrue($coluna['arquivada']);
-        $this->assertContains($lead->id, array_column($dados['leads'], 'id'));
+        $this->assertContains($lead->id, array_column($coluna['leads'], 'id'));
     }
 
     public function test_coluna_arquivada_sem_leads_nao_aparece(): void

@@ -44,12 +44,14 @@ class VisibilidadeDeLeadsTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $funil = Funil::factory()->padrao()->create(['tenant_id' => $this->tenant->id]);
+        // Com estágio: o quadro só mostra lead que está numa coluna.
+        $estagio = \App\Models\Estagio::factory()->create(['tenant_id' => $this->tenant->id, 'funil_id' => $funil->id]);
 
         $this->leadDoGestor = Usuario::factory()->create([
-            'tenant_id' => $this->tenant->id, 'user_id' => $this->gestor->id, 'funil_id' => $funil->id,
+            'tenant_id' => $this->tenant->id, 'user_id' => $this->gestor->id, 'funil_id' => $funil->id, 'estagio_id' => $estagio->id,
         ]);
         $this->leadDoVendedor = Usuario::factory()->create([
-            'tenant_id' => $this->tenant->id, 'user_id' => $this->vendedor->id, 'funil_id' => $funil->id,
+            'tenant_id' => $this->tenant->id, 'user_id' => $this->vendedor->id, 'funil_id' => $funil->id, 'estagio_id' => $estagio->id,
         ]);
     }
 
@@ -74,7 +76,7 @@ class VisibilidadeDeLeadsTest extends TestCase
     public function test_o_kanban_segue_a_mesma_regra(): void
     {
         $dados = $this->actingAs($this->gestor)->getJson('/api/kanban')->assertOk()->json();
-        $ids = array_column($dados['leads'], 'id');
+        $ids = collect($dados['estagios'])->flatMap(fn ($e) => array_column($e['leads'], 'id'))->all();
 
         $this->assertContains($this->leadDoVendedor->id, $ids);
     }

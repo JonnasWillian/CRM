@@ -1,779 +1,518 @@
 <script setup>
-    import { ref, computed, onMounted } from 'vue';
-    import { Head, Link, router, usePage } from '@inertiajs/vue3';
-    import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import axios from 'axios';
-    import { Settings, X, Save, Plus, LayoutList, ArrowRightLeft, Clock } from 'lucide-vue-next';
-    import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
-    import { useContador } from '@/Composables/useContador';
-    import { vMaska } from 'maska/vue';
-    import { MASCARA_TELEFONE } from '@/utils/telefone';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
+import draggable from 'vuedraggable';
+import { ArrowRightLeft, Calendar, ChevronDown, Clock, ExternalLink, GitBranch, MessageCircle, Plus, Settings2, SquareKanban, Trash2 } from 'lucide-vue-next';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppAlert from '@/Components/ui/AppAlert.vue';
+import AppAvatar from '@/Components/ui/AppAvatar.vue';
+import AppBadge from '@/Components/ui/AppBadge.vue';
+import AppButton from '@/Components/ui/AppButton.vue';
+import AppDropdown from '@/Components/ui/AppDropdown.vue';
+import AppDropdownItem from '@/Components/ui/AppDropdownItem.vue';
+import AppDropdownSeparador from '@/Components/ui/AppDropdownSeparador.vue';
+import AppInput from '@/Components/ui/AppInput.vue';
+import AppModal from '@/Components/ui/AppModal.vue';
+import AppSelect from '@/Components/ui/AppSelect.vue';
+import AppSkeleton from '@/Components/ui/AppSkeleton.vue';
+import AppSwitch from '@/Components/ui/AppSwitch.vue';
+import EmptyState from '@/Components/ui/EmptyState.vue';
+import FormField from '@/Components/ui/FormField.vue';
+import IconButton from '@/Components/ui/IconButton.vue';
+import PageContainer from '@/Components/ui/PageContainer.vue';
+import PageHeader from '@/Components/ui/PageHeader.vue';
+import ConfirmarGanhoDialog from '@/Components/leads/ConfirmarGanhoDialog.vue';
+import LeadFormModal from '@/Components/leads/LeadFormModal.vue';
+import MoverFunilDialog from '@/Components/leads/MoverFunilDialog.vue';
+import { useConfirm } from '@/Composables/useConfirm';
+import { usePerda } from '@/Composables/usePerda';
+import { useToast } from '@/Composables/useToast';
+import { errosDeValidacao, mensagemDeErro } from '@/utils/erros';
+import { formatBRL, formatarData, formatarRelativo } from '@/utils/formatadores';
+import { ehTelefoneBrasileiro, MASCARA_TELEFONE } from '@/utils/telefone';
 
-    const user = computed(() => usePage().props.auth.user);
+/**
+ * Pipeline: o quadro vem agrupado do servidor (GET api/kanban) — total, Σ
+ * valor e os primeiros cards por coluna; "carregar mais" pagina uma coluna.
+ * Arrastar move (com Desfazer); soltar em perdido pede motivo; em ganho,
+ * confirma o valor. Filtros na URL (funil_id, q, user_id, estagnados).
+ *
+ * SortableJS em modo fallback (eventos de ponteiro, não o DnD nativo do
+ * HTML5): mesmo comportamento no toque e no mouse, fantasma consistente e
+ * autoscroll do quadro; no toque, 150 ms de espera para a rolagem vertical
+ * da coluna continuar funcionando.
+ */
+const props = defineProps({
+    funis: { type: Array, required: true },
+    funilAtual: { type: Object, default: null },
+    estagios: { type: Array, required: true }, // todos os estágios do tenant
+    agentes: { type: Array, default: () => [] },
+});
 
-    // ── Board state ──
-    const estagios = ref([]);
-    const leads   = ref([]);
-    const isLoading = ref(false);
+const toast = useToast();
+const { confirmar } = useConfirm();
+const { pedirPerda } = usePerda();
+const pode = (p) => usePage().props.auth.permissions?.[p] === true;
+const eu = computed(() => usePage().props.auth.user);
 
-    // ── Funis ──
-    // O quadro mostra um funil por vez. `funilId` null significa "o padrão do
-    // tenant", que é o backend quem resolve — o cliente não deve adivinhar.
-    const funis      = ref([]);
-    const funilAtual = ref(null);
-    const funilId    = ref(null);
+// ── Filtros (URL) ──
+const inicial = new URLSearchParams(window.location.search);
+const filtros = reactive({
+    funil_id: Number(inicial.get('funil_id')) || props.funilAtual?.id || null,
+    q: inicial.get('q') ?? '',
+    user_id: Number(inicial.get('user_id')) || null,
+    estagnados: inicial.get('estagnados') === '1',
+});
+const query = () => ({
+    ...(filtros.funil_id ? { funil_id: filtros.funil_id } : {}),
+    ...(filtros.q ? { q: filtros.q } : {}),
+    ...(filtros.user_id ? { user_id: filtros.user_id } : {}),
+    ...(filtros.estagnados ? { estagnados: 1 } : {}),
+});
+function sincronizarUrl() {
+    const url = new URL(window.location.href);
+    url.search = new URLSearchParams(query()).toString();
+    window.history.replaceState(window.history.state, '', url);
+}
 
-    // ── Perda ──
-    // Um estado só para os três gatilhos que podem virar perda no quadro:
-    // arrastar para uma coluna perdida, cadastrar direto nela e mover de funil
-    // para um estágio perdido. Cada um informa como enviar e como desfazer; o
-    // modal não conhece nenhum deles.
-    const perdaPendente = ref(null);   // { titulo, enviar(perda), desfazer() }
-    const perdaErro     = ref('');
-    const perdaSalvando = ref(false);
+// ── Quadro ──
+const quadro = ref(null);
+const carregando = ref(false);
+const erro = ref(null);
+let controlador = null;
 
-    const ehPerdido = (estagio) => estagio?.tipo === 'perdido';
+async function carregar() {
+    controlador?.abort();
+    controlador = new AbortController();
+    carregando.value = true;
+    erro.value = null;
+    sincronizarUrl();
+    try {
+        const { data } = await axios.get(route('api.kanban.index'), { params: query(), signal: controlador.signal, silencioso: true });
+        quadro.value = data;
+    } catch (e) {
+        if (axios.isCancel(e)) return;
+        erro.value = mensagemDeErro(e, 'Não foi possível carregar o quadro.');
+    } finally {
+        carregando.value = false;
+    }
+}
+onMounted(carregar);
 
-    const abrirPerda = (acao) => {
-        perdaPendente.value = acao;
-        perdaErro.value = '';
-    };
+const colunas = computed(() => quadro.value?.estagios ?? []);
+const funil = computed(() => quadro.value?.funil ?? props.funilAtual);
+const totais = computed(() => quadro.value?.totais ?? null);
+const opcoesFunil = computed(() => props.funis.map((f) => ({ valor: f.id, rotulo: f.nome })));
+const opcoesAgente = computed(() => props.agentes.map((a) => ({ valor: a.id, rotulo: a.name })));
+const funisComEstagios = computed(() => props.funis.map((f) => ({ ...f, estagios: props.estagios.filter((e) => e.funil_id === f.id) })));
+const filtrosAtivos = computed(() => Boolean(filtros.q || filtros.user_id || filtros.estagnados));
 
-    const cancelarPerda = () => {
-        // Desfaz o movimento otimista: o card volta para a coluna de origem.
-        perdaPendente.value?.desfazer?.();
-        perdaPendente.value = null;
-        perdaErro.value = '';
-    };
+let temporizador = null;
+function buscar(valor) {
+    filtros.q = valor;
+    clearTimeout(temporizador);
+    temporizador = setTimeout(carregar, 300);
+}
+function limparFiltros() {
+    filtros.q = ''; filtros.user_id = null; filtros.estagnados = false;
+    carregar();
+}
 
-    const confirmarPerda = async (perda) => {
-        perdaSalvando.value = true;
-        perdaErro.value = '';
-        try {
-            await perdaPendente.value.enviar(perda);
-            perdaPendente.value = null;
-            await buscarKanban();
-        } catch (e) {
-            perdaErro.value = e?.response?.data?.erros?.motivo_perda_id?.[0]
-                ?? e?.response?.data?.error
-                ?? 'Não foi possível registrar a perda.';
-        } finally {
-            perdaSalvando.value = false;
-        }
-    };
+// ── Cards ──
+const whatsapp = (l) => { const d = String(l.telefone ?? '').replace(/\D/g, ''); return d.length >= 10 ? `https://wa.me/${d}` : null; };
+const previsaoVencida = (l, coluna) => l.previsao_fechamento && coluna.tipo === 'aberto' && new Date(l.previsao_fechamento) < new Date(new Date().toDateString());
+const hrefDoLead = (l) => route('leads.show', { usuario: l.id, de: 'pipeline' });
+const corDaColuna = (c) => (c.tipo === 'ganho' ? 'var(--ok)' : c.tipo === 'perdido' ? 'var(--danger)' : c.cor || 'var(--cat-neutral)');
 
-    // ── Mover de funil ──
-    const moverAlvo       = ref(null);   // lead escolhido
-    const moverFunilId    = ref(null);
-    const moverEstagioId  = ref(null);
-    const moverEstagios   = ref([]);
-    const movendo         = ref(false);
-    const moverErro       = ref('');
+async function carregarMais(coluna) {
+    if (!coluna.proxima_pagina || coluna.carregandoMais) return;
+    coluna.carregandoMais = true;
+    try {
+        const { data } = await axios.get(route('api.kanban.coluna', coluna.id), { params: { ...query(), page: coluna.proxima_pagina } });
+        const ids = new Set(coluna.leads.map((l) => l.id));
+        coluna.leads.push(...data.data.filter((l) => !ids.has(l.id)));
+        coluna.proxima_pagina = data.meta.current_page < data.meta.last_page ? data.meta.current_page + 1 : null;
+    } catch { /* interceptor */ } finally {
+        coluna.carregandoMais = false;
+    }
+}
 
-    // ── DnD state ──
-    const draggingLead  = ref(null);
-    const dragOverEstagioId = ref(null);
+// ── Transições ──
+const patchEstagio = (lead, payload, opcoes = {}) => axios.patch(route('api.leads.estagio', lead.id), payload, opcoes);
+const ganho = ref({ aberto: false, lead: null, destino: null, salvando: false, erro: '' });
 
-    // ── Quick-add ──
-    const quickAddEstagioId = ref(null);
-    const quickAddForm  = ref({ nome: '', email: '', telefone: '' });
-    const quickAdding   = ref(false);
+/** Depois de o card já ter mudado de lista na tela (arraste ou teclado). Cancelar recarrega o quadro (rollback). */
+async function moverPara(lead, destino, origemId) {
+    if (destino.arquivada || destino.id === origemId) return carregar();
+    lead.estagio_id = destino.id;
 
-    // ── Settings ──
-    const showSettings   = ref(false);
-    const defaultEstagioId   = ref(null);
-    const savingSettings = ref(false);
-
-    // ── Paleta ──
-    // Antes era um mapa fixo de id 1..6, o que só funcionava enquanto o conjunto
-    // de estágios era o mesmo para todos os tenants. Com estágios criados por
-    // cada empresa, a cor é um atributo do próprio estágio; ids não significam
-    // nada entre tenants. O cinza é o fallback de quem ainda não escolheu cor.
-    const hexParaRgba = (hex, alpha) => {
-        const n = parseInt((hex || '').replace('#', ''), 16);
-        if (Number.isNaN(n)) return `rgba(148,163,184,${alpha})`;
-        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-    };
-
-    const getPalette = (estagio) => {
-        const cor = estagio?.cor || '#94a3b8';
-        return { color: cor, bg: hexParaRgba(cor, 0.15), border: hexParaRgba(cor, 0.3) };
-    };
-
-    const columnLeads = (estagioId) => leads.value.filter(l => l.estagio_id === estagioId);
-
-    // Estágios arquivados ainda aparecem no quadro enquanto seguram leads, mas
-    // não são destino válido: não recebem lead novo nem servem de coluna padrão.
-    const estagiosAtivos = computed(() => estagios.value.filter(t => !t.arquivada));
-
-    // ── Fetch ──
-    const buscarKanban = async () => {
-        isLoading.value = true;
-        try {
-            const params = funilId.value ? { funil_id: funilId.value } : {};
-
-            const res = await axios.get('/api/kanban', { params });
-            estagios.value = res.data.estagios;
-            leads.value = res.data.leads;
-            funis.value = res.data.funis ?? [];
-            funilAtual.value = res.data.funil;
-            funilId.value = res.data.funil?.id ?? null;
-
-            // A coluna padrão do usuário é de um funil específico. Ao trocar de
-            // funil ela não existe mais aqui, e cair no primeiro estágio ativo
-            // evita um select apontando para uma opção inexistente.
-            const daPreferencia = estagios.value.find(e => e.id === user.value.kanban_default_estagio_id);
-            defaultEstagioId.value = daPreferencia?.id
-                ?? (estagios.value.find(e => !e.arquivada)?.id ?? null);
-        } catch {
-            estagios.value = [];
-            leads.value = [];
-        } finally {
-            isLoading.value = false;
-        }
-    };
-
-    const trocarFunil = async (id) => {
-        funilId.value = id;
-        await buscarKanban();
-    };
-
-    // ── Drag-and-drop ──
-    const onDragStart = (evt, lead) => {
-        draggingLead.value = lead;
-        evt.dataTransfer.effectAllowed = 'move';
-        evt.dataTransfer.setData('text/plain', lead.id);
-    };
-
-    const onDragEnd = () => {
-        draggingLead.value  = null;
-        dragOverEstagioId.value = null;
-    };
-
-    const onDragOver = (estagio) => {
-        if (estagio.arquivada) return;
-        dragOverEstagioId.value = estagio.id;
-    };
-
-    const onDrop = async (evt, estagio) => {
-        evt.preventDefault();
-        dragOverEstagioId.value = null;
-        const lead = draggingLead.value;
-        draggingLead.value = null;
-        // Estágio arquivado é somente-saída: aceita perder leads, nunca recebê-los.
-        if (!lead || estagio.arquivada || lead.estagio_id === estagio.id) return;
-
-        const oldEstagioId = lead.estagio_id;
-        lead.estagio_id = estagio.id;
-
-        const enviar = (perda) => axios.patch(`/api/leads/${lead.id}/estagio`, {
-            estagio_id: estagio.id,
-            perda,
+    if (destino.tipo === 'perdido') {
+        const ok = await pedirPerda({
+            titulo: `Perder “${lead.nome}”`,
+            detalhe: lead.projetos_abertos_count > 0 ? `Este lead tem ${lead.projetos_abertos_count} projeto(s) em aberto. Eles continuam como estão; feche-os no perfil se for o caso.` : null,
+            enviar: (perda) => patchEstagio(lead, { estagio_id: destino.id, perda }),
         });
-        const desfazer = () => { lead.estagio_id = oldEstagioId; };
+        if (ok) toast.sucesso(`Perda registrada para “${lead.nome}”.`);
+        return carregar();
+    }
 
-        // O card move na hora e o modal pergunta o motivo depois. Bloquear o
-        // drop e exigir um menu seria mais fácil de implementar e trocaria o
-        // gesto natural do quadro por um caminho escondido; cancelar desfaz,
-        // que é o mesmo rollback já usado quando a API falha.
-        if (ehPerdido(estagio)) {
-            abrirPerda({ titulo: `Perder "${lead.nome}"`, enviar, desfazer });
-            return;
-        }
+    if (destino.tipo === 'ganho') {
+        ganho.value = { aberto: true, lead, destino, salvando: false, erro: '' };
+        return;
+    }
 
-        try {
-            await enviar(null);
-        } catch {
-            desfazer();
-        }
-    };
-
-    // ── Quick-add ──
-    const abrirQuickAdd = (estagioId) => {
-        quickAddEstagioId.value = estagioId;
-        quickAddForm.value  = { nome: '', email: '', telefone: '' };
-    };
-
-    const cancelarQuickAdd = () => { quickAddEstagioId.value = null; };
-
-    const salvarQuickAdd = async () => {
-        if (!quickAddForm.value.nome.trim() || !quickAddForm.value.email.trim()) return;
-
-        const estagio = estagios.value.find(e => e.id === quickAddEstagioId.value);
-        const payload = {
-            nome:     quickAddForm.value.nome.trim(),
-            email:    quickAddForm.value.email.trim(),
-            telefone: quickAddForm.value.telefone.trim(),
-            estagio_id: quickAddEstagioId.value,
-            funil_id: funilAtual.value?.id ?? null,
-            user_id:  user.value.id,
-        };
-        const enviar = (perda) => axios.post('/api/leads', { ...payload, perda });
-
-        // Cadastrar um lead direto numa coluna perdida é perder: o quick-add
-        // usa a coluna clicada como estágio, e ela pode ser uma delas.
-        if (ehPerdido(estagio)) {
-            const nome = payload.nome;
-            quickAddEstagioId.value = null;
-            abrirPerda({ titulo: `Cadastrar "${nome}" como perdido`, enviar, desfazer: () => {} });
-            return;
-        }
-
-        quickAdding.value = true;
-        try {
-            await enviar(null);
-            quickAddEstagioId.value = null;
-            await buscarKanban();
-        } catch { /* silencioso */ }
-        finally { quickAdding.value = false; }
-    };
-
-    // ── Mover de funil ──
-    // Transição manual e explícita: escolher o funil de destino e o estágio de
-    // entrada. Arrastar o card continua movendo só dentro do quadro atual — o
-    // backend recusa um estagio_id de outro funil no endpoint de arrastar.
-    const abrirMover = (lead) => {
-        moverAlvo.value = lead;
-        moverErro.value = '';
-        moverFunilId.value = funis.value.find(f => f.id !== funilAtual.value?.id)?.id ?? null;
-        moverEstagioId.value = null;
-        moverEstagios.value = [];
-        if (moverFunilId.value) carregarEstagiosDestino();
-    };
-
-    const fecharMover = () => { moverAlvo.value = null; };
-
-    const carregarEstagiosDestino = async () => {
-        moverEstagioId.value = null;
-        moverEstagios.value = [];
-        if (!moverFunilId.value) return;
-        try {
-            const res = await axios.get('/api/estagios', { params: { funil_id: moverFunilId.value } });
-            moverEstagios.value = res.data;
-            moverEstagioId.value = res.data.find(e => e.tipo === 'aberto')?.id ?? res.data[0]?.id ?? null;
-        } catch {
-            moverErro.value = 'Não foi possível carregar os estágios do funil de destino.';
-        }
-    };
-
-    const confirmarMover = async () => {
-        if (!moverFunilId.value || !moverEstagioId.value) return;
-
-        const destino = moverEstagios.value.find(e => e.id === moverEstagioId.value);
-        const enviar = (perda) => axios.patch(`/api/leads/${moverAlvo.value.id}/funil`, {
-            funil_id: moverFunilId.value,
-            estagio_id: moverEstagioId.value,
-            perda,
+    try {
+        await patchEstagio(lead, { estagio_id: destino.id });
+        toast.sucesso(`“${lead.nome}” movido para “${destino.descricao}”.`, {
+            acao: { rotulo: 'Desfazer', onClick: () => patchEstagio(lead, { estagio_id: origemId }).then(carregar) },
         });
+    } catch { /* interceptor */ }
+    carregar();
+}
 
-        // Mover para a coluna "Perdido" de outro funil é uma perda como
-        // qualquer outra — sem isto, trocar de funil seria o desvio que
-        // esvazia a obrigatoriedade.
-        if (ehPerdido(destino)) {
-            const nome = moverAlvo.value.nome;
-            fecharMover();
-            abrirPerda({ titulo: `Perder "${nome}"`, enviar, desfazer: () => {} });
-            return;
-        }
+async function confirmarGanho({ valor_fechado }) {
+    const { lead, destino } = ganho.value;
+    ganho.value.salvando = true;
+    ganho.value.erro = '';
+    try {
+        await patchEstagio(lead, { estagio_id: destino.id, valor_fechado }, { silencioso: true });
+        ganho.value.aberto = false;
+        toast.sucesso(`Negócio ganho: “${lead.nome}”.`);
+        carregar();
+    } catch (e) {
+        ganho.value.erro = mensagemDeErro(e, 'Não foi possível marcar como ganho.');
+    } finally {
+        ganho.value.salvando = false;
+    }
+}
+function cancelarGanho() {
+    ganho.value.aberto = false;
+    carregar();
+}
 
-        movendo.value = true;
-        moverErro.value = '';
-        try {
-            await enviar(null);
-            fecharMover();
-            await buscarKanban();
-        } catch (e) {
-            moverErro.value = e?.response?.data?.error
-                ?? Object.values(e?.response?.data?.erros ?? {}).flat()[0]
-                ?? 'Não foi possível mover o lead.';
-        } finally {
-            movendo.value = false;
-        }
-    };
+// vuedraggable: `added` dispara na coluna de destino com o card já lá.
+function aoMudar(evento, coluna) {
+    if (evento.added) moverPara(evento.added.element, coluna, evento.added.element.estagio_id);
+}
 
-    // ── Navegação para perfil ──
-    const irParaLead = (id) => {
-        router.visit(route('leads.show', id));
-    };
+function moverPeloMenu(lead, colunaAtual, destino) {
+    const origem = colunas.value.find((c) => c.id === colunaAtual.id);
+    const i = origem.leads.findIndex((l) => l.id === lead.id);
+    if (i >= 0) origem.leads.splice(i, 1);
+    destino.leads.unshift(lead);
+    moverPara(lead, destino, colunaAtual.id);
+}
 
-    // ── Settings: coluna padrão ──
-    const salvarSettings = async () => {
-        savingSettings.value = true;
-        try {
-            await axios.patch('/api/kanban/settings', {
-                default_estagio_id: defaultEstagioId.value,
-            });
-            showSettings.value = false;
-        } catch { /* silencioso */ }
-        finally { savingSettings.value = false; }
-    };
+// Shift+←/→ move para a coluna vizinha (pulando arquivadas); M abre o menu do card.
+function aoTeclarCard(e, lead, coluna) {
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        const i = colunas.value.findIndex((c) => c.id === coluna.id);
+        const passo = e.key === 'ArrowRight' ? 1 : -1;
+        let j = i + passo;
+        while (colunas.value[j]?.arquivada) j += passo;
+        const destino = colunas.value[j];
+        if (destino) moverPeloMenu(lead, coluna, destino);
+    } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        e.currentTarget.querySelector('[data-menu-card]')?.click();
+    }
+}
 
-    // ── Formatação ──
-    const formatBRL = (v) =>
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+// ── Mover de funil ──
+const funilDialogo = ref({ aberto: false, lead: null, salvando: false, erro: '' });
+async function confirmarFunil({ funil_id, estagio_id }) {
+    const lead = funilDialogo.value.lead;
+    const destinoFunil = funisComEstagios.value.find((f) => f.id === funil_id);
+    const destino = destinoFunil?.estagios.find((e) => e.id === estagio_id);
+    const enviar = (perda) => axios.patch(route('api.leads.funil', lead.id), { funil_id, estagio_id, perda }, { silencioso: true });
 
-    const formatRelativo = (ts) => {
-        if (!ts) return null;
-        const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
-        if (diff === 0) return 'hoje';
-        if (diff === 1) return 'ontem';
-        if (diff < 30)  return `há ${diff} dias`;
-        if (diff < 365) return `há ${Math.floor(diff / 30)} meses`;
-        return `há ${Math.floor(diff / 365)} ano(s)`;
-    };
+    if (destino?.tipo === 'perdido') {
+        funilDialogo.value.aberto = false;
+        const ok = await pedirPerda({ titulo: `Perder “${lead.nome}”`, enviar });
+        if (ok) { toast.sucesso(`“${lead.nome}” movido para “${destinoFunil.nome}” e registrado como perda.`); carregar(); }
+        return;
+    }
+    funilDialogo.value.salvando = true;
+    funilDialogo.value.erro = '';
+    try {
+        await enviar(null);
+        funilDialogo.value.aberto = false;
+        toast.sucesso(`“${lead.nome}” movido para “${destinoFunil?.nome}” › “${destino?.descricao}”.`);
+        carregar();
+    } catch (e) {
+        funilDialogo.value.erro = mensagemDeErro(e, 'Não foi possível mover de funil.');
+    } finally {
+        funilDialogo.value.salvando = false;
+    }
+}
 
-    // ── Números do quadro ──────────────────────────────────────
-    // Somados no cliente a partir dos leads que já vieram: pedir ao servidor
-    // um total que está na mão seria uma consulta a mais para o mesmo número.
-    const totalLeads = computed(() => leads.value.length);
-    const valorAberto = computed(() =>
-        leads.value.reduce((soma, l) => soma + (l.valor_projetos || 0), 0)
-    );
+// ── Lixeira ──
+async function excluir(lead) {
+    const ok = await confirmar({
+        titulo: `Mover “${lead.nome}” para a lixeira?`,
+        mensagem: 'O lead some das listas e do pipeline, com projetos, tarefas, anotações e documentos. Você pode restaurá-lo na Lixeira.',
+        rotuloConfirmar: 'Mover para a lixeira',
+        tom: 'danger',
+    });
+    if (!ok) return;
+    try {
+        await axios.delete(route('api.leads.destroy', lead.id));
+        toast.sucesso(`“${lead.nome}” movido para a lixeira.`, {
+            acao: { rotulo: 'Desfazer', onClick: () => axios.patch(route('api.leads.restaurar', lead.id)).then(() => { toast.sucesso(`“${lead.nome}” restaurado.`); carregar(); }) },
+        });
+        carregar();
+    } catch { /* interceptor */ }
+}
 
-    // Contam até o novo valor quando ele muda — nunca na primeira carga.
-    const leadsExibidos = useContador(() => totalLeads.value);
-    const valorExibido  = useContador(() => valorAberto.value);
+// ── Quick-add ──
+const quickAdd = reactive({ estagioId: null, nome: '', email: '', telefone: '', erros: {}, salvando: false });
+function abrirQuickAdd(coluna) {
+    Object.assign(quickAdd, { estagioId: coluna.id, nome: '', email: '', telefone: '', erros: {}, salvando: false });
+}
+const fecharQuickAdd = () => { quickAdd.estagioId = null; };
+async function salvarQuickAdd(coluna) {
+    if (!quickAdd.nome.trim() || !quickAdd.email.trim()) return;
+    const payload = { nome: quickAdd.nome.trim(), email: quickAdd.email.trim(), telefone: quickAdd.telefone.trim() || null, estagio_id: coluna.id, funil_id: funil.value?.id ?? null };
+    const enviar = (perda) => axios.post(route('api.leads.store'), { ...payload, perda }, { silencioso: true });
 
-    const valorDaColuna = (estagioId) =>
-        columnLeads(estagioId).reduce((soma, l) => soma + (l.valor_projetos || 0), 0);
+    if (coluna.tipo === 'perdido') {
+        const ok = await pedirPerda({ titulo: `Cadastrar “${payload.nome}” já como perdido`, enviar });
+        if (ok) { fecharQuickAdd(); toast.sucesso('Lead cadastrado.'); carregar(); }
+        return;
+    }
+    quickAdd.salvando = true;
+    quickAdd.erros = {};
+    try {
+        await enviar(null);
+        fecharQuickAdd();
+        toast.sucesso('Lead cadastrado.');
+        carregar();
+    } catch (e) {
+        quickAdd.erros = errosDeValidacao(e);
+        if (!Object.keys(quickAdd.erros).length) toast.erro(mensagemDeErro(e, 'Não foi possível cadastrar o lead.'));
+    } finally {
+        quickAdd.salvando = false;
+    }
+}
 
-    // ── Idade do lead ──────────────────────────────────────────
-    // Quantos dias desde o último contato. Vira sinal âmbar depois de duas
-    // semanas: é como o olho encontra o lead esquecido sem ler card por card.
-    const DIAS_PARADO = 14;
+// ── Coluna padrão para novos leads ──
+const colunaPadraoId = ref(eu.value?.kanban_default_estagio_id ?? null);
+const configuracao = ref({ aberto: false, escolhido: null, salvando: false });
+const opcoesColunaPadrao = computed(() => colunas.value.filter((c) => !c.arquivada).map((c) => ({ valor: c.id, rotulo: c.descricao })));
+function abrirConfiguracao() {
+    configuracao.value = { aberto: true, escolhido: colunas.value.some((c) => c.id === colunaPadraoId.value) ? colunaPadraoId.value : null, salvando: false };
+}
+async function salvarConfiguracao() {
+    configuracao.value.salvando = true;
+    try {
+        await axios.patch(route('api.kanban.settings'), { default_estagio_id: configuracao.value.escolhido });
+        colunaPadraoId.value = configuracao.value.escolhido;
+        configuracao.value.aberto = false;
+        toast.sucesso('Coluna padrão atualizada.');
+    } catch { /* interceptor */ } finally {
+        configuracao.value.salvando = false;
+    }
+}
 
-    const diasDesde = (ts) => {
-        if (!ts) return null;
-        return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
-    };
-    const idadeDe = (lead) => diasDesde(lead.ultimo_contato ?? lead.updated_at);
-    const idadeRotulo = (lead) => {
-        const d = idadeDe(lead);
-        if (d === null) return null;
-        return d === 0 ? 'hoje' : `${d}d`;
-    };
-    const estaParado = (lead) => (idadeDe(lead) ?? 0) >= DIAS_PARADO;
+// ── Novo lead (modal completo) ──
+const modal = ref(false);
 
-    // Iniciais de nome e sobrenome. Cortar as duas primeiras letras do nome
-    // dava "DI" para Diego e "MA" para Marina — parece ruído, não identidade.
-    const iniciais = (nome) =>
-        (nome || '').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
-
-    // Entrada escalonada: teto de 8 para a última coluna não esperar a fila
-    // inteira. Depois disso tudo entra junto.
-    const atraso = (i) => Math.min(i, 8);
-
-    onMounted(buscarKanban);
+// Atalhos: N novo lead, / busca
+function atalho(e) {
+    const alvo = e.target;
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || ['INPUT', 'TEXTAREA', 'SELECT'].includes(alvo?.tagName) || alvo?.isContentEditable) return;
+    if (e.key === '/') { e.preventDefault(); document.querySelector('input[type="search"]')?.focus(); }
+    else if ((e.key === 'n' || e.key === 'N') && pode('leads.manage')) { e.preventDefault(); modal.value = true; }
+}
+onMounted(() => window.addEventListener('keydown', atalho));
+onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTimeout(temporizador); controlador?.abort(); });
 </script>
 
 <template>
     <Head title="Pipeline" />
     <AuthenticatedLayout>
-        <div class="kb">
-
-            <header class="kb-topo">
-                <h1 class="kb-h1">Pipeline</h1>
-
-                <div v-if="funis.length > 1" class="kb-funil">
-                    <select
-                        class="kb-funil-sel"
-                        :value="funilId"
-                        aria-label="Funil exibido no quadro"
-                        @change="trocarFunil(Number($event.target.value))"
-                    >
-                        <option v-for="f in funis" :key="f.id" :value="f.id">{{ f.nome }}</option>
-                    </select>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 9l-7 7-7-7"/></svg>
-                </div>
-                <span v-else-if="funilAtual" class="kb-funil-fixo">{{ funilAtual.nome }}</span>
-
-                <!-- Números como tipografia, não como quatro cartões: no quadro,
-                     altura economizada aqui é card de lead visível sem rolar. -->
-                <div class="kb-nums">
-                    <div class="kb-num">
-                        <b class="num">{{ Math.round(leadsExibidos) }}</b>
-                        <span>{{ totalLeads === 1 ? 'lead' : 'leads' }}</span>
+        <PageContainer>
+            <PageHeader titulo="Pipeline" :subtitulo="totais ? `${totais.leads} ${totais.leads === 1 ? 'lead' : 'leads'} · ${formatBRL(totais.valor_estimado_aberto)} em aberto · ${formatBRL(totais.valor_ponderado_aberto)} ponderado` : null">
+                <template #acoes>
+                    <AppDropdown rotulo="Mais ações" alinhar="end">
+                        <AppDropdownItem rotulo="Coluna padrão para novos leads…" :icone="Settings2" @click="abrirConfiguracao" />
+                        <AppDropdownItem v-if="pode('configuracoes.manage')" rotulo="Configurar funis" :icone="GitBranch" as="Link" :href="route('configuracoes.funis')" />
+                    </AppDropdown>
+                    <AppButton v-if="pode('leads.manage')" @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
+                </template>
+                <template #abaixo>
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <AppSelect :model-value="filtros.funil_id" :opcoes="opcoesFunil" :disabled="funis.length <= 1" tamanho="sm" aria-label="Funil" class="w-44" @update:model-value="(v) => { filtros.funil_id = v; carregar(); }" />
+                        <label class="relative">
+                            <span class="sr-only">Buscar</span>
+                            <input type="search" :value="filtros.q" placeholder="Buscar no quadro" class="form-input h-8 w-48 rounded border-line bg-bg-1 pl-3 pr-3 text-sm text-fg-0 placeholder:text-fg-disabled focus:border-focus focus:ring-2 focus:ring-focus/25" @input="buscar($event.target.value)" />
+                        </label>
+                        <AppSelect v-if="agentes.length" :model-value="filtros.user_id" :opcoes="opcoesAgente" placeholder="Todos os responsáveis" tamanho="sm" aria-label="Responsável" class="w-44" @update:model-value="(v) => { filtros.user_id = v; carregar(); }" />
+                        <AppSwitch :model-value="filtros.estagnados" rotulo="Só parados +14d" @update:model-value="(v) => { filtros.estagnados = v; carregar(); }" />
+                        <button v-if="filtrosAtivos" type="button" class="h-8 rounded px-2 text-sm font-medium text-primary hover:bg-primary-subtle" @click="limparFiltros">Limpar</button>
                     </div>
-                    <div class="kb-num">
-                        <b class="num">{{ formatBRL(valorExibido) }}</b>
-                        <span>em aberto</span>
-                    </div>
-                </div>
+                </template>
+            </PageHeader>
 
-                <Link :href="route('leads.index')" class="kb-btn-ghost">
-                    <LayoutList :size="14" /> Lista
-                </Link>
-            </header>
+            <AppAlert v-if="erro" tom="danger" titulo="Não deu para carregar o quadro">
+                {{ erro }}
+                <template #acao><AppButton variante="secondary" tamanho="sm" @click="carregar">Tentar de novo</AppButton></template>
+            </AppAlert>
 
-            <ModalMotivoPerda
-                :aberto="!!perdaPendente"
-                :titulo="perdaPendente?.titulo ?? 'Registrar perda'"
-                :erro="perdaErro"
-                :salvando="perdaSalvando"
-                @confirmar="confirmarPerda"
-                @cancelar="cancelarPerda"
-            />
-
-            <Transition name="kb-fade">
-                <div v-if="showSettings" class="kb-overlay" @click.self="showSettings = false">
-                    <div class="kb-dialogo">
-                        <header class="kb-dialogo-h">
-                            <span>Configurações do quadro</span>
-                            <button class="kb-x" aria-label="Fechar" @click="showSettings = false"><X :size="15" /></button>
-                        </header>
-                        <div class="kb-dialogo-b">
-                            <label class="kb-label">Coluna padrão para novos leads</label>
-                            <select v-model="defaultEstagioId" class="kb-input">
-                                <option v-for="e in estagiosAtivos" :key="e.id" :value="e.id">{{ e.descricao }}</option>
-                            </select>
-                        </div>
-                        <footer class="kb-dialogo-f">
-                            <button class="kb-btn-ghost" @click="showSettings = false"><X :size="12" /> Cancelar</button>
-                            <button class="kb-btn" :disabled="savingSettings" @click="salvarSettings">
-                                <Save :size="12" /> {{ savingSettings ? 'Salvando…' : 'Salvar' }}
-                            </button>
-                        </footer>
-                    </div>
-                </div>
-            </Transition>
-
-            <Transition name="kb-fade">
-                <div v-if="moverAlvo" class="kb-overlay" @click.self="fecharMover">
-                    <div class="kb-dialogo">
-                        <header class="kb-dialogo-h">
-                            <span>Mover “{{ moverAlvo.nome }}”</span>
-                            <button class="kb-x" aria-label="Fechar" @click="fecharMover"><X :size="15" /></button>
-                        </header>
-                        <div class="kb-dialogo-b">
-                            <label class="kb-label">Funil de destino</label>
-                            <select v-model.number="moverFunilId" class="kb-input" @change="carregarEstagiosDestino">
-                                <option v-for="f in funis.filter(f => f.id !== funilAtual?.id)" :key="f.id" :value="f.id">{{ f.nome }}</option>
-                            </select>
-
-                            <label class="kb-label kb-label--mt">Estágio de entrada</label>
-                            <select v-model.number="moverEstagioId" class="kb-input" :disabled="!moverEstagios.length">
-                                <option v-for="e in moverEstagios" :key="e.id" :value="e.id">{{ e.descricao }}</option>
-                            </select>
-
-                            <p v-if="moverErro" class="kb-erro">{{ moverErro }}</p>
-                        </div>
-                        <footer class="kb-dialogo-f">
-                            <button class="kb-btn-ghost" @click="fecharMover"><X :size="12" /> Cancelar</button>
-                            <button class="kb-btn" :disabled="movendo || !moverEstagioId" @click="confirmarMover">
-                                <ArrowRightLeft :size="12" /> {{ movendo ? 'Movendo…' : 'Mover' }}
-                            </button>
-                        </footer>
-                    </div>
-                </div>
-            </Transition>
-
-            <div v-if="isLoading" class="kb-esqueleto">
-                <div v-for="n in 4" :key="n" class="kb-col kb-col--fantasma">
-                    <div class="kb-sk kb-sk--h"></div>
-                    <div class="kb-sk" v-for="m in 3" :key="m"></div>
+            <!-- Esqueleto -->
+            <div v-else-if="!quadro" class="flex gap-3 overflow-hidden" aria-busy="true">
+                <div v-for="i in 4" :key="i" class="w-[272px] shrink-0 space-y-2 rounded-lg border border-line bg-bg-2/60 p-2">
+                    <AppSkeleton largura="50%" />
+                    <AppSkeleton v-for="j in 3" :key="j" variante="rect" altura="76px" />
                 </div>
             </div>
 
-            <div v-else-if="!estagios.length" class="kb-vazio">
-                Este funil ainda não tem estágios.
-                <Link v-if="$page.props.auth.permissions?.['configuracoes.manage']" :href="route('configuracoes.funis')" class="kb-link">Configurar funis</Link>
-            </div>
+            <EmptyState v-else-if="!funil" :icone="SquareKanban" titulo="Nenhum funil configurado" descricao="Crie um funil com estágios para começar a mover leads.">
+                <template #acao><AppButton v-if="pode('configuracoes.manage')" as="Link" :href="route('configuracoes.funis')">Configurar funis</AppButton></template>
+            </EmptyState>
 
-            <div v-else class="kb-quadro">
+            <EmptyState v-else-if="colunas.length === 0" :icone="SquareKanban" titulo="Este funil não tem estágios" descricao="Configure os estágios para começar a mover leads.">
+                <template #acao><AppButton v-if="pode('configuracoes.manage')" as="Link" :href="route('configuracoes.funis')">Configurar funis</AppButton></template>
+            </EmptyState>
+
+            <!-- Quadro -->
+            <div v-else class="kb-quadro -mx-[var(--page-x)] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[var(--page-x)] pb-3 md:mx-0 md:snap-none md:px-0" :class="carregando ? 'opacity-70' : ''" :aria-busy="carregando ? 'true' : undefined">
                 <section
-                    v-for="estagio in estagios"
-                    :key="estagio.id"
-                    class="kb-col"
-                    :class="{ 'is-alvo': dragOverEstagioId === estagio.id, 'is-arquivada': estagio.arquivada }"
-                    :style="{ '--cor': estagio.cor || 'var(--fg-2)' }"
-                    @dragover.prevent="onDragOver(estagio)"
-                    @dragleave.self="dragOverEstagioId = null"
-                    @drop="onDrop($event, estagio)"
+                    v-for="coluna in colunas"
+                    :key="coluna.id"
+                    class="flex w-[min(272px,calc(100vw-2*var(--page-x)))] shrink-0 snap-start flex-col rounded-lg border border-line bg-bg-2/60 md:w-[272px]"
+                    :aria-label="coluna.descricao"
                 >
-                    <header class="kb-col-h">
-                        <div class="kb-col-t">
-                            <span class="kb-regua" aria-hidden="true"></span>
-                            <span class="kb-col-n">{{ estagio.descricao }}</span>
-                            <span v-if="estagio.arquivada" class="kb-tag" title="Estágio arquivado: só saída. Some do quadro quando esvaziar.">arquivado</span>
-                            <span class="kb-col-c num">{{ columnLeads(estagio.id).length }}</span>
+                    <header class="border-b border-line px-3 py-2" :style="{ borderTop: `3px solid ${corDaColuna(coluna)}`, borderTopLeftRadius: 'var(--r-3)', borderTopRightRadius: 'var(--r-3)' }">
+                        <div class="flex items-center gap-2">
+                            <h2 class="min-w-0 flex-1 truncate text-sm font-semibold text-fg-0">{{ coluna.descricao }}</h2>
+                            <AppBadge v-if="coluna.id === colunaPadraoId" tom="primary">Padrão</AppBadge>
+                            <AppBadge v-if="coluna.arquivada" tom="warn">Arquivado</AppBadge>
+                            <span class="num rounded-full bg-bg-1 px-2 py-0.5 text-xs font-medium text-fg-1">{{ coluna.total }}</span>
                         </div>
-                        <div v-if="valorDaColuna(estagio.id) > 0" class="kb-col-v num">{{ formatBRL(valorDaColuna(estagio.id)) }}</div>
+                        <p v-if="coluna.tipo === 'aberto' && (coluna.valor_estimado || coluna.valor_projetos)" class="num mt-1 truncate text-xs text-fg-2">
+                            {{ formatBRL(coluna.valor_estimado) }}<span v-if="coluna.valor_ponderado"> · {{ formatBRL(coluna.valor_ponderado) }} pond.</span><span v-if="coluna.sem_probabilidade" class="text-warn"> · faltam {{ coluna.sem_probabilidade }} prob.</span>
+                        </p>
                     </header>
 
-                    <div class="kb-cards">
-                        <Transition name="kb-ghost">
-                            <div v-if="dragOverEstagioId === estagio.id && !estagio.arquivada" class="kb-alvo">Soltar aqui</div>
-                        </Transition>
-
-                        <Transition name="kb-slide">
-                            <div v-if="quickAddEstagioId === estagio.id" class="kb-rapido">
-                                <input v-model="quickAddForm.nome" class="kb-input" placeholder="Nome *" autofocus @keydown.escape="cancelarQuickAdd" />
-                                <input v-model="quickAddForm.email" type="email" class="kb-input" placeholder="E-mail *" @keydown.escape="cancelarQuickAdd" />
-                                <input v-model="quickAddForm.telefone" class="kb-input" v-maska :data-maska="MASCARA_TELEFONE" placeholder="Telefone" @keydown.escape="cancelarQuickAdd" @keydown.enter="salvarQuickAdd" />
-                                <div class="kb-rapido-f">
-                                    <button class="kb-btn-ghost kb-btn--sm" @click="cancelarQuickAdd">Cancelar</button>
-                                    <button class="kb-btn kb-btn--sm" :disabled="quickAdding" @click="salvarQuickAdd">
-                                        {{ quickAdding ? 'Salvando…' : 'Adicionar' }}
-                                    </button>
+                    <draggable
+                        :list="coluna.leads"
+                        :group="{ name: 'leads', put: !coluna.arquivada }"
+                        item-key="id"
+                        :disabled="!pode('leads.manage')"
+                        ghost-class="kb-fantasma"
+                        drag-class="kb-arrastando"
+                        filter=".kb-nao-arrastar"
+                        :prevent-on-filter="false"
+                        :animation="150"
+                        :force-fallback="true"
+                        :fallback-tolerance="4"
+                        :delay="150"
+                        :delay-on-touch-only="true"
+                        :scroll-sensitivity="80"
+                        class="kb-lista flex min-h-[80px] flex-1 flex-col gap-2 overflow-y-auto p-2"
+                        @change="aoMudar($event, coluna)"
+                    >
+                        <template #item="{ element: lead }">
+                            <article
+                                tabindex="0"
+                                class="rounded-md border border-line bg-bg-1 p-2.5 shadow-1 transition-shadow duration-1 ease-ui hover:shadow-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
+                                :class="pode('leads.manage') && !coluna.arquivada ? 'cursor-grab active:cursor-grabbing' : ''"
+                                :aria-label="`${lead.nome}. Shift+setas move de coluna, M abre o menu.`"
+                                @keydown="aoTeclarCard($event, lead, coluna)"
+                            >
+                                <div class="flex items-start gap-2">
+                                    <AppAvatar :nome="lead.nome" :tamanho="28" />
+                                    <div class="min-w-0 flex-1">
+                                        <Link :href="hrefDoLead(lead)" class="block truncate text-md font-medium text-fg-0 hover:text-primary">{{ lead.nome }}</Link>
+                                        <p class="truncate text-xs text-fg-2">{{ lead.responsavel?.name && agentes.length ? lead.responsavel.name : lead.email }}</p>
+                                    </div>
+                                    <div class="kb-nao-arrastar -mr-1 -mt-1">
+                                        <AppDropdown rotulo="Ações do lead" alinhar="end" tamanho="sm">
+                                            <template #gatilho="{ alternar, atributos }">
+                                                <button type="button" data-menu-card v-bind="atributos" aria-label="Ações do lead" class="inline-flex h-8 w-8 items-center justify-center rounded text-fg-2 hover:bg-bg-2 hover:text-fg-0" @click.stop="alternar">
+                                                    <ChevronDown :size="16" aria-hidden="true" />
+                                                </button>
+                                            </template>
+                                            <AppDropdownItem rotulo="Abrir" :icone="ExternalLink" as="Link" :href="hrefDoLead(lead)" />
+                                            <AppDropdownItem v-if="whatsapp(lead)" rotulo="Abrir no WhatsApp" :icone="MessageCircle" as="a" :href="whatsapp(lead)" />
+                                            <template v-if="pode('leads.manage')">
+                                                <AppDropdownSeparador />
+                                                <p class="px-2.5 pb-1 pt-1.5 text-xs font-medium uppercase tracking-wider text-fg-2">Mover para</p>
+                                                <AppDropdownItem v-for="c in colunas.filter((x) => !x.arquivada && x.id !== coluna.id)" :key="c.id" :rotulo="c.descricao" :tom="c.tipo === 'perdido' ? 'danger' : 'default'" @click="moverPeloMenu(lead, coluna, c)" />
+                                                <AppDropdownItem v-if="funis.length > 1" rotulo="Mover para outro funil…" :icone="ArrowRightLeft" @click="funilDialogo = { aberto: true, lead, salvando: false, erro: '' }" />
+                                                <AppDropdownSeparador />
+                                                <AppDropdownItem rotulo="Mover para a lixeira" :icone="Trash2" tom="danger" @click="excluir(lead)" />
+                                            </template>
+                                        </AppDropdown>
+                                    </div>
                                 </div>
-                            </div>
-                        </Transition>
-
-                        <article
-                            v-for="(lead, i) in columnLeads(estagio.id)"
-                            :key="lead.id"
-                            class="kb-card"
-                            :class="{ 'is-arrastando': draggingLead?.id === lead.id }"
-                            :style="{ '--i': atraso(i) }"
-                            draggable="true"
-                            tabindex="0"
-                            @dragstart="onDragStart($event, lead)"
-                            @dragend="onDragEnd"
-                            @click="irParaLead(lead.id)"
-                            @keydown.enter="irParaLead(lead.id)"
-                        >
-                            <div class="kb-card-t">
-                                <span class="kb-ini" aria-hidden="true">{{ iniciais(lead.nome) }}</span>
-                                <div class="kb-card-id">
-                                    <p class="kb-card-n">{{ lead.nome }}</p>
-                                    <p class="kb-card-e">{{ lead.email }}</p>
+                                <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-2">
+                                    <span v-if="lead.valor_estimado" class="num font-medium text-fg-0">{{ formatBRL(lead.valor_estimado) }}</span>
+                                    <AppBadge v-if="lead.probabilidade !== null && lead.probabilidade !== undefined && coluna.tipo === 'aberto'" tom="info">{{ lead.probabilidade }}%</AppBadge>
+                                    <span class="inline-flex items-center gap-1" :class="lead.estagnado ? 'font-medium text-warn' : ''" :title="lead.estagnado ? 'Sem contato há mais de 14 dias' : 'Último contato'">
+                                        <Clock :size="12" aria-hidden="true" />{{ formatarRelativo(lead.ultimo_contato ?? lead.created_at) ?? '—' }}
+                                    </span>
+                                    <span v-if="lead.previsao_fechamento" class="inline-flex items-center gap-1" :class="previsaoVencida(lead, coluna) ? 'font-medium text-danger' : ''">
+                                        <Calendar :size="12" aria-hidden="true" />{{ formatarData(lead.previsao_fechamento) }}
+                                    </span>
+                                    <span v-if="lead.valor_projetos" class="num">{{ formatBRL(lead.valor_projetos) }} em projetos</span>
                                 </div>
-                                <button
-                                    v-if="funis.length > 1"
-                                    class="kb-mover"
-                                    title="Mover para outro funil"
-                                    aria-label="Mover para outro funil"
-                                    @click.stop="abrirMover(lead)"
-                                >
-                                    <ArrowRightLeft :size="12" />
-                                </button>
-                            </div>
-                            <div class="kb-card-b">
-                                <span v-if="idadeRotulo(lead)" class="kb-idade" :class="{ 'is-parado': estaParado(lead) }"
-                                      :title="estaParado(lead) ? 'Sem contato há mais de duas semanas' : 'Último contato'">
-                                    <Clock :size="11" /> {{ idadeRotulo(lead) }}
-                                </span>
-                                <span v-if="lead.valor_projetos > 0" class="kb-valor num">{{ formatBRL(lead.valor_projetos) }}</span>
-                            </div>
-                        </article>
+                            </article>
+                        </template>
+                        <template #footer>
+                            <p v-if="coluna.leads.length === 0 && quickAdd.estagioId !== coluna.id" class="rounded-md border border-dashed border-line px-3 py-5 text-center text-xs text-fg-2">
+                                {{ filtrosAtivos ? 'Nenhum lead com esses filtros' : 'Nenhum lead aqui' }}<br /><span v-if="!filtrosAtivos && !coluna.arquivada">Arraste um lead ou clique em Adicionar.</span>
+                            </p>
+                            <button v-if="coluna.proxima_pagina" type="button" class="kb-nao-arrastar w-full rounded-md border border-line bg-bg-1 py-2 text-sm font-medium text-primary hover:bg-primary-subtle" :disabled="coluna.carregandoMais" @click="carregarMais(coluna)">
+                                {{ coluna.carregandoMais ? 'Carregando…' : `Carregar mais (${coluna.total - coluna.leads.length})` }}
+                            </button>
+                        </template>
+                    </draggable>
 
-                        <p v-if="!columnLeads(estagio.id).length && dragOverEstagioId !== estagio.id" class="kb-col-vazia">
-                            Nenhum lead
-                        </p>
-                    </div>
-
-                    <button v-if="!estagio.arquivada" class="kb-add" @click="abrirQuickAdd(estagio.id)">
-                        <Plus :size="12" /> Adicionar
-                    </button>
+                    <footer v-if="pode('leads.manage') && !coluna.arquivada" class="kb-nao-arrastar border-t border-line p-2">
+                        <form v-if="quickAdd.estagioId === coluna.id" class="space-y-2" @submit.prevent="salvarQuickAdd(coluna)">
+                            <FormField rotulo="Nome" obrigatorio :erro="quickAdd.erros.nome"><AppInput v-model="quickAdd.nome" tamanho="sm" limite="nome" autofocus /></FormField>
+                            <FormField rotulo="E-mail" obrigatorio :erro="quickAdd.erros.email"><AppInput v-model="quickAdd.email" type="email" tamanho="sm" limite="email" /></FormField>
+                            <FormField rotulo="Telefone" :erro="quickAdd.erros.telefone"><AppInput v-model="quickAdd.telefone" tamanho="sm" inputmode="tel" :mascara="ehTelefoneBrasileiro(quickAdd.telefone) ? MASCARA_TELEFONE : null" /></FormField>
+                            <div class="flex justify-end gap-2">
+                                <AppButton variante="ghost" tamanho="sm" @click="fecharQuickAdd">Cancelar</AppButton>
+                                <AppButton type="submit" tamanho="sm" :carregando="quickAdd.salvando" :disabled="!quickAdd.nome.trim() || !quickAdd.email.trim()">Adicionar</AppButton>
+                            </div>
+                        </form>
+                        <button v-else type="button" class="flex h-9 w-full items-center justify-center gap-1.5 rounded-md text-sm font-medium text-fg-1 hover:bg-bg-1 hover:text-fg-0" @click="abrirQuickAdd(coluna)">
+                            <Plus :size="16" aria-hidden="true" /> Adicionar
+                        </button>
+                    </footer>
                 </section>
-
-                <button class="kb-cfg" title="Configurações do quadro" aria-label="Configurações do quadro" @click="showSettings = true">
-                    <Settings :size="15" />
-                </button>
             </div>
-        </div>
+        </PageContainer>
+
+        <ConfirmarGanhoDialog :aberto="ganho.aberto" :nome="ganho.lead?.nome ?? ''" :valor-estimado="ganho.lead?.valor_estimado ?? null" :projetos-abertos="ganho.lead?.projetos_abertos_count ?? 0" :salvando="ganho.salvando" :erro="ganho.erro" @confirmar="confirmarGanho" @cancelar="cancelarGanho" />
+        <MoverFunilDialog :aberto="funilDialogo.aberto" :nome="funilDialogo.lead?.nome ?? ''" :funis="funisComEstagios" :funil-atual-id="funil?.id ?? null" :salvando="funilDialogo.salvando" :erro="funilDialogo.erro" @confirmar="confirmarFunil" @cancelar="funilDialogo.aberto = false" />
+        <LeadFormModal :aberto="modal" :funis="funis" :estagios="estagios" :agentes="agentes" @fechar="modal = false" @salvo="carregar" />
+
+        <AppModal :aberto="configuracao.aberto" titulo="Coluna padrão para novos leads" descricao="Leads cadastrados sem estágio escolhido entram nesta coluna." tamanho="sm" @fechar="configuracao.aberto = false">
+            <FormField rotulo="Coluna">
+                <AppSelect v-model="configuracao.escolhido" :opcoes="opcoesColunaPadrao" placeholder="Primeiro estágio aberto" />
+            </FormField>
+            <template #rodape>
+                <AppButton variante="secondary" @click="configuracao.aberto = false">Cancelar</AppButton>
+                <AppButton :carregando="configuracao.salvando" @click="salvarConfiguracao">Salvar</AppButton>
+            </template>
+        </AppModal>
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
-    .kb { display: flex; flex-direction: column; min-height: 100vh; }
-
-    /* ── Topo ──────────────────────────────────────── */
-    .kb-topo {
-        display: flex; align-items: center; gap: var(--s-3);
-        padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--line);
-        flex-wrap: wrap;
-    }
-    .kb-h1 { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.3px; }
-
-    .kb-funil { position: relative; display: flex; align-items: center; }
-    .kb-funil svg { width: 13px; height: 13px; color: var(--fg-2); position: absolute; right: 9px; pointer-events: none; }
-    .kb-funil-sel {
-        appearance: none; background: var(--bg-1); border: 1px solid var(--line);
-        border-radius: var(--r-2); padding: 5px 28px 5px 10px; color: var(--fg-0);
-        font: inherit; font-size: var(--fs-md); cursor: pointer;
-        transition: border-color var(--d-1) var(--e);
-    }
-    .kb-funil-sel:hover { border-color: var(--line-2); }
-    .kb-funil-fixo { font-size: var(--fs-md); color: var(--fg-1); }
-
-    .kb-nums { margin-left: auto; display: flex; align-items: center; gap: var(--s-5); }
-    .kb-num { text-align: right; line-height: 1.15; }
-    .kb-num b { display: block; font-size: var(--fs-lg); font-weight: 600; }
-    .kb-num span { display: block; font-size: var(--fs-xs); color: var(--fg-2); }
-
-    /* ── Quadro ────────────────────────────────────── */
-    .kb-quadro, .kb-esqueleto {
-        flex: 1; display: flex; gap: 11px; padding: var(--s-4) var(--s-5);
-        overflow-x: auto; align-items: flex-start;
-    }
-
-    .kb-col {
-        width: 258px; flex-shrink: 0; display: flex; flex-direction: column;
-        background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-3);
-        max-height: calc(100vh - 118px);
-        transition: border-color var(--d-2) var(--e), background var(--d-2) var(--e);
-    }
-    .kb-col.is-arquivada { opacity: .72; border-style: dashed; }
-
-    /* A coluna de destino se anuncia: é como você vê para onde o card vai. */
-    .kb-col.is-alvo {
-        border-color: var(--accent);
-        background: linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-1);
-    }
-
-    .kb-col-h { padding: 11px 12px 9px; border-bottom: 1px solid var(--line); }
-    .kb-col-t { display: flex; align-items: center; gap: 7px; }
-
-    /* Identidade do estágio é um filete na cor dele, não a coluna tingida:
-       assim a cor marca sem roubar contraste do que é clicável. */
-    .kb-regua { width: 3px; height: 13px; border-radius: 2px; background: var(--cor); flex-shrink: 0; }
-
-    .kb-col-n { font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kb-col-c { margin-left: auto; font-size: var(--fs-sm); color: var(--fg-2); }
-    .kb-col-v { font-size: var(--fs-sm); color: var(--fg-2); margin-top: 5px; padding-left: 10px; }
-    .kb-tag {
-        font-size: 9.5px; color: var(--fg-2); border: 1px solid var(--line-2);
-        border-radius: var(--r-full); padding: 1px 6px; flex-shrink: 0;
-    }
-
-    .kb-cards { padding: var(--s-2); display: flex; flex-direction: column; gap: 7px; overflow-y: auto; }
-
-    /* ── Card ──────────────────────────────────────── */
-    .kb-card {
-        position: relative; background: var(--bg-2); border: 1px solid var(--line);
-        border-radius: var(--r-2); padding: 9px 10px; cursor: grab;
-        transition: border-color var(--d-1) var(--e), transform var(--d-1) var(--e);
-        animation: kb-entra var(--d-2) var(--e) backwards;
-        animation-delay: calc(var(--i, 0) * 20ms);
-    }
-    /* Fio de luz no topo: o detalhe que o olho registra sem saber por quê. */
-    .kb-card::before {
-        content: ""; position: absolute; inset: 0 0 auto; height: 1px;
-        border-radius: var(--r-2) var(--r-2) 0 0;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
-    }
-    .kb-card:hover { border-color: var(--line-2); transform: translateY(-1px); }
-    .kb-card.is-arrastando { opacity: .45; transform: rotate(-1.2deg) scale(.99); cursor: grabbing; }
-
-    @keyframes kb-entra { from { opacity: 0; transform: translateY(4px); } }
-
-    .kb-card-t { display: flex; align-items: center; gap: var(--s-2); }
-    .kb-ini {
-        width: 24px; height: 24px; border-radius: var(--r-1); flex-shrink: 0;
-        background: var(--bg-0); border: 1px solid var(--line);
-        display: grid; place-items: center; font-size: 10.5px; font-weight: 600; color: var(--fg-1);
-    }
-    .kb-card-id { min-width: 0; flex: 1; }
-    .kb-card-n { font-size: var(--fs-md); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kb-card-e { font-size: var(--fs-sm); color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .kb-mover {
-        width: 22px; height: 22px; flex-shrink: 0; border-radius: var(--r-1);
-        border: 1px solid var(--line); background: transparent; color: var(--fg-2);
-        display: grid; place-items: center; cursor: pointer; opacity: 0;
-        transition: opacity var(--d-1) var(--e), color var(--d-1) var(--e), border-color var(--d-1) var(--e);
-    }
-    /* Ação secundária só aparece quando o card é o foco da atenção. */
-    .kb-card:hover .kb-mover, .kb-card:focus-within .kb-mover { opacity: 1; }
-    .kb-mover:hover { color: var(--fg-0); border-color: var(--accent); }
-
-    .kb-card-b {
-        display: flex; align-items: center; gap: var(--s-2);
-        margin-top: var(--s-2); padding-top: 7px; border-top: 1px solid var(--line);
-    }
-    .kb-idade { display: flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--fg-2); }
-    /* Sinal, não enfeite: encontra o lead esquecido sem ler card por card. */
-    .kb-idade.is-parado { color: var(--warn); }
-    .kb-valor { margin-left: auto; font-size: var(--fs-sm); font-weight: 600; color: var(--fg-1); }
-
-    .kb-col-vazia { font-size: var(--fs-sm); color: var(--fg-2); text-align: center; padding: var(--s-4) 0; }
-
-    .kb-alvo {
-        border: 1px dashed var(--accent); border-radius: var(--r-2); height: 58px;
-        display: grid; place-items: center; font-size: var(--fs-sm); color: var(--accent-hi);
-        background: color-mix(in srgb, var(--accent) 6%, transparent);
-    }
-
-    .kb-add {
-        margin: 0 var(--s-2) var(--s-2); display: flex; align-items: center; justify-content: center; gap: 5px;
-        background: transparent; border: 1px dashed var(--line-2); border-radius: var(--r-2);
-        color: var(--fg-2); font: inherit; font-size: var(--fs-sm); padding: 6px; cursor: pointer;
-        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
-    }
-    .kb-add:hover { color: var(--accent-hi); border-color: var(--accent); }
-
-    .kb-rapido { display: flex; flex-direction: column; gap: 6px; padding: var(--s-2); background: var(--bg-0); border: 1px solid var(--line); border-radius: var(--r-2); }
-    .kb-rapido-f { display: flex; gap: 5px; justify-content: flex-end; }
-
-    .kb-cfg {
-        width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--r-2);
-        border: 1px solid var(--line); background: var(--bg-1); color: var(--fg-2);
-        display: grid; place-items: center; cursor: pointer; margin-top: 2px;
-        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
-    }
-    .kb-cfg:hover { color: var(--fg-0); border-color: var(--line-2); }
-
-    /* ── Controles ─────────────────────────────────── */
-    .kb-input {
-        width: 100%; background: var(--bg-0); border: 1px solid var(--line);
-        border-radius: var(--r-2); padding: 7px 9px; color: var(--fg-0);
-        font: inherit; font-size: var(--fs-md); outline: none;
-        transition: border-color var(--d-1) var(--e);
-    }
-    .kb-input:focus { border-color: var(--accent); }
-    .kb-label { display: block; font-size: 12px; color: var(--fg-1); margin-bottom: 5px; }
-    .kb-label--mt { margin-top: var(--s-3); }
-
-    .kb-btn, .kb-btn-ghost {
-        display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-2);
-        padding: 7px 12px; font: inherit; font-size: var(--fs-md); cursor: pointer;
-        text-decoration: none; transition: background var(--d-1) var(--e), color var(--d-1) var(--e), border-color var(--d-1) var(--e);
-    }
-    .kb-btn { background: var(--accent); color: #fff; border: 0; }
-    .kb-btn:hover { background: var(--accent-hi); }
-    .kb-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .kb-btn-ghost { background: transparent; color: var(--fg-1); border: 1px solid var(--line); }
-    .kb-btn-ghost:hover { color: var(--fg-0); border-color: var(--line-2); }
-    .kb-btn--sm { padding: 5px 9px; font-size: var(--fs-sm); }
-
-    .kb-erro {
-        margin-top: var(--s-3); font-size: var(--fs-md); color: var(--danger);
-        background: var(--danger-dim); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
-        border-radius: var(--r-2); padding: 7px 9px;
-    }
-
-    /* ── Diálogos ──────────────────────────────────── */
-    .kb-overlay {
-        position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.6);
-        backdrop-filter: blur(4px); display: grid; place-items: center; padding: var(--s-4);
-    }
-    .kb-dialogo { width: 100%; max-width: 400px; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
-    .kb-dialogo-h { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); font-family: var(--font-display); font-weight: 700; font-size: 14px; }
-    .kb-dialogo-b { padding: 14px; }
-    .kb-dialogo-f { display: flex; justify-content: flex-end; gap: 6px; padding: 12px 14px; border-top: 1px solid var(--line); }
-    .kb-x { background: 0; border: 0; color: var(--fg-2); cursor: pointer; display: flex; }
-    .kb-x:hover { color: var(--fg-0); }
-
-    /* ── Esqueleto ─────────────────────────────────── */
-    .kb-col--fantasma { padding: var(--s-2); gap: 7px; }
-    .kb-sk { height: 58px; border-radius: var(--r-2); background: var(--bg-2); animation: kb-pulsa 1.4s var(--e) infinite; }
-    .kb-sk--h { height: 34px; }
-    @keyframes kb-pulsa { 50% { opacity: .5; } }
-
-    .kb-vazio { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--fg-1); font-size: var(--fs-md); padding: var(--s-10) 0; }
-    .kb-link { color: var(--accent-hi); }
-
-    .kb-fade-enter-active, .kb-fade-leave-active { transition: opacity var(--d-2) var(--e); }
-    .kb-fade-enter-from, .kb-fade-leave-to { opacity: 0; }
-    .kb-ghost-enter-active, .kb-ghost-leave-active { transition: opacity var(--d-1) var(--e), transform var(--d-1) var(--e); }
-    .kb-ghost-enter-from, .kb-ghost-leave-to { opacity: 0; transform: scaleY(.8); }
-    .kb-slide-enter-active, .kb-slide-leave-active { transition: opacity var(--d-2) var(--e), transform var(--d-2) var(--e); }
-    .kb-slide-enter-from, .kb-slide-leave-to { opacity: 0; transform: translateY(-6px); }
-
-    @media (max-width: 860px) {
-        .kb-topo { padding: var(--s-3) var(--s-4); }
-        .kb-quadro, .kb-esqueleto { padding: var(--s-3) var(--s-4); }
-        .kb-nums { width: 100%; justify-content: flex-start; margin-left: 0; order: 9; }
-    }
+/* Altura do quadro: a página inteira menos cabeçalho e filtros; as colunas rolam por dentro. */
+.kb-quadro { min-height: 320px; }
+@media (min-width: 768px) {
+    .kb-quadro > section { max-height: calc(100dvh - 230px); }
+}
+.kb-fantasma { opacity: 0.4; }
+.kb-arrastando { transform: rotate(1.5deg); box-shadow: var(--sh-3); }
 </style>
