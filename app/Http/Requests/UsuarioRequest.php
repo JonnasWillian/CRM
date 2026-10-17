@@ -65,7 +65,7 @@ class UsuarioRequest extends FormRequest
             return;
         }
 
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
     }
 
     /**
@@ -102,8 +102,8 @@ class UsuarioRequest extends FormRequest
     {
         return [
             'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
-            'email' => ['required', 'email', 'max:'.LimitesDeTexto::EMAIL, new EmailDeLeadDisponivel()],
-            'telefone' => ['nullable', 'string', new TelefoneE164()],
+            'email' => ['required', 'email', 'max:'.LimitesDeTexto::EMAIL, new EmailDeLeadDisponivel],
+            'telefone' => ['nullable', 'string', new TelefoneE164],
             'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'funil_id' => ['nullable', $this->funilDoTenant()],
             'estagio_id' => ['nullable', $this->estagioDoTenant()],
@@ -124,7 +124,7 @@ class UsuarioRequest extends FormRequest
                 // cliente reenviar 'id' no payload.
                 new EmailDeLeadDisponivel($this->route('usuario')?->id),
             ],
-            'telefone' => ['nullable', 'string', new TelefoneE164()],
+            'telefone' => ['nullable', 'string', new TelefoneE164],
             'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'funil_id' => ['nullable', $this->funilDoTenant()],
             'estagio_id' => ['nullable', $this->estagioDoTenant()],

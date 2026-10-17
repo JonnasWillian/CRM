@@ -11,12 +11,16 @@ use Tests\TestCase;
 
 class LixeiraDeProjetoTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private User $dono;
+
     private User $intruso;
+
     private User $gestor;
+
     private Usuario $lead;
+
     private Projeto $projeto;
 
     protected function setUp(): void

@@ -62,7 +62,7 @@ trait CenarioDeTenant
     {
         $status = Statu::factory()->create(['tenant_id' => $lead->tenant_id]);
 
-        $projeto = new Projeto();
+        $projeto = new Projeto;
         $projeto->fill(array_merge([
             'nome' => 'Proposta inicial',
             'usuario_id' => $lead->id,

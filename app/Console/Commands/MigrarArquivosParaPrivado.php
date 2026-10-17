@@ -54,6 +54,7 @@ class MigrarArquivosParaPrivado extends Command
 
                     if (! $publico->exists($origem)) {
                         $semArquivo[] = [class_basename($linha), $linha->id, $origem];
+
                         continue;
                     }
 
@@ -69,6 +70,7 @@ class MigrarArquivosParaPrivado extends Command
                     if ($privado->size($destino) !== $publico->size($origem)) {
                         $privado->delete($destino);
                         $this->error("Cópia divergente, mantido no público: {$origem}");
+
                         continue;
                     }
 

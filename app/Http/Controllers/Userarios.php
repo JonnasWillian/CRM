@@ -2,27 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Http\Requests\UsuarioRequest;
-use App\Support\LimitesDeTexto;
-use App\Support\Tenancy\CurrentTenant;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-
-use App\Models\Usuario;
+use App\Models\Anotacao;
+use App\Models\arquivo as ArquivoModel;
 use App\Models\Estagio;
+use App\Models\EstagioHistorico;
 use App\Models\Funil;
+use App\Models\Projeto;
+use App\Models\ProjetoAnexo;
+use App\Models\ProjetoAnotacao;
+use App\Models\Tarefa;
+use App\Models\Usuario;
 use App\Services\Funis\MoverLeadDeFunil;
 use App\Services\Perdas\AplicarTransicao;
+use App\Support\LimitesDeTexto;
 use App\Support\Perdas\RegrasDePerda;
-use App\Models\Anotacao;
-use App\Models\arquivo AS ArquivoModel;
-use App\Models\Projeto;
-use App\Models\ProjetoAnotacao;
-use App\Models\ProjetoAnexo;
-use App\Models\EstagioHistorico;
-use App\Models\Tarefa;
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class Userarios extends Controller
 {
@@ -61,7 +59,6 @@ class Userarios extends Controller
         return Funil::where('is_default', true)->first() ?? Funil::ordenados()->first();
     }
 
-
     public function create(UsuarioRequest $request)
     {
         try {
@@ -87,12 +84,12 @@ class Userarios extends Controller
             // Via AplicarTransicao e não Usuario::create(): o quick-add do Kanban
             // cadastra o lead direto na coluna clicada, e essa coluna pode ser
             // um estágio perdido. Nascer perdido é perder.
-            app(AplicarTransicao::class)(new Usuario(), $validated, RegrasDePerda::extrair($request));
+            app(AplicarTransicao::class)(new Usuario, $validated, RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Usuário cadastrado com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
@@ -118,7 +115,7 @@ class Userarios extends Controller
             return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
@@ -138,16 +135,16 @@ class Userarios extends Controller
         $events = [];
 
         $events[] = [
-            'tipo'      => 'lead_criado',
+            'tipo' => 'lead_criado',
             'descricao' => 'Lead cadastrado no sistema',
-            'data'      => $usuario->created_at,
+            'data' => $usuario->created_at,
         ];
 
         foreach (Anotacao::where('usuario_id', $id)->get() as $a) {
             $events[] = [
-                'tipo'     => 'anotacao',
+                'tipo' => 'anotacao',
                 'descricao' => $a->descricao,
-                'data'     => $a->created_at,
+                'data' => $a->created_at,
             ];
         }
 
@@ -168,48 +165,48 @@ class Userarios extends Controller
 
             foreach (ProjetoAnotacao::where('projeto_id', $p->id)->get() as $pa) {
                 $events[] = [
-                    'tipo'         => 'projeto_anotacao',
-                    'descricao'    => $pa->descricao,
+                    'tipo' => 'projeto_anotacao',
+                    'descricao' => $pa->descricao,
                     'projeto_nome' => $p->nome,
-                    'data'         => $pa->created_at,
+                    'data' => $pa->created_at,
                 ];
             }
 
             foreach (ProjetoAnexo::where('projeto_id', $p->id)->get() as $pf) {
                 $events[] = [
-                    'tipo'         => 'projeto_anexo',
-                    'nome'         => $pf->nome ?: 'Arquivo sem nome',
+                    'tipo' => 'projeto_anexo',
+                    'nome' => $pf->nome ?: 'Arquivo sem nome',
                     'projeto_nome' => $p->nome,
-                    'data'         => $pf->created_at,
+                    'data' => $pf->created_at,
                 ];
             }
         }
 
         foreach (EstagioHistorico::with(['estagioAnterior', 'estagioNovo'])->where('usuario_id', $id)->get() as $h) {
             $events[] = [
-                'tipo'          => 'status_alterado',
+                'tipo' => 'status_alterado',
                 'estagio_anterior' => $h->estagioAnterior->descricao ?? '—',
-                'estagio_novo'     => $h->estagioNovo->descricao ?? '—',
-                'data'          => $h->created_at,
+                'estagio_novo' => $h->estagioNovo->descricao ?? '—',
+                'data' => $h->created_at,
             ];
         }
 
         foreach (Tarefa::where('usuario_id', $id)->get() as $t) {
             $events[] = [
-                'tipo'   => 'tarefa_criada',
+                'tipo' => 'tarefa_criada',
                 'titulo' => $t->titulo,
-                'data'   => $t->created_at,
+                'data' => $t->created_at,
             ];
             if ($t->concluido && $t->concluido_em) {
                 $events[] = [
-                    'tipo'   => 'tarefa_concluida',
+                    'tipo' => 'tarefa_concluida',
                     'titulo' => $t->titulo,
-                    'data'   => $t->concluido_em,
+                    'data' => $t->concluido_em,
                 ];
             }
         }
 
-        usort($events, fn($a, $b) => $b['data'] <=> $a['data']);
+        usort($events, fn ($a, $b) => $b['data'] <=> $a['data']);
 
         return response()->json($events);
     }
@@ -248,7 +245,6 @@ class Userarios extends Controller
         return response()->json(Anotacao::where('usuario_id', $usuario->id)->get());
     }
 
-
     public function createAnotacao(Request $request)
     {
         try {
@@ -272,11 +268,10 @@ class Userarios extends Controller
             return response()->json(['message' => 'Anotação cadastrada com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
-
 
     public function updateAnotacao(Request $request, Anotacao $anotacao)
     {
@@ -322,13 +317,13 @@ class Userarios extends Controller
                     ->selectRaw('COALESCE(SUM(preco), 0)'),
             ])
             ->get()
-            ->map(fn($u) => [
-                'id'             => $u->id,
-                'nome'           => $u->nome,
-                'email'          => $u->email,
-                'telefone'       => $u->telefone,
-                'descricao'      => $u->descricao,
-                'estagio_id'     => $u->estagio_id,
+            ->map(fn ($u) => [
+                'id' => $u->id,
+                'nome' => $u->nome,
+                'email' => $u->email,
+                'telefone' => $u->telefone,
+                'descricao' => $u->descricao,
+                'estagio_id' => $u->estagio_id,
                 'ultimo_contato' => $u->ultimo_contato ?? $u->updated_at,
                 'valor_projetos' => (float) ($u->valor_projetos ?? 0),
             ]);
@@ -348,11 +343,11 @@ class Userarios extends Controller
             ->orderBy('id')
             ->get()
             ->map(fn ($estagio) => [
-                'id'        => $estagio->id,
+                'id' => $estagio->id,
                 'descricao' => $estagio->descricao,
-                'ordem'     => $estagio->ordem,
-                'tipo'      => $estagio->tipo,
-                'cor'       => $estagio->cor,
+                'ordem' => $estagio->ordem,
+                'tipo' => $estagio->tipo,
+                'cor' => $estagio->cor,
                 'arquivada' => $estagio->trashed(),
             ])
             ->values();
@@ -360,16 +355,16 @@ class Userarios extends Controller
         // A lista de funis acompanha o quadro para alimentar o seletor e o
         // diálogo de "mover para outro funil" sem uma segunda requisição.
         $funis = Funil::ordenados()->get()->map(fn (Funil $f) => [
-            'id'         => $f->id,
-            'nome'       => $f->nome,
+            'id' => $f->id,
+            'nome' => $f->nome,
             'is_default' => $f->is_default,
         ])->values();
 
         return response()->json([
-            'funil'    => ['id' => $funil->id, 'nome' => $funil->nome, 'is_default' => $funil->is_default],
-            'funis'    => $funis,
+            'funil' => ['id' => $funil->id, 'nome' => $funil->nome, 'is_default' => $funil->is_default],
+            'funis' => $funis,
             'estagios' => $estagios,
-            'leads'    => $leads,
+            'leads' => $leads,
         ]);
     }
 
@@ -470,31 +465,31 @@ class Userarios extends Controller
         // `is_active` foi removida: o que separa lead em pipeline de lead
         // encerrado agora é o tipo do estágio. "Aberto" é o que antes era
         // is_active = true; ganho e perdido, juntos, são o que era false.
-        $leadsAtivos     = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->aberto())->count();
+        $leadsAtivos = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->aberto())->count();
         $leadsArquivados = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->fechado())->count();
-        $leads30Dias     = Usuario::visibleTo(auth()->user())->where('created_at', '>=', now()->subDays(30))->count();
+        $leads30Dias = Usuario::visibleTo(auth()->user())->where('created_at', '>=', now()->subDays(30))->count();
         $valorAberto = Projeto::whereIn('usuario_id', $visiveis())->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
         $valorFechadoMes = Projeto::whereIn('usuario_id', $visiveis())->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
         $leadsPorEstagio = Usuario::visibleTo(auth()->user())->select('estagio_id', DB::raw('count(*) as total'))->with('estagio')->groupBy('estagio_id')->get()
-            ->map(fn($row) => [
-                'id'        => $row->estagio_id,
+            ->map(fn ($row) => [
+                'id' => $row->estagio_id,
                 'descricao' => $row->estagio->descricao ?? 'Sem estágio',
-                'total'     => (int) $row->total,
+                'total' => (int) $row->total,
             ]);
-        $totalLeads      = Usuario::visibleTo(auth()->user())->count();
+        $totalLeads = Usuario::visibleTo(auth()->user())->count();
         $leadsComProjeto = Projeto::whereIn('usuario_id', $visiveis())->distinct('usuario_id')->count('usuario_id');
-        $taxaConversao   = $totalLeads > 0 ? round($leadsComProjeto / $totalLeads * 100, 1) : 0;
+        $taxaConversao = $totalLeads > 0 ? round($leadsComProjeto / $totalLeads * 100, 1) : 0;
 
         return response()->json([
-            'leads_ativos'           => $leadsAtivos,
-            'leads_arquivados'       => $leadsArquivados,
-            'leads_30_dias'          => $leads30Dias,
+            'leads_ativos' => $leadsAtivos,
+            'leads_arquivados' => $leadsArquivados,
+            'leads_30_dias' => $leads30Dias,
             'valor_projetos_abertos' => (float) $valorAberto,
-            'valor_fechado_mes'      => (float) $valorFechadoMes,
-            'leads_por_estagio'      => $leadsPorEstagio,
-            'taxa_conversao'         => $taxaConversao,
-            'total_com_projeto'      => $leadsComProjeto,
-            'total_leads'            => $totalLeads,
+            'valor_fechado_mes' => (float) $valorFechadoMes,
+            'leads_por_estagio' => $leadsPorEstagio,
+            'taxa_conversao' => $taxaConversao,
+            'total_com_projeto' => $leadsComProjeto,
+            'total_leads' => $totalLeads,
         ]);
     }
 }

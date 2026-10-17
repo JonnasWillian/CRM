@@ -2,9 +2,9 @@
 
 namespace App\Services\Perdas;
 
-use App\Support\Db\ReordenarPorIds;
 use App\Exceptions\RegraDePerdaException;
 use App\Models\MotivoPerda;
+use App\Support\Db\ReordenarPorIds;
 
 /**
  * Manutenção do catálogo de motivos.
@@ -19,7 +19,7 @@ class MotivoPerdaService
 {
     public function criar(array $dados): MotivoPerda
     {
-        $motivo = new MotivoPerda();
+        $motivo = new MotivoPerda;
         $motivo->fill($dados);
         $motivo->ordem = $dados['ordem'] ?? ((int) MotivoPerda::withTrashed()->max('ordem') + 1);
         $motivo->save();

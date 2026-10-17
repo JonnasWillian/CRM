@@ -16,7 +16,7 @@ use Tests\TestCase;
  */
 class LimpezaDoActivityLogTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_apaga_registros_antigos_de_todos_os_tenants_e_preserva_os_recentes(): void
     {

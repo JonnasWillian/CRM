@@ -11,8 +11,11 @@ namespace App\Support;
 final class LimitesDeTexto
 {
     public const NOME = 255;
+
     public const EMAIL = 255;
+
     public const DESCRICAO = 5000;
+
     public const ANOTACAO = 10000;
 
     public static function paraOFront(): array

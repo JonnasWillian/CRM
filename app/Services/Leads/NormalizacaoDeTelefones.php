@@ -30,6 +30,7 @@ class NormalizacaoDeTelefones
 
                     if (! TelefoneE164::valido($novo)) {
                         $invalidos[] = ['id' => (int) $linha->id, 'telefone' => $atual];
+
                         continue;
                     }
 

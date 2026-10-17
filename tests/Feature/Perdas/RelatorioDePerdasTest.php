@@ -29,10 +29,15 @@ class RelatorioDePerdasTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $gestor;
+
     private User $vendedor;
+
     private Funil $funil;
+
     private Estagio $aberto;
+
     private Estagio $perdido;
 
     protected function setUp(): void
@@ -67,7 +72,7 @@ class RelatorioDePerdasTest extends TestCase
 
     private function perdaEm(Carbon $quando, MotivoPerda $motivo, ?float $valor = null): Perda
     {
-        $perda = new Perda();
+        $perda = new Perda;
         $perda->motivo_perda_id = $motivo->id;
         $perda->valor = $valor;
         $perda->tenant_id = $this->tenant->id;

@@ -14,13 +14,18 @@ use Tests\TestCase;
 
 class LixeiraDeLeadTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private User $intruso;
+
     private User $gestor;
+
     private Usuario $lead;
+
     private Anotacao $anotacao;
 
     protected function setUp(): void

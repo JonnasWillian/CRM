@@ -165,6 +165,7 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
             // é pior: some da contagem e a rede passa verde mentindo. Acusa.
             if (! class_exists($classe) || ! method_exists($classe, $metodo)) {
                 $desprotegidas[] = $assinatura.'  ->  acao inexistente: '.$acao;
+
                 continue;
             }
 
@@ -214,6 +215,7 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
                         $desprotegidas[] = $assinatura.'  ->  '.$reflexaoOuErro;
                     }
                 }
+
                 continue;
             }
 
@@ -392,6 +394,7 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
                     continue;
                 }
                 $significativos[] = strtolower($token[1]);
+
                 continue;
             }
             $significativos[] = $token;

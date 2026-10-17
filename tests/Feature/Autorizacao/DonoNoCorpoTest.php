@@ -26,9 +26,13 @@ class DonoNoCorpoTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private User $colega;
+
     private Usuario $lead;
+
     private Projeto $projeto;
 
     protected function setUp(): void
@@ -51,7 +55,7 @@ class DonoNoCorpoTest extends TestCase
         ]);
 
         $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
-        $this->projeto = new Projeto();
+        $this->projeto = new Projeto;
         $this->projeto->fill(['nome' => 'Proposta', 'usuario_id' => $this->lead->id, 'status_id' => $status->id]);
         $this->projeto->tenant_id = $this->tenant->id;
         $this->projeto->save();
@@ -135,7 +139,7 @@ class DonoNoCorpoTest extends TestCase
 
     public function test_aplicar_modelo_de_tarefa_em_lead_de_colega_e_recusado(): void
     {
-        $padrao = new TarefaPadrao();
+        $padrao = new TarefaPadrao;
         $padrao->fill(['user_id' => $this->colega->id, 'titulo' => 'Follow-up', 'prazo_dias' => 3]);
         $padrao->tenant_id = $this->tenant->id;
         $padrao->save();
@@ -240,7 +244,7 @@ class DonoNoCorpoTest extends TestCase
         $outro = Tenant::factory()->create();
         $staffAlheio = User::factory()->create(['tenant_id' => $outro->id]);
         app(CurrentTenant::class)->set($outro);
-        $padraoAlheio = new TarefaPadrao();
+        $padraoAlheio = new TarefaPadrao;
         $padraoAlheio->fill(['user_id' => $staffAlheio->id, 'titulo' => 'Alheio', 'prazo_dias' => 3]);
         $padraoAlheio->tenant_id = $outro->id;
         $padraoAlheio->save();
@@ -264,7 +268,7 @@ class DonoNoCorpoTest extends TestCase
     /** O modelo próprio continua sendo aplicado. */
     public function test_aplicar_modelo_proprio_continua_funcionando(): void
     {
-        $meu = new TarefaPadrao();
+        $meu = new TarefaPadrao;
         $meu->fill(['user_id' => $this->dono->id, 'titulo' => 'Meu modelo', 'prazo_dias' => 2]);
         $meu->tenant_id = $this->tenant->id;
         $meu->save();

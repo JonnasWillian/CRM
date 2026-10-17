@@ -84,7 +84,7 @@ class ProjetoRequest extends FormRequest
             return;
         }
 
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
     }
 
     public function rules(): array

@@ -20,9 +20,13 @@ class VisibilidadeDeLeadsTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $gestor;
+
     private User $vendedor;
+
     private Usuario $leadDoGestor;
+
     private Usuario $leadDoVendedor;
 
     protected function setUp(): void

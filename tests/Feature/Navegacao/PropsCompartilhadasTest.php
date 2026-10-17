@@ -15,7 +15,7 @@ use Tests\TestCase;
  */
 class PropsCompartilhadasTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_admin_recebe_o_mapa_completo_de_permissoes_e_o_papel(): void
     {

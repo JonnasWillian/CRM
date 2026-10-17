@@ -7,11 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE `users` MODIFY `tenant_id` BIGINT UNSIGNED NOT NULL");
+        DB::statement('ALTER TABLE `users` MODIFY `tenant_id` BIGINT UNSIGNED NOT NULL');
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE `users` MODIFY `tenant_id` BIGINT UNSIGNED NULL");
+        DB::statement('ALTER TABLE `users` MODIFY `tenant_id` BIGINT UNSIGNED NULL');
     }
 };

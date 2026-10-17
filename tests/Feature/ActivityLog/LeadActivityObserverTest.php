@@ -4,15 +4,15 @@ namespace Tests\Feature\ActivityLog;
 
 use App\Models\Activity;
 use App\Models\Anotacao;
+use App\Models\Estagio;
+use App\Models\EstagioHistorico;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\Statu;
-use App\Models\Estagio;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
-use App\Models\EstagioHistorico;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -28,7 +28,9 @@ class LeadActivityObserverTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $staff;
+
     private Usuario $lead;
 
     protected function setUp(): void

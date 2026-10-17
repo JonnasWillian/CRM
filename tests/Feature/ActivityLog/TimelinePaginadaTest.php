@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class TimelinePaginadaTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_mais_de_uma_pagina_e_per_page_com_teto(): void
     {

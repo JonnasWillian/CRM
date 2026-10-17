@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
 class ListagemDeLeads
 {
     public const POR_PAGINA = 25;
+
     public const MAX_POR_PAGINA = 100;
 
     /**

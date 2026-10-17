@@ -15,7 +15,7 @@ use Tests\TestCase;
  */
 class ReordenarEmUmaConsultaTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_reordenar_funis_faz_um_unico_update(): void
     {

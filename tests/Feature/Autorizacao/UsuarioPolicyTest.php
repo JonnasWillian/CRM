@@ -16,9 +16,13 @@ class UsuarioPolicyTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $gestor;
+
     private User $vendedor;
+
     private User $semPapel;
+
     private Usuario $leadDoGestor;
 
     protected function setUp(): void

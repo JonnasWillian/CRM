@@ -25,7 +25,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class AtividadeResource extends JsonResource
 {
     private const COM_DESCRICAO = ['anotacao', 'projeto_anotacao'];
+
     private const DE_ESTAGIO = ['status_alterado', 'funil_alterado'];
+
     private const DE_ARQUIVO = ['arquivo', 'arquivo_removido', 'projeto_anexo', 'projeto_anexo_removido'];
 
     /** @param  array<int,string>  $nomesDeEstagio  id => descrição, withTrashed */

@@ -1,16 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Userarios;
-use App\Http\Controllers\ProjetoController;
 use App\Http\Controllers\arquivo;
-use App\Http\Controllers\TarefaController;
-use App\Http\Controllers\TarefaPadraoController;
-use App\Http\Controllers\LeadAtividadeController;
 use App\Http\Controllers\FunilController;
+use App\Http\Controllers\LeadAtividadeController;
 use App\Http\Controllers\MotivoPerdaController;
 use App\Http\Controllers\PerdaRelatorioController;
+use App\Http\Controllers\ProjetoController;
+use App\Http\Controllers\TarefaController;
+use App\Http\Controllers\TarefaPadraoController;
+use App\Http\Controllers\Userarios;
+use Illuminate\Support\Facades\Route;
 
 /*
  * Toda rota daqui tem nome `api.*`: o front chama a API por `route()` (Ziggy),
@@ -124,9 +123,9 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::get('/tarefasPendentes', [TarefaController::class, 'pendentes'])->name('tarefas.pendentes');
 
     // Modelos de Tarefa
-    Route::get('/tarefa-padroes',          [TarefaPadraoController::class, 'index'])->name('tarefa-padroes.index');
-    Route::post('/tarefa-padroes',         [TarefaPadraoController::class, 'store'])->name('tarefa-padroes.store');
+    Route::get('/tarefa-padroes', [TarefaPadraoController::class, 'index'])->name('tarefa-padroes.index');
+    Route::post('/tarefa-padroes', [TarefaPadraoController::class, 'store'])->name('tarefa-padroes.store');
     Route::post('/tarefa-padroes/aplicar', [TarefaPadraoController::class, 'aplicar'])->name('tarefa-padroes.aplicar');
-    Route::put('/tarefa-padroes/{tarefaPadrao}',     [TarefaPadraoController::class, 'update'])->name('tarefa-padroes.update');
-    Route::delete('/tarefa-padroes/{tarefaPadrao}',  [TarefaPadraoController::class, 'destroy'])->name('tarefa-padroes.destroy');
+    Route::put('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'update'])->name('tarefa-padroes.update');
+    Route::delete('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'destroy'])->name('tarefa-padroes.destroy');
 });

@@ -16,9 +16,7 @@ use App\Services\Arquivos\ArquivoService;
  */
 class DownloadDeArquivoController extends Controller
 {
-    public function __construct(private readonly ArquivoService $arquivos)
-    {
-    }
+    public function __construct(private readonly ArquivoService $arquivos) {}
 
     public function lead(ArquivoModel $arquivo)
     {

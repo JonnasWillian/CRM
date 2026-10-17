@@ -33,14 +33,23 @@ class MotivoDePerdaObrigatorioTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $staff;
+
     private Funil $funil;
+
     private Funil $outroFunil;
+
     private Estagio $aberto;
+
     private Estagio $perdido;
+
     private Estagio $perdidoNoOutroFunil;
+
     private Statu $statusAberto;
+
     private Statu $statusPerdido;
+
     private MotivoPerda $motivo;
 
     protected function setUp(): void
@@ -88,7 +97,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
 
     private function projeto(): Projeto
     {
-        $projeto = new Projeto();
+        $projeto = new Projeto;
         $projeto->fill([
             'nome' => 'Projeto de teste',
             'usuario_id' => $this->lead()->id,
@@ -322,7 +331,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $lead = $this->lead();
 
         foreach ([1500.00, 2500.00] as $preco) {
-            $projeto = new Projeto();
+            $projeto = new Projeto;
             $projeto->fill(['nome' => 'Proposta aberta', 'usuario_id' => $lead->id, 'status_id' => $this->statusAberto->id, 'preco' => $preco]);
             $projeto->tenant_id = $this->tenant->id;
             $projeto->save();

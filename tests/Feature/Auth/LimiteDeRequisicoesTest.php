@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class LimiteDeRequisicoesTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_api_limita_por_usuario(): void
     {

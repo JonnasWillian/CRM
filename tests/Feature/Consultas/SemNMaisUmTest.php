@@ -17,7 +17,7 @@ use Tests\TestCase;
  */
 class SemNMaisUmTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_listar_funis_nao_cresce_com_o_numero_de_funis(): void
     {

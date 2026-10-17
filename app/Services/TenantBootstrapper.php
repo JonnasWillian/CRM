@@ -30,7 +30,7 @@ class TenantBootstrapper
 {
     public static function bootstrap(Tenant $tenant): void
     {
-        $funil = new Funil();
+        $funil = new Funil;
         $funil->nome = 'Vendas';
         $funil->descricao = 'Funil padrão, criado no cadastro da empresa.';
         $funil->ordem = 1;
@@ -39,7 +39,7 @@ class TenantBootstrapper
         $funil->save();
 
         foreach (static::defaultEstagios() as $attributes) {
-            $estagio = new Estagio();
+            $estagio = new Estagio;
             $estagio->funil_id = $funil->id;
             $estagio->descricao = $attributes['descricao'];
             $estagio->ordem = $attributes['ordem'];
@@ -50,7 +50,7 @@ class TenantBootstrapper
         }
 
         foreach (static::defaultMotivosDePerda() as $posicao => $descricao) {
-            $motivo = new MotivoPerda();
+            $motivo = new MotivoPerda;
             $motivo->descricao = $descricao;
             $motivo->ordem = $posicao + 1;
             $motivo->tenant_id = $tenant->id;
@@ -58,7 +58,7 @@ class TenantBootstrapper
         }
 
         foreach (static::defaultStatus() as $attributes) {
-            $status = new Statu();
+            $status = new Statu;
             $status->descricao = $attributes['descricao'];
             $status->ordem = $attributes['ordem'];
             $status->is_won = $attributes['is_won'];

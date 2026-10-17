@@ -2,10 +2,10 @@
 
 namespace App\Services\Funis;
 
-use App\Support\Db\ReordenarPorIds;
 use App\Exceptions\RegraDeFunilException;
 use App\Models\Estagio;
 use App\Models\Funil;
+use App\Support\Db\ReordenarPorIds;
 
 /**
  * Operações de estágio dentro de um funil.
@@ -23,7 +23,7 @@ class EstagioService
 {
     public function criar(Funil $funil, array $dados): Estagio
     {
-        $estagio = new Estagio();
+        $estagio = new Estagio;
         $estagio->fill($dados);
         $estagio->funil_id = $funil->id;
         // withTrashed: um estágio arquivado ainda ocupa sua posição no funil

@@ -27,9 +27,13 @@ class DoisSaltosPolicyTest extends TestCase
     use RefreshDatabase;
 
     private User $dono;
+
     private User $intruso;
+
     private Projeto $projeto;
+
     private ProjetoAnotacao $anotacao;
+
     private ProjetoAnexo $anexo;
 
     protected function setUp(): void
@@ -52,7 +56,7 @@ class DoisSaltosPolicyTest extends TestCase
         ]);
         $status = Statu::factory()->create(['tenant_id' => $tenant->id]);
 
-        $this->projeto = new Projeto();
+        $this->projeto = new Projeto;
         $this->projeto->fill(['nome' => 'Proposta', 'usuario_id' => $lead->id, 'status_id' => $status->id]);
         $this->projeto->tenant_id = $tenant->id;
         $this->projeto->save();

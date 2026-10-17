@@ -4,11 +4,11 @@ namespace Tests\Feature\ActivityLog;
 
 use App\Models\Anotacao;
 use App\Models\arquivo;
+use App\Models\Estagio;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
 use App\Models\Statu;
-use App\Models\Estagio;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
@@ -35,8 +35,11 @@ class TimelineParityTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $staff;
+
     private Usuario $lead;
+
     private Anotacao $anotacao;
 
     protected function setUp(): void

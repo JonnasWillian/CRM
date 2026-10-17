@@ -19,14 +19,20 @@ use Tests\TestCase;
  */
 class DownloadProtegidoTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private User $intruso;
+
     private User $gestor;
+
     private Usuario $lead;
+
     private arquivo $arquivo;
+
     private ProjetoAnexo $anexo;
 
     protected function setUp(): void

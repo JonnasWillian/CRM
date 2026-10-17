@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Concerns\BelongsToTenant;
 
 /**
  * Estágio de um funil (antes: Tags, quando o conjunto era fixo).
@@ -22,10 +22,12 @@ use App\Models\Concerns\BelongsToTenant;
  */
 class Estagio extends Model
 {
-    use HasFactory, Notifiable, SoftDeletes, BelongsToTenant;
+    use BelongsToTenant, HasFactory, Notifiable, SoftDeletes;
 
     public const TIPO_ABERTO = 'aberto';
+
     public const TIPO_GANHO = 'ganho';
+
     public const TIPO_PERDIDO = 'perdido';
 
     public const TIPOS = [

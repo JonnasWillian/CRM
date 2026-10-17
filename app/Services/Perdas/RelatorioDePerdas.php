@@ -4,7 +4,6 @@ namespace App\Services\Perdas;
 
 use App\Models\Perda;
 use App\Models\Projeto;
-use App\Models\Usuario;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 

@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE `projetos` MODIFY `tenant_id` BIGINT UNSIGNED NOT NULL");
+        DB::statement('ALTER TABLE `projetos` MODIFY `tenant_id` BIGINT UNSIGNED NOT NULL');
 
         Schema::table('projetos', function (Blueprint $table) {
             $table->index(['tenant_id', 'usuario_id']);
@@ -24,6 +24,6 @@ return new class extends Migration
             $table->dropIndex(['tenant_id', 'status_id']);
         });
 
-        DB::statement("ALTER TABLE `projetos` MODIFY `tenant_id` BIGINT UNSIGNED NULL");
+        DB::statement('ALTER TABLE `projetos` MODIFY `tenant_id` BIGINT UNSIGNED NULL');
     }
 };

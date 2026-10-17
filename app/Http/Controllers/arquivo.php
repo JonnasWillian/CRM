@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Http\Requests\ArquivoRequest;
-use App\Services\Arquivos\ArquivoService;
-use App\Models\arquivo AS ArquivoModel;
+use App\Models\arquivo as ArquivoModel;
 use App\Models\Usuario;
+use App\Services\Arquivos\ArquivoService;
+use Illuminate\Http\Request;
 
 class arquivo extends Controller
 {
     protected $arquivoService;
 
-    public function __construct(ArquivoService $arquivoService){
+    public function __construct(ArquivoService $arquivoService)
+    {
         $this->arquivoService = $arquivoService;
     }
 

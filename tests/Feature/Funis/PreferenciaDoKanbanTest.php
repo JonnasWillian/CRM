@@ -12,10 +12,12 @@ use Tests\TestCase;
 
 class PreferenciaDoKanbanTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $agente;
+
     private Estagio $estagio;
 
     protected function setUp(): void

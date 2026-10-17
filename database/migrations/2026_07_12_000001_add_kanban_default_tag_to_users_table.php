@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('kanban_default_tag_id')
-                  ->nullable()
-                  ->after('remember_token')
-                  ->constrained('tags')
-                  ->nullOnDelete();
+                ->nullable()
+                ->after('remember_token')
+                ->constrained('tags')
+                ->nullOnDelete();
         });
     }
 

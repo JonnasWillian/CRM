@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Trilha de mudança de estágio de um lead (antes: UsuarioTagHistorico).
@@ -13,7 +13,7 @@ use App\Models\Concerns\BelongsToTenant;
  */
 class EstagioHistorico extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
 
     protected $table = 'estagio_historicos';
 

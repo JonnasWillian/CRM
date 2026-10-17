@@ -14,10 +14,12 @@ use Tests\TestCase;
 
 class ListagemPaginadaTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $vendedor;
+
     private User $gestor;
 
     protected function setUp(): void

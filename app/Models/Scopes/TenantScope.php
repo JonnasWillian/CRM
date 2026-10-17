@@ -25,6 +25,6 @@ class TenantScope implements Scope
     {
         app(CurrentTenant::class)->get();
 
-        $builder->where($model->getTable() . '.tenant_id', app(CurrentTenant::class)->id());
+        $builder->where($model->getTable().'.tenant_id', app(CurrentTenant::class)->id());
     }
 }

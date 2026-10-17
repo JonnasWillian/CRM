@@ -19,7 +19,7 @@ use Tests\TestCase;
  */
 class SemCascataDestrutivaTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     /** Cascata permitida, com o motivo. */
     private const PERMITIDAS = [

@@ -78,5 +78,8 @@ jobs:
             sleep 2
           done
 
+      - name: Estilo (Pint)
+        run: vendor/bin/pint --test
+
       - name: Rodar suíte de testes
         run: php artisan test

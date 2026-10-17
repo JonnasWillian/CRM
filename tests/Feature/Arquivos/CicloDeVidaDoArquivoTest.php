@@ -14,10 +14,12 @@ use Tests\TestCase;
 
 class CicloDeVidaDoArquivoTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private Usuario $lead;
 
     protected function setUp(): void

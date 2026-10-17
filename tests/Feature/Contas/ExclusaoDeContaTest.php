@@ -14,7 +14,7 @@ use Tests\TestCase;
  */
 class ExclusaoDeContaTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
 

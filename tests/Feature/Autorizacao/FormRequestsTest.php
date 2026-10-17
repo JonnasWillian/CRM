@@ -138,7 +138,7 @@ class FormRequestsTest extends TestCase
         ]);
         $status = Statu::factory()->create(['tenant_id' => $tenant->id]);
 
-        $projetoProprio = new Projeto();
+        $projetoProprio = new Projeto;
         $projetoProprio->fill(['nome' => 'Proposta propria', 'usuario_id' => $leadProprio->id, 'status_id' => $status->id]);
         $projetoProprio->tenant_id = $tenant->id;
         $projetoProprio->save();
@@ -312,7 +312,7 @@ class FormRequestsTest extends TestCase
         $lead = Usuario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $staff->id, 'funil_id' => $funil->id]);
         $status = Statu::factory()->create(['tenant_id' => $tenant->id]);
 
-        $projeto = new Projeto();
+        $projeto = new Projeto;
         $projeto->fill(['nome' => 'Proposta', 'usuario_id' => $lead->id, 'status_id' => $status->id]);
         $projeto->tenant_id = $tenant->id;
         $projeto->save();

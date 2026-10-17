@@ -15,7 +15,7 @@ use Tests\TestCase;
  */
 class TelefoneDoLeadTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private User $dono;
 

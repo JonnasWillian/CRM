@@ -57,6 +57,7 @@ class GuardaDeArrayNoUsuarioIdTest extends TestCase
     use RefreshDatabase;
 
     private Usuario $lead;
+
     private Projeto $projeto;
 
     protected function setUp(): void
@@ -83,14 +84,14 @@ class GuardaDeArrayNoUsuarioIdTest extends TestCase
 
     public function test_arquivo_request_rejeita_usuario_id_em_formato_de_array(): void
     {
-        $this->assertUsuarioIdArrayRejeitado(new ArquivoRequest(), $this->lead->id, [], [
+        $this->assertUsuarioIdArrayRejeitado(new ArquivoRequest, $this->lead->id, [], [
             'arquivo' => UploadedFile::fake()->create('arquivo.txt', 10),
         ]);
     }
 
     public function test_projeto_anexo_request_rejeita_usuario_id_em_formato_de_array(): void
     {
-        $this->assertUsuarioIdArrayRejeitado(new ProjetoAnexoRequest(), $this->projeto->id, [], [
+        $this->assertUsuarioIdArrayRejeitado(new ProjetoAnexoRequest, $this->projeto->id, [], [
             'arquivo' => UploadedFile::fake()->create('arquivo.txt', 10),
         ]);
     }
@@ -98,7 +99,7 @@ class GuardaDeArrayNoUsuarioIdTest extends TestCase
     /** `ProjetoRequest::storeRules()` — sem model na rota, é o caminho de criação. */
     public function test_projeto_request_rejeita_usuario_id_em_formato_de_array_na_criacao(): void
     {
-        $this->assertUsuarioIdArrayRejeitado(new ProjetoRequest(), $this->lead->id, [
+        $this->assertUsuarioIdArrayRejeitado(new ProjetoRequest, $this->lead->id, [
             'nome' => 'Proposta',
             'status_id' => $this->projeto->status_id,
         ]);

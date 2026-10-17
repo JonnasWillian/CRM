@@ -2,10 +2,10 @@
 
 namespace App\Services\Funis;
 
-use App\Support\Db\ReordenarPorIds;
 use App\Exceptions\RegraDeFunilException;
 use App\Models\Estagio;
 use App\Models\Funil;
+use App\Support\Db\ReordenarPorIds;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,7 +23,7 @@ class FunilService
     public function criar(array $dados): Funil
     {
         return DB::transaction(function () use ($dados) {
-            $funil = new Funil();
+            $funil = new Funil;
             $funil->fill($dados);
             $funil->ordem = $dados['ordem'] ?? ((int) Funil::max('ordem') + 1);
             $funil->save();
@@ -32,7 +32,7 @@ class FunilService
             // entregar ao tenant um funil inutilizável até ele descobrir por
             // quê, o primeiro estágio nasce junto — renomeável como qualquer
             // outro.
-            $estagio = new Estagio();
+            $estagio = new Estagio;
             $estagio->funil_id = $funil->id;
             $estagio->descricao = 'Novo estágio';
             $estagio->ordem = 1;

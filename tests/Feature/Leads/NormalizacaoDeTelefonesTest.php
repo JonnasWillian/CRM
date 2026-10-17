@@ -9,9 +9,10 @@ use Tests\TestCase;
 
 class NormalizacaoDeTelefonesTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private int $bom;
+
     private int $ruim;
 
     protected function setUp(): void

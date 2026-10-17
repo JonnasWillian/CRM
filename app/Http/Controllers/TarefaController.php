@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Tarefa;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class TarefaController extends Controller
@@ -38,9 +38,9 @@ class TarefaController extends Controller
                     'required',
                     Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
                 ],
-                'titulo'     => 'required|string|max:255',
+                'titulo' => 'required|string|max:255',
                 'data_limite' => 'required|date',
-                'anotacao'   => 'nullable|string',
+                'anotacao' => 'nullable|string',
             ]);
 
             $validated['usuario_id'] = $lead->id;
@@ -59,10 +59,10 @@ class TarefaController extends Controller
 
         try {
             $validated = $request->validate([
-                'titulo'      => 'sometimes|string|max:255',
+                'titulo' => 'sometimes|string|max:255',
                 'data_limite' => 'sometimes|date',
-                'anotacao'    => 'nullable|string',
-                'concluido'   => 'sometimes|boolean',
+                'anotacao' => 'nullable|string',
+                'concluido' => 'sometimes|boolean',
             ]);
 
             if (isset($validated['concluido'])) {

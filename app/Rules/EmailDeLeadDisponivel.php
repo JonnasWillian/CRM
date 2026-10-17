@@ -18,9 +18,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class EmailDeLeadDisponivel implements ValidationRule
 {
-    public function __construct(private readonly ?int $ignorarLeadId = null)
-    {
-    }
+    public function __construct(private readonly ?int $ignorarLeadId = null) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

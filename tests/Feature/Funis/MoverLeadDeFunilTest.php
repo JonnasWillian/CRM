@@ -27,11 +27,17 @@ class MoverLeadDeFunilTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $staff;
+
     private Funil $vendas;
+
     private Funil $posVenda;
+
     private Estagio $estagioVendas;
+
     private Estagio $estagioPosVenda;
+
     private Usuario $lead;
 
     protected function setUp(): void

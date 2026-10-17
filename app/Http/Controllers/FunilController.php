@@ -8,8 +8,8 @@ use App\Models\Estagio;
 use App\Models\Funil;
 use App\Services\Funis\EstagioService;
 use App\Services\Funis\FunilService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Configuração de funis e seus estágios.

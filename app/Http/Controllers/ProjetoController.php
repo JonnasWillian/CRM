@@ -2,29 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Http\Requests\ProjetoRequest;
 use App\Http\Requests\ProjetoAnexoRequest;
-use App\Support\LimitesDeTexto;
-
-use App\Services\Arquivos\ArquivoService;
-
-use App\Models\Statu;
+use App\Http\Requests\ProjetoRequest;
 use App\Models\Projeto;
-use App\Models\ProjetoAnotacao;
 use App\Models\ProjetoAnexo;
+use App\Models\ProjetoAnotacao;
+use App\Models\Statu;
 use App\Models\Usuario;
+use App\Services\Arquivos\ArquivoService;
 use App\Services\Perdas\AplicarTransicao;
+use App\Support\LimitesDeTexto;
 use App\Support\Perdas\RegrasDePerda;
+use Illuminate\Http\Request;
 
 class ProjetoController extends Controller
 {
     protected $arquivoService;
 
-    public function __construct(ArquivoService $arquivoService){
+    public function __construct(ArquivoService $arquivoService)
+    {
         $this->arquivoService = $arquivoService;
     }
-
 
     public function getStatus()
     {
@@ -32,7 +30,6 @@ class ProjetoController extends Controller
 
         return response()->json($status);
     }
-
 
     public function view(Request $request)
     {
@@ -49,22 +46,20 @@ class ProjetoController extends Controller
         );
     }
 
-
     public function create(ProjetoRequest $request)
     {
         try {
             // Um projeto pode nascer já perdido — o status é escolhido no
             // próprio formulário de cadastro.
-            app(AplicarTransicao::class)(new Projeto(), $request->validated(), RegrasDePerda::extrair($request));
+            app(AplicarTransicao::class)(new Projeto, $request->validated(), RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Projeto cadastrado com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
-
 
     public function viewProjeto(Projeto $projeto)
     {
@@ -72,7 +67,6 @@ class ProjetoController extends Controller
 
         return response()->json($projeto->load('status'));
     }
-
 
     public function update(ProjetoRequest $request, Projeto $projeto)
     {
@@ -84,11 +78,10 @@ class ProjetoController extends Controller
             return response()->json(['message' => 'Projeto atualizado com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
-
 
     public function viewAnotacao(Projeto $projeto)
     {
@@ -98,7 +91,6 @@ class ProjetoController extends Controller
 
         return response()->json($anotacoes);
     }
-
 
     public function createAnotacao(Request $request)
     {
@@ -122,11 +114,10 @@ class ProjetoController extends Controller
             return response()->json(['message' => 'Anotação cadastrada com sucesso'], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
-
 
     public function updateAnotacao(Request $request, ProjetoAnotacao $projetoAnotacao)
     {
@@ -142,11 +133,10 @@ class ProjetoController extends Controller
             return response()->json(['message' => 'Anotação atualizada com sucesso'], 200);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json([
-                'erros' => $error->errors()
+                'erros' => $error->errors(),
             ], 422);
         }
     }
-
 
     public function destroyAnotacao(ProjetoAnotacao $projetoAnotacao)
     {
@@ -157,7 +147,6 @@ class ProjetoController extends Controller
         return response()->json(['message' => 'Anotação deletada com sucesso'], 200);
     }
 
-
     public function viewAnexo(Projeto $projeto)
     {
         $this->authorize('view', $projeto);
@@ -166,7 +155,6 @@ class ProjetoController extends Controller
 
         return response()->json($anexos);
     }
-
 
     public function createAnexo(ProjetoAnexoRequest $request)
     {
@@ -192,7 +180,6 @@ class ProjetoController extends Controller
             'data' => $anexo,
         ], 201);
     }
-
 
     public function destroyAnexo(ProjetoAnexo $projetoAnexo)
     {

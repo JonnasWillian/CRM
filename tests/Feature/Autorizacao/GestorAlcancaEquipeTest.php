@@ -53,8 +53,11 @@ class GestorAlcancaEquipeTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $gestor;
+
     private Usuario $leadDaEquipe;
+
     private Projeto $projetoDaEquipe;
 
     protected function setUp(): void
@@ -77,7 +80,7 @@ class GestorAlcancaEquipeTest extends TestCase
         ]);
 
         $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
-        $this->projetoDaEquipe = new Projeto();
+        $this->projetoDaEquipe = new Projeto;
         $this->projetoDaEquipe->fill([
             'nome' => 'Proposta da equipe', 'usuario_id' => $this->leadDaEquipe->id, 'status_id' => $status->id,
         ]);

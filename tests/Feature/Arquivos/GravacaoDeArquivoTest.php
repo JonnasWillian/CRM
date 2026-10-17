@@ -21,11 +21,14 @@ use Tests\TestCase;
  */
 class GravacaoDeArquivoTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private Usuario $lead;
+
     private Projeto $projeto;
 
     protected function setUp(): void

@@ -23,7 +23,9 @@ class CatalogoDeMotivosTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $admin;
+
     private User $vendedor;
 
     protected function setUp(): void

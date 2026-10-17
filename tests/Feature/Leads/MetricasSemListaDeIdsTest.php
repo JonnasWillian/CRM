@@ -15,9 +15,10 @@ use Tests\TestCase;
 
 class MetricasSemListaDeIdsTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $vendedor;
 
     protected function setUp(): void

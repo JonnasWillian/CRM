@@ -25,12 +25,19 @@ class UmSaltoPolicyTest extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private User $intruso;
+
     private Usuario $lead;
+
     private Projeto $projeto;
+
     private Tarefa $tarefa;
+
     private Anotacao $anotacao;
+
     private arquivo $arquivo;
 
     protected function setUp(): void
@@ -53,7 +60,7 @@ class UmSaltoPolicyTest extends TestCase
         ]);
 
         $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
-        $this->projeto = new Projeto();
+        $this->projeto = new Projeto;
         $this->projeto->fill(['nome' => 'Proposta inicial', 'usuario_id' => $this->lead->id, 'status_id' => $status->id]);
         $this->projeto->tenant_id = $this->tenant->id;
         $this->projeto->save();

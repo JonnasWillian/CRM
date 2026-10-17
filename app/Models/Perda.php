@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Perda extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use BelongsToTenant, HasFactory;
 
     protected $table = 'perdas';
 

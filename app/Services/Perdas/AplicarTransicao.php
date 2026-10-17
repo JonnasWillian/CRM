@@ -41,11 +41,11 @@ use Illuminate\Validation\ValidationException;
 class AplicarTransicao
 {
     /**
-     * @param  Perdivel&Model  $entidade   novo ou existente
+     * @param  Perdivel&Model  $entidade  novo ou existente
      * @param  array<string, mixed>  $atributos  o que será gravado
      * @param  array{motivo_perda_id?: int|null, observacao?: string|null}|null  $perda
      *
-     * @throws ValidationException  quando a transição é perda e falta motivo
+     * @throws ValidationException quando a transição é perda e falta motivo
      */
     public function __invoke(Perdivel&Model $entidade, array $atributos, ?array $perda = null): void
     {
@@ -68,7 +68,7 @@ class AplicarTransicao
             // O valor é lido depois do save: se a mesma requisição mudou o
             // preço do projeto junto com o status, o que se perdeu é o preço
             // novo, não o anterior.
-            $linha = new Perda();
+            $linha = new Perda;
             $linha->motivo_perda_id = $motivo->id;
             $linha->observacao = $perda['observacao'] ?? null;
             $linha->valor = $entidade->valorDaPerda();

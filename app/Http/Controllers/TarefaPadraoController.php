@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Models\TarefaPadrao;
 use App\Models\Tarefa;
+use App\Models\TarefaPadrao;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class TarefaPadraoController extends Controller
@@ -26,8 +26,8 @@ class TarefaPadraoController extends Controller
     {
         try {
             $validated = $request->validate([
-                'titulo'    => 'required|string|max:255',
-                'anotacao'  => 'nullable|string',
+                'titulo' => 'required|string|max:255',
+                'anotacao' => 'nullable|string',
                 'prazo_dias' => 'required|integer|min:0',
             ]);
 
@@ -65,8 +65,8 @@ class TarefaPadraoController extends Controller
 
         try {
             $validated = $request->validate([
-                'titulo'    => 'sometimes|string|max:255',
-                'anotacao'  => 'nullable|string',
+                'titulo' => 'sometimes|string|max:255',
+                'anotacao' => 'nullable|string',
                 'prazo_dias' => 'sometimes|integer|min:0',
             ]);
 
@@ -104,7 +104,7 @@ class TarefaPadraoController extends Controller
                     'required',
                     Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
                 ],
-                'padroes'    => 'required|array|min:1',
+                'padroes' => 'required|array|min:1',
                 // Mesmo filtro de tenant do `usuario_id` acima. Sem ele esta
                 // era a única regra `exists` da base sem `where('tenant_id')`:
                 // um id de modelo de OUTRA empresa passava na validação e
@@ -113,7 +113,7 @@ class TarefaPadraoController extends Controller
                 // O `whereIn(...)->where('user_id', auth()->id())` logo abaixo
                 // já impedia a criação da tarefa, então o vazamento era só de
                 // informação — e era o suficiente.
-                'padroes.*'  => [
+                'padroes.*' => [
                     'integer',
                     Rule::exists('tarefa_padroes', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
                 ],
@@ -127,13 +127,13 @@ class TarefaPadraoController extends Controller
             // create dispara um observer que grava no activity log, e uma
             // falha no meio deixaria metade aplicada.
             $criadas = DB::transaction(fn () => $padroes->map(fn ($p) => Tarefa::create([
-                'usuario_id'  => $lead->id,
-                'titulo'      => $p->titulo,
-                'anotacao'    => $p->anotacao,
+                'usuario_id' => $lead->id,
+                'titulo' => $p->titulo,
+                'anotacao' => $p->anotacao,
                 'data_limite' => Carbon::today()->addDays($p->prazo_dias),
             ]))->all());
 
-            return response()->json(['message' => count($criadas) . ' tarefa(s) criada(s)', 'data' => $criadas], 201);
+            return response()->json(['message' => count($criadas).' tarefa(s) criada(s)', 'data' => $criadas], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {
             return response()->json(['erros' => $error->errors()], 422);
         }

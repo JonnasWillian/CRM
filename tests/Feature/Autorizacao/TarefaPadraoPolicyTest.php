@@ -34,7 +34,7 @@ class TarefaPadraoPolicyTest extends TestCase
         $intruso->assignRole('vendedor');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $modelo = new TarefaPadrao();
+        $modelo = new TarefaPadrao;
         $modelo->fill(['user_id' => $dono->id, 'titulo' => 'Follow-up', 'prazo_dias' => 3]);
         $modelo->tenant_id = $tenant->id;
         $modelo->save();
@@ -119,7 +119,7 @@ class TarefaPadraoPolicyTest extends TestCase
         $intruso->assignRole('vendedor');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $modelo = new TarefaPadrao();
+        $modelo = new TarefaPadrao;
         $modelo->fill(['user_id' => $dono->id, 'titulo' => 'Follow-up', 'prazo_dias' => 3]);
         $modelo->tenant_id = $tenant->id;
         $modelo->save();

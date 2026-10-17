@@ -17,7 +17,7 @@ use Tests\TestCase;
  */
 class RotasNomeadasTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     public function test_toda_rota_de_api_tem_nome_com_prefixo_api(): void
     {

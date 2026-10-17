@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 class LeadAtividadeController extends Controller
 {
     private const POR_PAGINA = 20;
+
     private const MAX_POR_PAGINA = 100;
 
     public function index(Request $request, Usuario $usuario)

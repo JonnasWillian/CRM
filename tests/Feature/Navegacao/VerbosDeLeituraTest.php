@@ -11,9 +11,10 @@ use Tests\TestCase;
 
 class VerbosDeLeituraTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private User $dono;
+
     private Usuario $lead;
 
     protected function setUp(): void

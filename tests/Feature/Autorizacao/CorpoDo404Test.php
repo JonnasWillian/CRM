@@ -35,10 +35,15 @@ class CorpoDo404Test extends TestCase
     use RefreshDatabase;
 
     private Tenant $tenant;
+
     private User $dono;
+
     private User $colega;
+
     private Usuario $leadDoDono;
+
     private TarefaPadrao $modeloDoDono;
+
     private Usuario $leadDeOutroTenant;
 
     protected function setUp(): void
@@ -60,7 +65,7 @@ class CorpoDo404Test extends TestCase
             'tenant_id' => $this->tenant->id, 'user_id' => $this->dono->id, 'funil_id' => $funil->id,
         ]);
 
-        $this->modeloDoDono = new TarefaPadrao();
+        $this->modeloDoDono = new TarefaPadrao;
         $this->modeloDoDono->fill(['user_id' => $this->dono->id, 'titulo' => 'Follow-up', 'prazo_dias' => 3]);
         $this->modeloDoDono->tenant_id = $this->tenant->id;
         $this->modeloDoDono->save();

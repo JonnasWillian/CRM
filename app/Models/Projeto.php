@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Notifications\Notifiable;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Perdas\Perdivel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 
 class Projeto extends Model implements Perdivel
 {
-    use HasFactory, Notifiable, BelongsToTenant, SoftDeletes;
+    use BelongsToTenant, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'nome',

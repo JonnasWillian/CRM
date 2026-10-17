@@ -18,10 +18,12 @@ use Tests\TestCase;
  */
 class LimitesDeTextoTest extends TestCase
 {
-    use RefreshDatabase, CenarioDeTenant;
+    use CenarioDeTenant, RefreshDatabase;
 
     private User $dono;
+
     private Usuario $lead;
+
     private Projeto $projeto;
 
     protected function setUp(): void
