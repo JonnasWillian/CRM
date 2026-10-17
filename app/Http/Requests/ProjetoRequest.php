@@ -11,41 +11,22 @@ class ProjetoRequest extends FormRequest
     public function authorize(): bool
     {
         // Permissão de CLASSE primeiro: sem `projetos.manage` não há o que
-        // checar na instância — quem não mexe em projeto nenhum não passa
-        // daqui, ponto.
+        // checar na instância.
         if (! $this->user()?->can('projetos.manage')) {
             return false;
         }
 
-        // Edição: o projeto vem da rota e o binding o resolve. A autorização da
-        // INSTÂNCIA precisa acontecer AQUI, e não no corpo do controller: o
-        // FormRequest é validado antes de o método rodar, e um 422 contra um
-        // projeto alheio já revelaria que o id existe no tenant.
+        // Edição: o projeto vem da rota. Criação: o lead dono vem da rota
+        // (`POST /api/leads/{usuario}/projetos`). Nos dois casos a instância
+        // é autorizada AQUI, antes da validação — um 422 contra um recurso
+        // alheio já revelaria que o id existe no tenant.
         $projeto = $this->route('projeto');
 
         if ($projeto !== null) {
             return $this->user()->can('update', $projeto);
         }
 
-        // Criação: o lead dono vem de um campo do CORPO, que o binding nunca
-        // enxerga. Sem resolver e autorizar aqui, dá para criar um projeto
-        // preso ao lead de um colega — ou a um id que nem existe.
-        //
-        // integer() e não input(): com `usuario_id` enviado como array,
-        // find() viraria findMany() e devolveria uma Collection, que nunca é
-        // null — a guarda abaixo passaria sozinha. integer() evita ISSO, mas
-        // não da forma que parece: `(int) [qualquer array não vazio]` é
-        // sempre 1 em PHP, não importa o conteúdo. Ou seja, authorize() acaba
-        // decidindo sobre "o recurso de id 1", não sobre o que foi enviado —
-        // hoje isso nega por acaso (id 1 raramente é o alvo pretendido), mas
-        // se um dia for, autorizaria o recurso ERRADO.
-        //
-        // authorize() roda ANTES de rules(), então a regra `integer` do
-        // campo em rules() não impede ESTA decisão específica. O que ela
-        // garante é a rede de segurança: mesmo que authorize() acerte por
-        // acidente, a validação recusa o array logo depois e nada malformado
-        // chega ao controller ou ao banco.
-        $lead = \App\Models\Usuario::find($this->integer('usuario_id'));
+        $lead = $this->route('usuario');
 
         return $lead !== null && $this->user()->can('update', $lead);
     }
@@ -76,9 +57,9 @@ class ProjetoRequest extends FormRequest
      */
     protected function failedAuthorization(): void
     {
-        $projeto = $this->route('projeto');
+        $alvo = $this->route('projeto') ?? $this->route('usuario');
 
-        if ($projeto === null || ($this->user()?->can('view', $projeto) ?? false)) {
+        if ($alvo === null || ($this->user()?->can('view', $alvo) ?? false)) {
             parent::failedAuthorization();
 
             return;
@@ -111,7 +92,6 @@ class ProjetoRequest extends FormRequest
             'parcelas' => 'nullable|boolean',
             'qtd_parcelas' => 'nullable|numeric',
             'status_id' => ['required', $this->statusDoTenant()],
-            'usuario_id' => 'required|integer',
             ...RegrasDePerda::campos(),
         ];
     }
@@ -171,7 +151,6 @@ class ProjetoRequest extends FormRequest
             'descricao.string' => 'A descrição deve ser um texto válido.',
             'descricao.max' => 'A descrição pode ter no máximo :max caracteres.',
 
-            'usuario_id.required' => 'O usuário responsável é obrigatório.',
             'status_id.required' => 'O Status é obrigatório.',
             'status_id.exists' => 'Status inválido.',
         ];
@@ -182,7 +161,6 @@ class ProjetoRequest extends FormRequest
         return [
             'nome' => 'nome',
             'descricao' => 'descrição',
-            'usuario_id' => 'usuário',
             'status_id' => 'status',
         ];
     }

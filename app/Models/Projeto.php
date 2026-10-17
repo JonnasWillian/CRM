@@ -52,6 +52,16 @@ class Projeto extends Model implements Perdivel
         return $this->morphMany(Perda::class, 'perdivel');
     }
 
+    public function anotacoes()
+    {
+        return $this->hasMany(ProjetoAnotacao::class, 'projeto_id');
+    }
+
+    public function anexos()
+    {
+        return $this->hasMany(ProjetoAnexo::class, 'projeto_id');
+    }
+
     /**
      * Para o projeto, "perdido" é `is_lost` do status — o eixo que já existia
      * antes dos funis e que não mudou. Só a exigência do motivo é nova.

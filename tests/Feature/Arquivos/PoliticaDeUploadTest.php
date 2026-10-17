@@ -63,8 +63,7 @@ class PoliticaDeUploadTest extends TestCase
     #[DataProvider('recusados')]
     public function test_anexo_de_lead_recusa(string $nome, string $mime, int $kb): void
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create($nome, $kb, $mime),
         ])->assertUnprocessable()->assertJsonValidationErrors('arquivo');
 
@@ -74,8 +73,7 @@ class PoliticaDeUploadTest extends TestCase
     #[DataProvider('recusados')]
     public function test_anexo_de_projeto_recusa(string $nome, string $mime, int $kb): void
     {
-        $this->actingAs($this->dono)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $this->projeto->id,
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create($nome, $kb, $mime),
         ])->assertUnprocessable()->assertJsonValidationErrors('arquivo');
 
@@ -85,8 +83,7 @@ class PoliticaDeUploadTest extends TestCase
     #[DataProvider('aceitos')]
     public function test_anexo_de_lead_aceita(string $nome, string $mime): void
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create($nome, 20, $mime),
         ])->assertSuccessful();
 
@@ -96,8 +93,7 @@ class PoliticaDeUploadTest extends TestCase
     #[DataProvider('aceitos')]
     public function test_anexo_de_projeto_aceita(string $nome, string $mime): void
     {
-        $this->actingAs($this->dono)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $this->projeto->id,
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create($nome, 20, $mime),
         ])->assertSuccessful();
 
@@ -106,8 +102,7 @@ class PoliticaDeUploadTest extends TestCase
 
     public function test_nome_com_mais_de_255_caracteres_e_recusado(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'nome' => str_repeat('a', 256),
             'arquivo' => UploadedFile::fake()->create('a.pdf', 10),
         ])->assertUnprocessable()->assertJsonValidationErrors('nome');
@@ -119,8 +114,7 @@ class PoliticaDeUploadTest extends TestCase
         $caminho = tempnam(sys_get_temp_dir(), 'up');
         $barrado = new UploadedFile($caminho, 'grande.pdf', 'application/pdf', UPLOAD_ERR_INI_SIZE, true);
 
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => $barrado,
         ])->assertUnprocessable()->assertJsonValidationErrors(['arquivo' => 'limite de upload do servidor']);
     }

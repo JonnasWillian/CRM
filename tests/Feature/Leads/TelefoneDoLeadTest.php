@@ -28,7 +28,7 @@ class TelefoneDoLeadTest extends TestCase
 
     private function criar(array $dados)
     {
-        return $this->actingAs($this->dono)->postJson('/api/usuarios', array_merge([
+        return $this->actingAs($this->dono)->postJson('/api/leads', array_merge([
             'nome' => 'Cliente Teste',
             'email' => 'cliente'.uniqid().'@exemplo.com',
         ], $dados));
@@ -73,7 +73,7 @@ class TelefoneDoLeadTest extends TestCase
     {
         $lead = $this->lead(app(\App\Support\Tenancy\CurrentTenant::class)->get(), $this->dono);
 
-        $this->actingAs($this->dono)->putJson("/api/usuarios/{$lead->id}", [
+        $this->actingAs($this->dono)->putJson("/api/leads/{$lead->id}", [
             'nome' => 'Cliente Editado',
             'email' => $lead->email,
             'telefone' => '(21) 3333-4444',

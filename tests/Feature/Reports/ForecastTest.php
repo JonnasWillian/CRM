@@ -40,12 +40,12 @@ class ForecastTest extends TestCase
 
         // Ganho no período (valor fechado), ganho fora do período, perdido no período.
         $g1 = $this->lead($tenant, $dono, ['estagio_id' => $aberto->id, 'valor_estimado' => 5000]);
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$g1->id}/estagio", ['estagio_id' => $ganho->id, 'valor_fechado' => 5500])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$g1->id}/estagio", ['estagio_id' => $ganho->id, 'valor_fechado' => 5500])->assertOk();
         $g2 = $this->lead($tenant, $dono, ['estagio_id' => $aberto->id, 'valor_estimado' => 7000]);
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$g2->id}/estagio", ['estagio_id' => $ganho->id])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$g2->id}/estagio", ['estagio_id' => $ganho->id])->assertOk();
         \App\Models\Usuario::whereKey($g2->id)->update(['fechado_em' => '2026-08-01 10:00:00']);
         $p1 = $this->lead($tenant, $dono, ['estagio_id' => $aberto->id, 'valor_estimado' => 2000]);
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$p1->id}/estagio", ['estagio_id' => $perdido->id, 'perda' => ['motivo_perda_id' => $motivo->id]])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$p1->id}/estagio", ['estagio_id' => $perdido->id, 'perda' => ['motivo_perda_id' => $motivo->id]])->assertOk();
 
         $statusAberto = Statu::factory()->create(['tenant_id' => $tenant->id]);
         $this->projeto($g1, ['preco' => 900, 'status_id' => $statusAberto->id]);

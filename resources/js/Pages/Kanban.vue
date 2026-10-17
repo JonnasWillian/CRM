@@ -166,7 +166,7 @@
         const oldEstagioId = lead.estagio_id;
         lead.estagio_id = estagio.id;
 
-        const enviar = (perda) => axios.patch(`/api/usuarios/${lead.id}/estagio`, {
+        const enviar = (perda) => axios.patch(`/api/leads/${lead.id}/estagio`, {
             estagio_id: estagio.id,
             perda,
         });
@@ -208,7 +208,7 @@
             funil_id: funilAtual.value?.id ?? null,
             user_id:  user.value.id,
         };
-        const enviar = (perda) => axios.post('/api/usuarios', { ...payload, perda });
+        const enviar = (perda) => axios.post('/api/leads', { ...payload, perda });
 
         // Cadastrar um lead direto numa coluna perdida é perder: o quick-add
         // usa a coluna clicada como estágio, e ela pode ser uma delas.
@@ -260,7 +260,7 @@
         if (!moverFunilId.value || !moverEstagioId.value) return;
 
         const destino = moverEstagios.value.find(e => e.id === moverEstagioId.value);
-        const enviar = (perda) => axios.patch(`/api/usuarios/${moverAlvo.value.id}/funil`, {
+        const enviar = (perda) => axios.patch(`/api/leads/${moverAlvo.value.id}/funil`, {
             funil_id: moverFunilId.value,
             estagio_id: moverEstagioId.value,
             perda,

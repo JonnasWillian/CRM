@@ -49,7 +49,7 @@ class UsuarioPolicyTest extends TestCase
     public function test_vendedor_nao_alcanca_lead_de_colega(): void
     {
         $this->actingAs($this->vendedor)
-            ->getJson("/api/usuarioPerfil/{$this->leadDoGestor->id}")
+            ->getJson("/api/leads/{$this->leadDoGestor->id}")
             ->assertNotFound();
     }
 
@@ -63,7 +63,7 @@ class UsuarioPolicyTest extends TestCase
         ]);
 
         $this->actingAs($this->gestor)
-            ->getJson("/api/usuarioPerfil/{$lead->id}")
+            ->getJson("/api/leads/{$lead->id}")
             ->assertOk();
     }
 
@@ -71,14 +71,14 @@ class UsuarioPolicyTest extends TestCase
     public function test_usuario_sem_papel_recebe_negativa_limpa(): void
     {
         $this->actingAs($this->semPapel)
-            ->getJson("/api/usuarioPerfil/{$this->leadDoGestor->id}")
+            ->getJson("/api/leads/{$this->leadDoGestor->id}")
             ->assertNotFound();
     }
 
     public function test_dono_edita_o_proprio_lead(): void
     {
         $this->actingAs($this->gestor)
-            ->putJson("/api/usuarios/{$this->leadDoGestor->id}", [
+            ->putJson("/api/leads/{$this->leadDoGestor->id}", [
                 'nome' => 'Nome Editado',
                 'email' => $this->leadDoGestor->email,
                 'telefone' => '11999998888',
@@ -89,7 +89,7 @@ class UsuarioPolicyTest extends TestCase
     public function test_vendedor_nao_edita_lead_de_colega(): void
     {
         $this->actingAs($this->vendedor)
-            ->putJson("/api/usuarios/{$this->leadDoGestor->id}", [
+            ->putJson("/api/leads/{$this->leadDoGestor->id}", [
                 'nome' => 'Sequestrado',
                 'email' => $this->leadDoGestor->email,
                 'telefone' => '11999998888',
@@ -125,7 +125,7 @@ class UsuarioPolicyTest extends TestCase
     public function test_payload_invalido_contra_lead_alheio_devolve_404_e_nao_422(): void
     {
         $this->actingAs($this->vendedor)
-            ->putJson("/api/usuarios/{$this->leadDoGestor->id}", ['nome' => ''])
+            ->putJson("/api/leads/{$this->leadDoGestor->id}", ['nome' => ''])
             ->assertNotFound();
     }
 }

@@ -69,7 +69,7 @@ class MoverLeadDeFunilTest extends TestCase
     public function test_mover_troca_funil_e_estagio_juntos(): void
     {
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$this->lead->id}/funil", [
+            ->patchJson("/api/leads/{$this->lead->id}/funil", [
                 'funil_id' => $this->posVenda->id,
                 'estagio_id' => $this->estagioPosVenda->id,
             ])
@@ -84,7 +84,7 @@ class MoverLeadDeFunilTest extends TestCase
     public function test_mover_para_estagio_de_outro_funil_e_recusado(): void
     {
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$this->lead->id}/funil", [
+            ->patchJson("/api/leads/{$this->lead->id}/funil", [
                 'funil_id' => $this->posVenda->id,
                 // Estágio de Vendas, funil de destino Pós-venda: a combinação
                 // que deixaria o lead invisível no quadro.
@@ -99,7 +99,7 @@ class MoverLeadDeFunilTest extends TestCase
     public function test_mover_registra_historico_com_os_dois_funis(): void
     {
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$this->lead->id}/funil", [
+            ->patchJson("/api/leads/{$this->lead->id}/funil", [
                 'funil_id' => $this->posVenda->id,
                 'estagio_id' => $this->estagioPosVenda->id,
             ])
@@ -117,7 +117,7 @@ class MoverLeadDeFunilTest extends TestCase
     public function test_mover_registra_evento_funil_alterado_e_nao_status_alterado(): void
     {
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$this->lead->id}/funil", [
+            ->patchJson("/api/leads/{$this->lead->id}/funil", [
                 'funil_id' => $this->posVenda->id,
                 'estagio_id' => $this->estagioPosVenda->id,
             ])
@@ -135,7 +135,7 @@ class MoverLeadDeFunilTest extends TestCase
     public function test_arrastar_card_nao_atravessa_funil(): void
     {
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$this->lead->id}/estagio", [
+            ->patchJson("/api/leads/{$this->lead->id}/estagio", [
                 'estagio_id' => $this->estagioPosVenda->id,
             ])
             ->assertStatus(422);
@@ -150,7 +150,7 @@ class MoverLeadDeFunilTest extends TestCase
         $estagioAlheio = Estagio::factory()->create(['tenant_id' => $outroTenant->id, 'funil_id' => $funilAlheio->id]);
 
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$this->lead->id}/funil", [
+            ->patchJson("/api/leads/{$this->lead->id}/funil", [
                 'funil_id' => $funilAlheio->id,
                 'estagio_id' => $estagioAlheio->id,
             ])
@@ -167,7 +167,7 @@ class MoverLeadDeFunilTest extends TestCase
     public function test_lead_novo_cai_no_funil_padrao_sem_id_chutado(): void
     {
         $this->actingAs($this->staff)
-            ->postJson('/api/usuarios', [
+            ->postJson('/api/leads', [
                 'nome' => 'Cliente Novo',
                 'email' => 'cliente.novo@example.com',
                 'telefone' => '11999999999',

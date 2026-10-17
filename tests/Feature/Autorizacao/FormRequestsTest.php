@@ -48,18 +48,18 @@ class FormRequestsTest extends TestCase
     {
         [, $staff] = $this->cenario();
 
-        $this->actingAs($staff)->postJson('/api/arquivos', [
-            'usuario_id' => 999999,
+        // O lead vem da rota: id inexistente é 404 do binding, antes de
+        // qualquer autorização ou validação — a mesma resposta de um id alheio.
+        $this->actingAs($staff)->postJson('/api/leads/999999/arquivos', [
             'arquivo' => UploadedFile::fake()->create('a.pdf', 10),
-        ])->assertForbidden();
+        ])->assertNotFound();
     }
 
     public function test_anexo_de_projeto_continua_aceitando_id_de_projeto(): void
     {
         [, $staff, , $projeto] = $this->cenario();
 
-        $this->actingAs($staff)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $projeto->id,
+        $this->actingAs($staff)->postJson("/api/projetos/{$projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create('c.pdf', 10),
         ])->assertSuccessful();
     }
@@ -70,7 +70,7 @@ class FormRequestsTest extends TestCase
         [$tenant] = $this->cenario();
         $semPapel = User::factory()->create(['tenant_id' => $tenant->id]);
 
-        $this->actingAs($semPapel)->postJson('/api/usuarios', [
+        $this->actingAs($semPapel)->postJson('/api/leads', [
             'nome' => 'Fulano de Tal',
             'email' => 'fulano@example.com',
             'telefone' => '11999998888',
@@ -84,7 +84,7 @@ class FormRequestsTest extends TestCase
         $semPapel = User::factory()->create(['tenant_id' => $tenant->id]);
 
         $this->actingAs($semPapel)
-            ->putJson("/api/usuarios/{$lead->id}", ['nome' => 'X', 'email' => $lead->email, 'telefone' => '11999998888'])
+            ->putJson("/api/leads/{$lead->id}", ['nome' => 'X', 'email' => $lead->email, 'telefone' => '11999998888'])
             ->assertNotFound();
     }
 
@@ -115,10 +115,10 @@ class FormRequestsTest extends TestCase
         ]);
 
         // Ele enxerga o proprio lead: nao ha o que esconder.
-        $this->actingAs($semPapel)->getJson("/api/usuarioPerfil/{$leadProprio->id}")->assertOk();
+        $this->actingAs($semPapel)->getJson("/api/leads/{$leadProprio->id}")->assertOk();
 
         $this->actingAs($semPapel)
-            ->putJson("/api/usuarios/{$leadProprio->id}", [
+            ->putJson("/api/leads/{$leadProprio->id}", [
                 'nome' => 'Nome Editado', 'email' => $leadProprio->email, 'telefone' => '11999998888',
             ])
             ->assertForbidden();
@@ -143,10 +143,10 @@ class FormRequestsTest extends TestCase
         $projetoProprio->tenant_id = $tenant->id;
         $projetoProprio->save();
 
-        $this->actingAs($semPapel)->getJson("/api/projeto/{$projetoProprio->id}")->assertOk();
+        $this->actingAs($semPapel)->getJson("/api/projetos/{$projetoProprio->id}")->assertOk();
 
         $this->actingAs($semPapel)
-            ->putJson("/api/projeto/{$projetoProprio->id}", [
+            ->putJson("/api/projetos/{$projetoProprio->id}", [
                 'nome' => 'Nome Editado', 'status_id' => $status->id,
             ])
             ->assertForbidden();
@@ -162,10 +162,10 @@ class FormRequestsTest extends TestCase
         [$tenant, , $leadDoStaff] = $this->cenario();
         $semPapel = User::factory()->create(['tenant_id' => $tenant->id]);
 
-        $alheio = $this->actingAs($semPapel)->putJson("/api/usuarios/{$leadDoStaff->id}", [
+        $alheio = $this->actingAs($semPapel)->putJson("/api/leads/{$leadDoStaff->id}", [
             'nome' => 'X', 'email' => $leadDoStaff->email, 'telefone' => '11999998888',
         ]);
-        $inexistente = $this->actingAs($semPapel)->putJson('/api/usuarios/999999', [
+        $inexistente = $this->actingAs($semPapel)->putJson('/api/leads/999999', [
             'nome' => 'X', 'email' => 'x@example.com', 'telefone' => '11999998888',
         ]);
 
@@ -191,10 +191,9 @@ class FormRequestsTest extends TestCase
         $colega->assignRole('vendedor');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->actingAs($colega)->postJson('/api/arquivos', [
-            'usuario_id' => $lead->id,
+        $this->actingAs($colega)->postJson("/api/leads/{$lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('a.pdf', 10),
-        ])->assertForbidden();
+        ])->assertNotFound();
 
         $this->assertDatabaseMissing('arquivos', ['usuario_id' => $lead->id]);
     }
@@ -208,92 +207,53 @@ class FormRequestsTest extends TestCase
         $colega->assignRole('vendedor');
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->actingAs($colega)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $projeto->id,
+        $this->actingAs($colega)->postJson("/api/projetos/{$projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create('c.pdf', 10),
-        ])->assertForbidden();
+        ])->assertNotFound();
     }
 
     /**
-     * Item 3 da rodada B: `authorize()` resolve o lead via
-     * `Usuario::find($this->integer('usuario_id'))` — o cast em PHP lê o
-     * prefixo numérico e acha o lead certo, mesmo com lixo depois do número.
-     * O controller, porém, gravava `$request->usuario_id` CRU (a string com o
-     * lixo) em vez do id do model que acabou de ser autorizado. O que ia para
-     * o banco não era o que tinha sido checado.
-     *
-     * Chama o controller DIRETO, sem passar pelo ciclo de FormRequest — de
-     * propósito: a regra `integer` do item 7 (rules() de ArquivoRequest) já
-     * recusaria "{$lead->id}abc" na validação, antes de o controller rodar,
-     * o que tornaria este cenário inalcançável via HTTP e esconderia o que
-     * este teste quer isolar. O que está em jogo aqui é uma camada mais
-     * abaixo: dado um valor cru que DIVERGE do id do model, o controller
-     * grava o model autorizado ou o texto cru? A validação de outra camada
-     * não deveria ser pré-requisito para essa garantia.
+     * O id gravado é o do model resolvido pela ROTA (e autorizado pelo
+     * FormRequest), nunca algo lido do corpo. Chama o controller direto, com
+     * o model na mão, para isolar exatamente essa garantia.
      */
-    public function test_anexo_de_lead_grava_o_id_do_lead_autorizado_e_nao_o_texto_cru(): void
+    public function test_anexo_de_lead_grava_o_id_do_lead_da_rota(): void
     {
         [, $staff, $lead] = $this->cenario();
 
-        $request = \App\Http\Requests\ArquivoRequest::create('/api/arquivos', 'POST', [
-            'usuario_id' => "{$lead->id}abc",
-        ]);
+        $request = \App\Http\Requests\ArquivoRequest::create("/api/leads/{$lead->id}/arquivos", 'POST', ['usuario_id' => 999999]);
         $request->setUserResolver(fn () => $staff);
         $request->files->set('arquivo', UploadedFile::fake()->create('a.pdf', 10));
 
-        $controller = app(\App\Http\Controllers\arquivo::class);
-        $resposta = $controller->store($request);
+        $resposta = app(\App\Http\Controllers\Api\ArquivoController::class)->store($request, $lead);
 
-        $this->assertSame(200, $resposta->getStatusCode());
+        $this->assertSame(201, $resposta->getStatusCode());
         $this->assertDatabaseHas('arquivos', ['usuario_id' => $lead->id]);
     }
 
-    /** Mesmo defeito, mesmo padrão, no anexo de projeto. */
-    public function test_anexo_de_projeto_grava_o_id_do_projeto_autorizado_e_nao_o_texto_cru(): void
+    /** Mesmo padrão no anexo de projeto. */
+    public function test_anexo_de_projeto_grava_o_id_do_projeto_da_rota(): void
     {
         [, $staff, , $projeto] = $this->cenario();
 
-        $request = \App\Http\Requests\ProjetoAnexoRequest::create('/api/projetoAnexo', 'POST', [
-            'usuario_id' => "{$projeto->id}abc",
-        ]);
+        $request = \App\Http\Requests\ProjetoAnexoRequest::create("/api/projetos/{$projeto->id}/anexos", 'POST', ['usuario_id' => 999999]);
         $request->setUserResolver(fn () => $staff);
         $request->files->set('arquivo', UploadedFile::fake()->create('c.pdf', 10));
 
-        $controller = app(\App\Http\Controllers\ProjetoController::class);
-        $resposta = $controller->createAnexo($request);
+        $resposta = app(\App\Http\Controllers\Api\ProjetoAnexoController::class)->store($request, $projeto);
 
         $this->assertSame(201, $resposta->getStatusCode());
         $this->assertDatabaseHas('projetoAnexos', ['projeto_id' => $projeto->id]);
     }
 
-    /**
-     * Item 7 da rodada C: o `findOrFail` do projeto, acrescentado numa rodada
-     * anterior, tinha ficado DENTRO de um `try { ... } catch (\Exception) {
-     * 500 'Erro ao salvar anexo' }` — o mesmo padrão de catch amplo já
-     * removido do TarefaPadraoController. Hoje o ramo é inalcançável via
-     * HTTP: `ProjetoAnexoRequest::authorize()` já resolveu e autorizou o
-     * projeto antes do controller rodar, então um id inexistente nunca
-     * chega até aqui por essa porta. Por isso o teste chama o controller
-     * DIRETO — sem passar pelo ciclo de validação do FormRequest, igual ao
-     * teste acima — para isolar exatamente o que o try/catch decide: um id
-     * que não existe precisa propagar `ModelNotFoundException` (que o
-     * Handler global traduz para 404), não virar 500 com mensagem enganosa.
-     */
-    public function test_anexo_de_projeto_inexistente_propaga_notfound_e_nao_vira_500(): void
+    /** Projeto inexistente na rota: 404 do binding, nunca 500. */
+    public function test_anexo_de_projeto_inexistente_e_404(): void
     {
         [, $staff] = $this->cenario();
 
-        $request = \App\Http\Requests\ProjetoAnexoRequest::create('/api/projetoAnexo', 'POST', [
-            'usuario_id' => 999999,
-        ]);
-        $request->setUserResolver(fn () => $staff);
-        $request->files->set('arquivo', UploadedFile::fake()->create('c.pdf', 10));
-
-        $controller = app(\App\Http\Controllers\ProjetoController::class);
-
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
-
-        $controller->createAnexo($request);
+        $this->actingAs($staff)->postJson('/api/projetos/999999/anexos', [
+            'arquivo' => UploadedFile::fake()->create('c.pdf', 10),
+        ])->assertNotFound();
     }
 
     /**

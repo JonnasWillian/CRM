@@ -49,6 +49,16 @@ class Funil extends Model
      * `ordem` é definida pelo usuário e pode empatar entre dois funis; o id
      * desempata para que a listagem não mude de ordem entre dois requests.
      */
+    /**
+     * Funil em que o quadro e o cadastro operam quando o cliente não escolhe
+     * um: o marcado como padrão; na falta dele, o primeiro da ordem — um
+     * Kanban vazio sem explicação é pior que um Kanban no funil errado.
+     */
+    public static function padrao(): ?self
+    {
+        return static::where('is_default', true)->first() ?? static::ordenados()->first();
+    }
+
     public function scopeOrdenados($query)
     {
         return $query->orderBy('ordem')->orderBy('id');

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Resources\AtividadeResource;
 use App\Models\Activity;
 use App\Models\Estagio;
@@ -24,13 +25,29 @@ class LeadAtividadeController extends Controller
 
     private const MAX_POR_PAGINA = 100;
 
+    /** Chips da timeline → eventos do log. */
+    public const GRUPOS = [
+        'anotacao' => ['anotacao', 'anotacao_removida'],
+        'arquivo' => ['arquivo', 'arquivo_removido'],
+        'projeto' => ['projeto', 'projeto_anotacao', 'projeto_anexo', 'projeto_anotacao_removida', 'projeto_anexo_removido', 'projeto_removido', 'projeto_restaurado'],
+        'tarefa' => ['tarefa_criada', 'tarefa_concluida'],
+        'estagio' => ['status_alterado', 'funil_alterado', 'responsavel_alterado'],
+    ];
+
     public function index(Request $request, Usuario $usuario)
     {
         $this->authorize('view', $usuario);
 
         $porPagina = min(max($request->integer('per_page') ?: self::POR_PAGINA, 1), self::MAX_POR_PAGINA);
 
+        // Filtro por tipo no servidor: antes era no navegador, sobre as
+        // páginas já carregadas, e "Tarefas" podia vir vazio com tarefas na
+        // página seguinte.
+        $tipo = $request->input('tipo');
+        $eventos = self::GRUPOS[$tipo] ?? null;
+
         $pagina = Activity::where('lead_id', $usuario->id)
+            ->when($eventos, fn ($q) => $q->whereIn('event', $eventos))
             ->with(['subject' => fn (MorphTo $morph) => $morph->morphWith([
                 ProjetoAnotacao::class => ['projeto'],
                 ProjetoAnexo::class => ['projeto'],

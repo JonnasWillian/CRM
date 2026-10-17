@@ -35,8 +35,7 @@ class CicloDeVidaDoArquivoTest extends TestCase
 
     private function enviar(): arquivo
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertSuccessful();
 

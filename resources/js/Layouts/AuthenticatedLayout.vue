@@ -7,6 +7,7 @@ import AppDropdown from '@/Components/ui/AppDropdown.vue';
 import AppDropdownItem from '@/Components/ui/AppDropdownItem.vue';
 import AppDropdownSeparador from '@/Components/ui/AppDropdownSeparador.vue';
 import ConfirmHost from '@/Components/ui/ConfirmHost.vue';
+import PerdaHost from '@/Components/leads/PerdaHost.vue';
 import IconButton from '@/Components/ui/IconButton.vue';
 import ToastHost from '@/Components/ui/ToastHost.vue';
 import { usePrefsLocais } from '@/Composables/usePrefsLocais';
@@ -167,5 +168,6 @@ watch(
 
         <ToastHost />
         <ConfirmHost />
+        <PerdaHost />
     </div>
 </template>

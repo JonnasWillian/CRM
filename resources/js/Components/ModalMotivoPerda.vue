@@ -1,196 +1,92 @@
 <script setup>
-    import { ref, watch, computed } from 'vue';
-    import axios from 'axios';
-    import { X, Check, Loader2 } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
+import axios from 'axios';
+import AppButton from '@/Components/ui/AppButton.vue';
+import AppModal from '@/Components/ui/AppModal.vue';
+import AppSelect from '@/Components/ui/AppSelect.vue';
+import AppTextarea from '@/Components/ui/AppTextarea.vue';
+import FormField from '@/Components/ui/FormField.vue';
+import AppAlert from '@/Components/ui/AppAlert.vue';
 
-    /**
-     * Pergunta o motivo antes de concluir uma perda.
-     *
-     * Três telas usam este modal — Kanban, Perfil e Projetos — porque há seis
-     * caminhos que levam ao estado de perda e o backend recusa todos eles sem
-     * motivo. Um modal por tela divergiria com o tempo, e a tela que
-     * divergisse produziria um 422 que o usuário não conseguiria resolver.
-     *
-     * O componente não escreve nada: ele devolve `{ motivo_perda_id,
-     * observacao }` em `confirmar` e quem chamou decide o que fazer. Isso
-     * mantém o rollback (desfazer o card arrastado, por exemplo) com quem
-     * conhece o estado que precisa ser desfeito.
-     */
-    const props = defineProps({
-        aberto: { type: Boolean, default: false },
-        titulo: { type: String, default: 'Registrar perda' },
-        // Mensagem de erro vinda do backend, quando a confirmação falha.
-        erro: { type: String, default: '' },
-        salvando: { type: Boolean, default: false },
-    });
+/**
+ * Pergunta o motivo antes de concluir uma perda. Não escreve nada: devolve
+ * { motivo_perda_id, observacao } em `confirmar` e quem chamou decide — o
+ * rollback fica com quem conhece o estado a desfazer.
+ *
+ * Recarrega o catálogo a cada abertura: um motivo arquivado nesse meio-tempo
+ * seria recusado pelo backend com um erro que a tela não saberia explicar.
+ */
+const props = defineProps({
+    aberto: { type: Boolean, default: false },
+    titulo: { type: String, default: 'Registrar perda' },
+    detalhe: { type: String, default: null },
+    erro: { type: String, default: '' },
+    salvando: { type: Boolean, default: false },
+});
 
-    const emit = defineEmits(['confirmar', 'cancelar']);
+const emit = defineEmits(['confirmar', 'cancelar']);
 
-    const motivos = ref([]);
-    const carregando = ref(false);
-    const motivoId = ref(null);
-    const observacao = ref('');
-    const erroLocal = ref('');
+const MAX_OBSERVACAO = 500;
+const motivos = ref([]);
+const carregando = ref(false);
+const motivoId = ref(null);
+const observacao = ref('');
+const erroLocal = ref('');
 
-    const MAX_OBSERVACAO = 500;
+const opcoes = computed(() => motivos.value.map((m) => ({ valor: m.id, rotulo: m.descricao })));
 
-    const restantes = computed(() => MAX_OBSERVACAO - (observacao.value?.length ?? 0));
+async function buscarMotivos() {
+    carregando.value = true;
+    erroLocal.value = '';
+    try {
+        const res = await axios.get(route('api.motivos-perda.index'), { silencioso: true });
+        motivos.value = res.data;
+        motivoId.value = res.data[0]?.id ?? null;
+    } catch {
+        erroLocal.value = 'Não foi possível carregar os motivos de perda.';
+    } finally {
+        carregando.value = false;
+    }
+}
 
-    const buscarMotivos = async () => {
-        carregando.value = true;
-        erroLocal.value = '';
-        try {
-            const res = await axios.get('/api/motivos-perda');
-            motivos.value = res.data;
-            motivoId.value = res.data[0]?.id ?? null;
-        } catch {
-            erroLocal.value = 'Não foi possível carregar os motivos de perda.';
-        } finally {
-            carregando.value = false;
-        }
-    };
-
-    // Recarrega a cada abertura: o catálogo pode ter mudado noutra aba, e um
-    // motivo arquivado nesse meio-tempo seria recusado pelo backend com um erro
-    // que a tela não sabe explicar.
-    watch(() => props.aberto, (aberto) => {
+watch(
+    () => props.aberto,
+    (aberto) => {
         if (!aberto) return;
         observacao.value = '';
         erroLocal.value = '';
         buscarMotivos();
-    });
+    },
+    { immediate: true },
+);
 
-    const confirmar = () => {
-        if (!motivoId.value) {
-            erroLocal.value = 'Escolha um motivo.';
-            return;
-        }
-        emit('confirmar', {
-            motivo_perda_id: motivoId.value,
-            observacao: observacao.value.trim() || null,
-        });
-    };
+function confirmar() {
+    if (!motivoId.value) {
+        erroLocal.value = 'Escolha um motivo.';
+        return;
+    }
+    emit('confirmar', { motivo_perda_id: motivoId.value, observacao: observacao.value.trim() || null });
+}
 </script>
 
 <template>
-    <Transition name="mp-fade">
-        <div v-if="aberto" class="mp-overlay" @click.self="emit('cancelar')">
-            <div class="mp-panel">
-                <header class="mp-header">
-                    <span class="mp-title">{{ titulo }}</span>
-                    <button class="mp-close" @click="emit('cancelar')"><X :size="15" /></button>
-                </header>
+    <AppModal :aberto="aberto" :titulo="titulo" tamanho="sm" :persistente="salvando" @fechar="emit('cancelar')">
+        <p class="text-md text-fg-1">Registrar o motivo é o que permite responder depois por que a empresa perde.</p>
+        <p v-if="detalhe" class="mt-2 text-sm text-fg-2">{{ detalhe }}</p>
 
-                <div class="mp-body">
-                    <p class="mp-lead">
-                        Registrar o motivo é o que permite responder depois por que a empresa perde.
-                    </p>
-
-                    <div v-if="carregando" class="mp-loading">
-                        <Loader2 :size="16" class="mp-spin" /> Carregando motivos…
-                    </div>
-
-                    <template v-else>
-                        <label class="mp-label">Motivo <span class="mp-req">*</span></label>
-                        <select v-model="motivoId" class="mp-select">
-                            <option v-for="m in motivos" :key="m.id" :value="m.id">{{ m.descricao }}</option>
-                        </select>
-
-                        <label class="mp-label mp-label--mt">Detalhe (opcional)</label>
-                        <textarea
-                            v-model="observacao"
-                            class="mp-textarea"
-                            rows="3"
-                            :maxlength="MAX_OBSERVACAO"
-                            placeholder="O que aconteceu, em uma frase"
-                        />
-                        <span class="mp-contador" :class="{ 'mp-contador--baixo': restantes < 50 }">
-                            {{ restantes }} caracteres
-                        </span>
-                    </template>
-
-                    <p v-if="erro || erroLocal" class="mp-erro">{{ erro || erroLocal }}</p>
-                </div>
-
-                <footer class="mp-footer">
-                    <button class="mp-btn-ghost" @click="emit('cancelar')">
-                        <X :size="12" /> Cancelar
-                    </button>
-                    <button class="mp-btn-primary" :disabled="salvando || carregando || !motivoId" @click="confirmar">
-                        <Check :size="12" /> {{ salvando ? 'Registrando…' : 'Registrar perda' }}
-                    </button>
-                </footer>
-            </div>
+        <div class="mt-4 space-y-4">
+            <FormField rotulo="Motivo" obrigatorio>
+                <AppSelect v-model="motivoId" :opcoes="opcoes" :disabled="carregando" :placeholder="carregando ? 'Carregando…' : null" />
+            </FormField>
+            <FormField rotulo="Detalhe" dica="Opcional. O que aconteceu, em uma frase.">
+                <AppTextarea v-model="observacao" :rows="3" :maxlength="MAX_OBSERVACAO" mostrar-contador />
+            </FormField>
+            <AppAlert v-if="erro || erroLocal" tom="danger">{{ erro || erroLocal }}</AppAlert>
         </div>
-    </Transition>
+
+        <template #rodape>
+            <AppButton variante="secondary" :disabled="salvando" @click="emit('cancelar')">Cancelar</AppButton>
+            <AppButton variante="danger" :carregando="salvando" :disabled="carregando || !motivoId" @click="confirmar">Registrar perda</AppButton>
+        </template>
+    </AppModal>
 </template>
-
-<style scoped>
-    .mp-overlay {
-        position: fixed; inset: 0; z-index: 90;
-        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-        display: flex; align-items: center; justify-content: center; padding: 1rem;
-        font-family: 'DM Sans', sans-serif;
-    }
-
-    .mp-panel {
-        width: 100%; max-width: 420px;
-        background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-3);
-        color: var(--fg-0); overflow: hidden;
-    }
-
-    .mp-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--line);
-    }
-    .mp-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; }
-    .mp-close { background: none; border: none; color: var(--fg-1); cursor: pointer; display: flex; }
-    .mp-close:hover { color: var(--fg-0); }
-
-    .mp-body { padding: 1.1rem; }
-    .mp-lead { font-size: 0.78rem; color: var(--fg-1); margin-bottom: 0.9rem; line-height: 1.5; }
-
-    .mp-label { display: block; font-size: 0.76rem; color: var(--fg-1); margin-bottom: 0.35rem; }
-    .mp-label--mt { margin-top: 0.9rem; }
-    .mp-req { color: var(--danger); }
-
-    .mp-select, .mp-textarea {
-        width: 100%; background: rgba(13,17,23,0.7); border: 1px solid var(--line);
-        border-radius: var(--r-2); padding: 0.55rem 0.7rem; color: var(--fg-0);
-        font-size: 0.85rem; font-family: inherit; outline: none; resize: vertical;
-    }
-    .mp-select:focus, .mp-textarea:focus { border-color: var(--accent); }
-
-    .mp-contador { display: block; text-align: right; font-size: 0.7rem; color: var(--fg-2); margin-top: 0.25rem; }
-    .mp-contador--baixo { color: var(--warn); }
-
-    .mp-erro {
-        margin-top: 0.8rem; font-size: 0.78rem; color: var(--danger);
-        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-        border-radius: var(--r-2); padding: 0.5rem 0.65rem;
-    }
-
-    .mp-loading { display: flex; align-items: center; gap: 0.5rem; color: var(--fg-1); font-size: 0.85rem; padding: 1rem 0; }
-    .mp-spin { animation: mp-rot 1s linear infinite; }
-    @keyframes mp-rot { to { transform: rotate(360deg); } }
-
-    .mp-footer {
-        display: flex; justify-content: flex-end; gap: 0.5rem;
-        padding: 0.85rem 1.1rem; border-top: 1px solid var(--line);
-    }
-
-    .mp-btn-primary {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
-        padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
-    }
-    .mp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .mp-btn-ghost {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: transparent; color: var(--fg-1); border: 1px solid var(--line);
-        border-radius: var(--r-2); padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
-    }
-
-    .mp-fade-enter-active, .mp-fade-leave-active { transition: opacity var(--d-1); }
-    .mp-fade-enter-from, .mp-fade-leave-to { opacity: 0; }
-</style>

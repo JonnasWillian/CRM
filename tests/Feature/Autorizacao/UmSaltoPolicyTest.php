@@ -72,8 +72,8 @@ class UmSaltoPolicyTest extends TestCase
 
     public function test_intruso_nao_alcanca_projeto_de_lead_alheio(): void
     {
-        $this->actingAs($this->intruso)->getJson("/api/projeto/{$this->projeto->id}")->assertNotFound();
-        $this->actingAs($this->dono)->getJson("/api/projeto/{$this->projeto->id}")->assertOk();
+        $this->actingAs($this->intruso)->getJson("/api/projetos/{$this->projeto->id}")->assertNotFound();
+        $this->actingAs($this->dono)->getJson("/api/projetos/{$this->projeto->id}")->assertOk();
     }
 
     public function test_intruso_nao_apaga_tarefa_de_lead_alheio(): void
@@ -84,7 +84,7 @@ class UmSaltoPolicyTest extends TestCase
 
     public function test_intruso_nao_apaga_anotacao_de_lead_alheio(): void
     {
-        $this->actingAs($this->intruso)->deleteJson("/api/anotacao/{$this->anotacao->id}")->assertNotFound();
+        $this->actingAs($this->intruso)->deleteJson("/api/anotacoes/{$this->anotacao->id}")->assertNotFound();
     }
 
     public function test_intruso_nao_apaga_arquivo_de_lead_alheio(): void
@@ -116,8 +116,8 @@ class UmSaltoPolicyTest extends TestCase
      */
     public function test_listar_tarefas_autoriza_o_lead_e_nao_a_tarefa(): void
     {
-        $this->actingAs($this->intruso)->getJson("/api/tarefas/{$this->lead->id}")->assertNotFound();
-        $this->actingAs($this->dono)->getJson("/api/tarefas/{$this->lead->id}")->assertOk();
+        $this->actingAs($this->intruso)->getJson("/api/leads/{$this->lead->id}/tarefas")->assertNotFound();
+        $this->actingAs($this->dono)->getJson("/api/leads/{$this->lead->id}/tarefas")->assertOk();
     }
 
     /**
@@ -127,7 +127,7 @@ class UmSaltoPolicyTest extends TestCase
     public function test_payload_invalido_contra_projeto_alheio_devolve_404_e_nao_422(): void
     {
         $this->actingAs($this->intruso)
-            ->putJson("/api/projeto/{$this->projeto->id}", ['nome' => ''])
+            ->putJson("/api/projetos/{$this->projeto->id}", ['nome' => ''])
             ->assertNotFound();
     }
 
@@ -138,11 +138,11 @@ class UmSaltoPolicyTest extends TestCase
     public function test_buscar_arquivo_nao_entrega_anexos_de_lead_alheio(): void
     {
         $this->actingAs($this->intruso)
-            ->getJson('/api/arquivos?usuario_id='.$this->lead->id)
+            ->getJson("/api/leads/{$this->lead->id}/arquivos")
             ->assertNotFound();
 
         $this->actingAs($this->dono)
-            ->getJson('/api/arquivos?usuario_id='.$this->lead->id)
+            ->getJson("/api/leads/{$this->lead->id}/arquivos")
             ->assertOk();
     }
 }

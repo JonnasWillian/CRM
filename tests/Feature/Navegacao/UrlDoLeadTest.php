@@ -63,7 +63,7 @@ class UrlDoLeadTest extends TestCase
         $resposta->assertOk();
         $this->assertSame(
             $lead->id,
-            $resposta->viewData('page')['props']['leadId'],
+            $resposta->viewData('page')['props']['lead']['id'],
             'a página precisa receber leadId para saber qual lead abrir',
         );
     }

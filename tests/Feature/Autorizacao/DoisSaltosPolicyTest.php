@@ -68,20 +68,20 @@ class DoisSaltosPolicyTest extends TestCase
     /** Review Focus 5: no GET o id é do projeto. */
     public function test_get_de_anotacao_autoriza_o_projeto(): void
     {
-        $this->actingAs($this->intruso)->getJson("/api/projetoAnotacao/{$this->projeto->id}")->assertNotFound();
-        $this->actingAs($this->dono)->getJson("/api/projetoAnotacao/{$this->projeto->id}")->assertOk();
+        $this->actingAs($this->intruso)->getJson("/api/projetos/{$this->projeto->id}/anotacoes")->assertNotFound();
+        $this->actingAs($this->dono)->getJson("/api/projetos/{$this->projeto->id}/anotacoes")->assertOk();
     }
 
     /** No PUT e no DELETE o id é da própria anotação — mesma URL, outro model. */
     public function test_delete_de_anotacao_autoriza_a_anotacao(): void
     {
-        $this->actingAs($this->intruso)->deleteJson("/api/projetoAnotacao/{$this->anotacao->id}")->assertNotFound();
+        $this->actingAs($this->intruso)->deleteJson("/api/projeto-anotacoes/{$this->anotacao->id}")->assertNotFound();
         $this->assertDatabaseHas('projetoAnotacaos', ['id' => $this->anotacao->id, 'deleted_at' => null]);
     }
 
     public function test_delete_de_anexo_autoriza_o_anexo(): void
     {
-        $this->actingAs($this->intruso)->deleteJson("/api/projetoAnexo/{$this->anexo->id}")->assertNotFound();
+        $this->actingAs($this->intruso)->deleteJson("/api/projeto-anexos/{$this->anexo->id}")->assertNotFound();
 
         // O teste irmão de anotação já verifica isto; faltava aqui —
         // assertNotFound() sozinho prova a negativa, não que o anexo
@@ -95,7 +95,7 @@ class DoisSaltosPolicyTest extends TestCase
         $this->anotacao->delete();
 
         $this->actingAs($this->dono)
-            ->deleteJson("/api/projetoAnotacao/{$this->anotacao->id}")
+            ->deleteJson("/api/projeto-anotacoes/{$this->anotacao->id}")
             ->assertNotFound();
     }
 }

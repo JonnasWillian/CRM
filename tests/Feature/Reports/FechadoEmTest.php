@@ -42,11 +42,13 @@ class FechadoEmTest extends TestCase
 
         $this->assertNull($lead->fresh()->fechado_em);
 
+        $lead->forceFill(['probabilidade' => 60])->saveQuietly();
         $this->travelTo(now()->addDay());
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$lead->id}/estagio", ['estagio_id' => $ganho->id])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$lead->id}/estagio", ['estagio_id' => $ganho->id])->assertOk();
         $this->assertTrue($lead->fresh()->fechado_em->isSameSecond(now()));
+        $this->assertSame(100, $lead->fresh()->probabilidade, 'ganho é 100% por definição');
 
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$lead->id}/estagio", ['estagio_id' => $aberto->id])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$lead->id}/estagio", ['estagio_id' => $aberto->id])->assertOk();
         $this->assertNull($lead->fresh()->fechado_em);
     }
 
@@ -55,12 +57,13 @@ class FechadoEmTest extends TestCase
         ['tenant' => $tenant, 'dono' => $dono, 'lead' => $lead, 'perdido' => $perdido] = $this->cenario();
         $motivo = MotivoPerda::factory()->create(['tenant_id' => $tenant->id]);
 
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$lead->id}/estagio", [
+        $this->actingAs($dono)->patchJson("/api/leads/{$lead->id}/estagio", [
             'estagio_id' => $perdido->id,
             'perda' => ['motivo_perda_id' => $motivo->id],
         ])->assertOk();
 
         $this->assertNotNull($lead->fresh()->fechado_em);
+        $this->assertSame(0, $lead->fresh()->probabilidade, 'perdido é 0% por definição');
     }
 
     public function test_projeto_ganha_fechado_em_com_status_ganho_e_perde_ao_voltar(): void
@@ -83,24 +86,24 @@ class FechadoEmTest extends TestCase
     {
         ['tenant' => $tenant, 'dono' => $dono, 'funil' => $funil, 'aberto' => $aberto] = $this->cenario();
 
-        $this->actingAs($dono)->postJson('/api/usuarios', [
+        $this->actingAs($dono)->postJson('/api/leads', [
             'nome' => 'Lead Sem Probabilidade', 'email' => 'sem@acme.test', 'funil_id' => $funil->id, 'estagio_id' => $aberto->id,
         ])->assertCreated();
         $this->assertDatabaseHas('usuarios', ['email' => 'sem@acme.test', 'probabilidade' => 40]);
 
-        $this->actingAs($dono)->postJson('/api/usuarios', [
+        $this->actingAs($dono)->postJson('/api/leads', [
             'nome' => 'Lead Com Probabilidade', 'email' => 'com@acme.test', 'funil_id' => $funil->id, 'estagio_id' => $aberto->id, 'probabilidade' => 70,
         ])->assertCreated();
         $this->assertDatabaseHas('usuarios', ['email' => 'com@acme.test', 'probabilidade' => 70]);
 
         $outro = Estagio::factory()->create(['tenant_id' => $tenant->id, 'funil_id' => $funil->id, 'probabilidade_padrao' => 55]);
         $comValor = \App\Models\Usuario::where('email', 'com@acme.test')->firstOrFail();
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$comValor->id}/estagio", ['estagio_id' => $outro->id])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$comValor->id}/estagio", ['estagio_id' => $outro->id])->assertOk();
         $this->assertSame(70, $comValor->fresh()->probabilidade, 'valor explícito não é sobrescrito');
 
         $semValor = \App\Models\Usuario::where('email', 'sem@acme.test')->firstOrFail();
         $semValor->forceFill(['probabilidade' => null])->saveQuietly();
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$semValor->id}/estagio", ['estagio_id' => $outro->id])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$semValor->id}/estagio", ['estagio_id' => $outro->id])->assertOk();
         $this->assertSame(55, $semValor->fresh()->probabilidade);
     }
 }

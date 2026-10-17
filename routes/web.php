@@ -47,9 +47,8 @@ Route::get('/dashboard', function () {
  * responde com denyAsNotFound(), então a negativa é 404, igual à do id que
  * não existe.
  */
-Route::get('/leads/{usuario}', function (App\Models\Usuario $usuario) {
-    return Inertia::render('Usuario/Perfil', ['leadId' => $usuario->id]);
-})->middleware(['auth', 'tenant'])->can('view', 'usuario')->name('leads.show');
+Route::get('/leads/{usuario}', [\App\Http\Controllers\Web\LeadController::class, 'show'])
+    ->middleware(['auth', 'tenant'])->can('view', 'usuario')->name('leads.show');
 
 /*
  * Download de anexos. Ver DownloadDeArquivoController: é a única saída do

@@ -193,7 +193,7 @@
         // id chutado — válido só enquanto todo tenant tinha os mesmos estágios.
 
         try {
-            await axios.post('/api/usuarios', payload);
+            await axios.post('/api/leads', payload);
             closeModal();
 
             // search.value = '' dispara o watcher de busca (com debounce)

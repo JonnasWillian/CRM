@@ -1,82 +1,66 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\ListagemDeTarefasRequest;
 use App\Models\Tarefa;
 use App\Models\Usuario;
 use App\Support\Listagem\Paginacao;
-use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TarefaController extends Controller
 {
-    public function index(Usuario $usuario)
+    /** Tarefas de um lead (aba Tarefas): pendentes por vencimento, concluídas por conclusão. */
+    public function porLead(Request $request, Usuario $usuario)
     {
         $this->authorize('view', $usuario);
 
-        $tarefas = Tarefa::where('usuario_id', $usuario->id)
-            ->orderBy('concluido')
-            ->orderBy('data_limite')
-            ->get();
+        $escopo = $request->input('escopo', 'todas');
 
-        return response()->json($tarefas);
+        $pagina = Tarefa::where('usuario_id', $usuario->id)
+            ->when($escopo === 'pendentes', fn ($q) => $q->where('concluido', false)->orderBy('data_limite')->orderBy('id'))
+            ->when($escopo === 'concluidas', fn ($q) => $q->where('concluido', true)->orderByDesc('concluido_em')->orderByDesc('id'))
+            ->when($escopo === 'todas', fn ($q) => $q->orderBy('concluido')->orderBy('data_limite')->orderBy('id'))
+            ->paginate(Paginacao::clamp($request->input('per_page'), 50))
+            ->withQueryString();
+
+        return response()->json(Paginacao::resposta($pagina, null, ['escopo' => $escopo]));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Usuario $usuario)
     {
-        try {
-            // O lead vem de um campo do CORPO: o route model binding nunca o vê,
-            // então a TarefaPolicy não roda sozinha aqui. findOrFail primeiro — o
-            // TenantScope já devolve 404 para id de outro tenant — e só então
-            // autoriza, para que "não existe" e "não é seu" deem a mesma resposta.
-            $lead = Usuario::findOrFail($request->integer('usuario_id'));
+        $this->authorize('update', $usuario);
 
-            $this->authorize('update', $lead);
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:255',
+            'data_limite' => 'required|date',
+            'anotacao' => 'nullable|string',
+        ]);
 
-            $validated = $request->validate([
-                'usuario_id' => [
-                    'required',
-                    Rule::exists('usuarios', 'id')->where('tenant_id', app(CurrentTenant::class)->id()),
-                ],
-                'titulo' => 'required|string|max:255',
-                'data_limite' => 'required|date',
-                'anotacao' => 'nullable|string',
-            ]);
+        $tarefa = Tarefa::create([...$validated, 'usuario_id' => $usuario->id]);
 
-            $validated['usuario_id'] = $lead->id;
-
-            $tarefa = Tarefa::create($validated);
-
-            return response()->json(['message' => 'Tarefa criada com sucesso', 'data' => $tarefa], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json(['erros' => $error->errors()], 422);
-        }
+        return response()->json(['message' => 'Tarefa salva.', 'data' => $tarefa], 201);
     }
 
     public function update(Request $request, Tarefa $tarefa)
     {
         $this->authorize('update', $tarefa);
 
-        try {
-            $validated = $request->validate([
-                'titulo' => 'sometimes|string|max:255',
-                'data_limite' => 'sometimes|date',
-                'anotacao' => 'nullable|string',
-                'concluido' => 'sometimes|boolean',
-            ]);
+        $validated = $request->validate([
+            'titulo' => 'sometimes|string|max:255',
+            'data_limite' => 'sometimes|date',
+            'anotacao' => 'nullable|string',
+            'concluido' => 'sometimes|boolean',
+        ]);
 
-            if (isset($validated['concluido'])) {
-                $validated['concluido_em'] = $validated['concluido'] ? now() : null;
-            }
-
-            $tarefa->update($validated);
-
-            return response()->json(['message' => 'Tarefa atualizada com sucesso', 'data' => $tarefa], 200);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json(['erros' => $error->errors()], 422);
+        if (isset($validated['concluido'])) {
+            $validated['concluido_em'] = $validated['concluido'] ? now() : null;
         }
+
+        $tarefa->update($validated);
+
+        return response()->json(['message' => 'Tarefa salva.', 'data' => $tarefa->fresh()]);
     }
 
     public function destroy(Tarefa $tarefa)
@@ -85,7 +69,7 @@ class TarefaController extends Controller
 
         $tarefa->delete();
 
-        return response()->json(['message' => 'Tarefa removida com sucesso'], 200);
+        return response()->json(['message' => 'Tarefa excluída.']);
     }
 
     /**

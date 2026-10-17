@@ -39,8 +39,8 @@ class VerbosDeLeituraTest extends TestCase
 
     public function test_projetos_e_arquivos_do_lead_por_query_string(): void
     {
-        $this->actingAs($this->dono)->getJson("/api/projetos?usuario_id={$this->lead->id}")->assertOk();
-        $this->actingAs($this->dono)->getJson("/api/arquivos?usuario_id={$this->lead->id}")->assertOk();
+        $this->actingAs($this->dono)->getJson("/api/leads/{$this->lead->id}/projetos")->assertOk();
+        $this->actingAs($this->dono)->getJson("/api/leads/{$this->lead->id}/arquivos")->assertOk();
         $this->actingAs($this->dono)->postJson('/api/buscarArquivo', ['user_id' => $this->lead->id])->assertNotFound();
     }
 
@@ -48,7 +48,7 @@ class VerbosDeLeituraTest extends TestCase
     {
         $colega = $this->agente(app(\App\Support\Tenancy\CurrentTenant::class)->get());
 
-        $this->actingAs($colega)->getJson("/api/arquivos?usuario_id={$this->lead->id}")->assertNotFound();
-        $this->actingAs($colega)->getJson("/api/projetos?usuario_id={$this->lead->id}")->assertNotFound();
+        $this->actingAs($colega)->getJson("/api/leads/{$this->lead->id}/arquivos")->assertNotFound();
+        $this->actingAs($colega)->getJson("/api/leads/{$this->lead->id}/projetos")->assertNotFound();
     }
 }

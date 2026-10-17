@@ -37,12 +37,12 @@ class LimitesDeTextoTest extends TestCase
 
     public function test_anotacao_de_lead_aceita_o_limite_e_recusa_um_a_mais(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/anotacao', [
-            'usuario_id' => $this->lead->id, 'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO),
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/anotacoes", [
+            'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO),
         ])->assertCreated();
 
-        $this->actingAs($this->dono)->postJson('/api/anotacao', [
-            'usuario_id' => $this->lead->id, 'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO + 1),
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/anotacoes", [
+            'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO + 1),
         ])->assertUnprocessable();
     }
 
@@ -50,8 +50,8 @@ class LimitesDeTextoTest extends TestCase
     {
         $texto = str_repeat('Reunião: próximos passos. ', 80); // 2080 caracteres, com acento
 
-        $this->actingAs($this->dono)->postJson('/api/anotacao', [
-            'usuario_id' => $this->lead->id, 'descricao' => $texto,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/anotacoes", [
+            'descricao' => $texto,
         ])->assertCreated();
 
         // TrimStrings (middleware global do Laravel, anterior a esta tarefa)
@@ -66,19 +66,19 @@ class LimitesDeTextoTest extends TestCase
     {
         $anotacao = Anotacao::create(['descricao' => 'curta', 'usuario_id' => $this->lead->id]);
 
-        $this->actingAs($this->dono)->putJson("/api/anotacao/{$anotacao->id}", [
+        $this->actingAs($this->dono)->putJson("/api/anotacoes/{$anotacao->id}", [
             'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO + 1),
         ])->assertUnprocessable();
     }
 
     public function test_anotacao_de_projeto_tem_o_mesmo_limite(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/projetoAnotacao', [
-            'projeto_id' => $this->projeto->id, 'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO),
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anotacoes", [
+            'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO),
         ])->assertCreated();
 
-        $this->actingAs($this->dono)->postJson('/api/projetoAnotacao', [
-            'projeto_id' => $this->projeto->id, 'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO + 1),
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anotacoes", [
+            'descricao' => str_repeat('a', LimitesDeTexto::ANOTACAO + 1),
         ])->assertUnprocessable();
     }
 
@@ -86,19 +86,19 @@ class LimitesDeTextoTest extends TestCase
     {
         $base = ['nome' => 'Cliente Teste', 'email' => 'c@exemplo.com'];
 
-        $this->actingAs($this->dono)->postJson('/api/usuarios', [...$base, 'nome' => str_repeat('a', 256)])
+        $this->actingAs($this->dono)->postJson('/api/leads', [...$base, 'nome' => str_repeat('a', 256)])
             ->assertUnprocessable()->assertJsonValidationErrors('nome');
-        $this->actingAs($this->dono)->postJson('/api/usuarios', [...$base, 'email' => str_repeat('a', 244).'@exemplo.com'])
+        $this->actingAs($this->dono)->postJson('/api/leads', [...$base, 'email' => str_repeat('a', 244).'@exemplo.com'])
             ->assertUnprocessable()->assertJsonValidationErrors('email');
-        $this->actingAs($this->dono)->postJson('/api/usuarios', [...$base, 'descricao' => str_repeat('a', LimitesDeTexto::DESCRICAO + 1)])
+        $this->actingAs($this->dono)->postJson('/api/leads', [...$base, 'descricao' => str_repeat('a', LimitesDeTexto::DESCRICAO + 1)])
             ->assertUnprocessable()->assertJsonValidationErrors('descricao');
-        $this->actingAs($this->dono)->postJson('/api/usuarios', [...$base, 'descricao' => str_repeat('a', LimitesDeTexto::DESCRICAO)])
+        $this->actingAs($this->dono)->postJson('/api/leads', [...$base, 'descricao' => str_repeat('a', LimitesDeTexto::DESCRICAO)])
             ->assertCreated();
     }
 
     public function test_descricao_do_projeto_tem_limite(): void
     {
-        $this->actingAs($this->dono)->putJson("/api/projeto/{$this->projeto->id}", [
+        $this->actingAs($this->dono)->putJson("/api/projetos/{$this->projeto->id}", [
             'nome' => 'Proposta inicial',
             'status_id' => $this->projeto->status_id,
             'descricao' => str_repeat('a', LimitesDeTexto::DESCRICAO + 1),
@@ -114,7 +114,7 @@ class LimitesDeTextoTest extends TestCase
     {
         app()->setLocale('en');
 
-        $resposta = $this->actingAs($this->dono)->putJson("/api/projeto/{$this->projeto->id}", [
+        $resposta = $this->actingAs($this->dono)->putJson("/api/projetos/{$this->projeto->id}", [
             'nome' => str_repeat('n', LimitesDeTexto::NOME + 1),
             'status_id' => $this->projeto->status_id,
             'descricao' => str_repeat('a', LimitesDeTexto::DESCRICAO + 1),

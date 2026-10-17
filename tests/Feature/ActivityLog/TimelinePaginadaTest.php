@@ -92,7 +92,7 @@ class TimelinePaginadaTest extends TestCase
         $lead = $this->lead($tenant, $dono);
         $anotacao = Anotacao::create(['descricao' => 'Texto antigo', 'usuario_id' => $lead->id]);
 
-        $this->actingAs($dono)->putJson("/api/anotacao/{$anotacao->id}", ['descricao' => 'Texto novo'])->assertOk();
+        $this->actingAs($dono)->putJson("/api/anotacoes/{$anotacao->id}", ['descricao' => 'Texto novo'])->assertOk();
 
         $evento = collect($this->actingAs($dono)->getJson("/api/leads/{$lead->id}/atividades")->json('data'))
             ->firstWhere('tipo', 'anotacao');
@@ -111,7 +111,7 @@ class TimelinePaginadaTest extends TestCase
         $lead = $this->lead($tenant, $dono);
         $anotacao = Anotacao::create(['descricao' => 'Texto sigiloso', 'usuario_id' => $lead->id]);
 
-        $this->actingAs($dono)->deleteJson("/api/anotacao/{$anotacao->id}")->assertOk();
+        $this->actingAs($dono)->deleteJson("/api/anotacoes/{$anotacao->id}")->assertOk();
 
         $evento = collect($this->actingAs($dono)->getJson("/api/leads/{$lead->id}/atividades")->json('data'))
             ->firstWhere('tipo', 'anotacao');

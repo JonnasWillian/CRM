@@ -64,11 +64,11 @@ class DonoNoCorpoTest extends TestCase
     public function test_listar_projetos_exige_posse_do_lead(): void
     {
         $this->actingAs($this->colega)
-            ->getJson('/api/projetos?'.http_build_query(['usuario_id' => $this->lead->id]))
+            ->getJson("/api/leads/{$this->lead->id}/projetos")
             ->assertNotFound();
 
         $this->actingAs($this->dono)
-            ->getJson('/api/projetos?'.http_build_query(['usuario_id' => $this->lead->id]))
+            ->getJson("/api/leads/{$this->lead->id}/projetos")
             ->assertOk();
     }
 
@@ -79,7 +79,7 @@ class DonoNoCorpoTest extends TestCase
     public function test_anotar_em_lead_de_colega_e_recusado(): void
     {
         $this->actingAs($this->colega)
-            ->postJson('/api/anotacao', ['descricao' => 'Intrusa', 'usuario_id' => $this->lead->id])
+            ->postJson("/api/leads/{$this->lead->id}/anotacoes", ['descricao' => 'Intrusa'])
             ->assertNotFound();
 
         $this->assertDatabaseMissing('anotacaos', ['descricao' => 'Intrusa']);
@@ -88,7 +88,7 @@ class DonoNoCorpoTest extends TestCase
     public function test_anotar_em_projeto_de_colega_e_recusado(): void
     {
         $this->actingAs($this->colega)
-            ->postJson('/api/projetoAnotacao', ['descricao' => 'Intrusa', 'projeto_id' => $this->projeto->id])
+            ->postJson("/api/projetos/{$this->projeto->id}/anotacoes", ['descricao' => 'Intrusa'])
             ->assertNotFound();
 
         $this->assertDatabaseMissing('projetoAnotacaos', ['descricao' => 'Intrusa']);
@@ -108,10 +108,10 @@ class DonoNoCorpoTest extends TestCase
     public function test_id_inexistente_e_id_alheio_respondem_igual(): void
     {
         $alheio = $this->actingAs($this->colega)
-            ->postJson('/api/anotacao', ['descricao' => 'A', 'usuario_id' => $this->lead->id]);
+            ->postJson("/api/leads/{$this->lead->id}/anotacoes", ['descricao' => 'A']);
 
         $inexistente = $this->actingAs($this->colega)
-            ->postJson('/api/anotacao', ['descricao' => 'A', 'usuario_id' => 999999]);
+            ->postJson('/api/leads/999999/anotacoes', ['descricao' => 'A']);
 
         $this->assertSame(
             $alheio->status().' '.$alheio->getContent(),
@@ -127,8 +127,7 @@ class DonoNoCorpoTest extends TestCase
     public function test_criar_tarefa_em_lead_de_colega_e_recusado(): void
     {
         $this->actingAs($this->colega)
-            ->postJson('/api/tarefas', [
-                'usuario_id' => $this->lead->id,
+            ->postJson("/api/leads/{$this->lead->id}/tarefas", [
                 'titulo' => 'Intrusa',
                 'data_limite' => now()->addDay()->toDateString(),
             ])
@@ -145,8 +144,7 @@ class DonoNoCorpoTest extends TestCase
         $padrao->save();
 
         $this->actingAs($this->colega)
-            ->postJson('/api/tarefa-padroes/aplicar', [
-                'usuario_id' => $this->lead->id,
+            ->postJson("/api/leads/{$this->lead->id}/tarefas/aplicar-modelos", [
                 'padroes' => [$padrao->id],
             ])
             ->assertNotFound();
@@ -157,14 +155,14 @@ class DonoNoCorpoTest extends TestCase
     public function test_dono_anota_no_proprio_lead(): void
     {
         $this->actingAs($this->dono)
-            ->postJson('/api/anotacao', ['descricao' => 'Legitima', 'usuario_id' => $this->lead->id])
+            ->postJson("/api/leads/{$this->lead->id}/anotacoes", ['descricao' => 'Legitima'])
             ->assertCreated();
     }
 
     public function test_dono_anota_no_proprio_projeto(): void
     {
         $this->actingAs($this->dono)
-            ->postJson('/api/projetoAnotacao', ['descricao' => 'Legitima', 'projeto_id' => $this->projeto->id])
+            ->postJson("/api/projetos/{$this->projeto->id}/anotacoes", ['descricao' => 'Legitima'])
             ->assertCreated();
     }
 
@@ -177,28 +175,27 @@ class DonoNoCorpoTest extends TestCase
         $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($this->colega)
-            ->postJson('/api/projeto', [
+            ->postJson("/api/leads/{$this->lead->id}/projetos", [
                 'nome' => 'Projeto intruso',
-                'usuario_id' => $this->lead->id,
                 'status_id' => $status->id,
             ])
-            ->assertForbidden();
+            ->assertNotFound(); // lead alheio: a mesma resposta de id inexistente
 
         $this->assertDatabaseMissing('projetos', ['nome' => 'Projeto intruso']);
     }
 
-    /** `usuario_id` como array não pode escapar da checagem de posse. */
-    public function test_id_em_formato_de_array_nao_burla_a_checagem(): void
+    /** O dono vem da ROTA; um `usuario_id` no corpo (até em array) é ignorado. */
+    public function test_id_no_corpo_nao_burla_a_checagem_da_rota(): void
     {
         $status = \App\Models\Statu::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($this->colega)
-            ->postJson('/api/projeto', [
+            ->postJson("/api/leads/{$this->lead->id}/projetos", [
                 'nome' => 'Projeto por array',
                 'usuario_id' => [$this->lead->id],
                 'status_id' => $status->id,
             ])
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertDatabaseMissing('projetos', ['nome' => 'Projeto por array']);
     }
@@ -217,12 +214,12 @@ class DonoNoCorpoTest extends TestCase
     {
         $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        $alheio = $this->actingAs($this->colega)->postJson('/api/projeto', [
-            'nome' => 'A', 'usuario_id' => $this->lead->id, 'status_id' => $status->id,
+        $alheio = $this->actingAs($this->colega)->postJson("/api/leads/{$this->lead->id}/projetos", [
+            'nome' => 'A',  'status_id' => $status->id,
         ]);
 
-        $inexistente = $this->actingAs($this->colega)->postJson('/api/projeto', [
-            'nome' => 'A', 'usuario_id' => 999999, 'status_id' => $status->id,
+        $inexistente = $this->actingAs($this->colega)->postJson('/api/leads/999999/projetos', [
+            'nome' => 'A',  'status_id' => $status->id,
         ]);
 
         $this->assertSame(
@@ -250,11 +247,11 @@ class DonoNoCorpoTest extends TestCase
         $padraoAlheio->save();
         app(CurrentTenant::class)->set($this->tenant);
 
-        $alheio = $this->actingAs($this->dono)->postJson('/api/tarefa-padroes/aplicar', [
-            'usuario_id' => $this->lead->id, 'padroes' => [$padraoAlheio->id],
+        $alheio = $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/tarefas/aplicar-modelos", [
+            'padroes' => [$padraoAlheio->id],
         ]);
-        $inexistente = $this->actingAs($this->dono)->postJson('/api/tarefa-padroes/aplicar', [
-            'usuario_id' => $this->lead->id, 'padroes' => [999999],
+        $inexistente = $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/tarefas/aplicar-modelos", [
+            'padroes' => [999999],
         ]);
 
         $alheio->assertStatus(422);
@@ -274,8 +271,8 @@ class DonoNoCorpoTest extends TestCase
         $meu->save();
 
         $this->actingAs($this->dono)
-            ->postJson('/api/tarefa-padroes/aplicar', [
-                'usuario_id' => $this->lead->id, 'padroes' => [$meu->id],
+            ->postJson("/api/leads/{$this->lead->id}/tarefas/aplicar-modelos", [
+                'padroes' => [$meu->id],
             ])
             ->assertCreated();
 
@@ -299,9 +296,8 @@ class DonoNoCorpoTest extends TestCase
         app(CurrentTenant::class)->set($this->tenant);
 
         $this->actingAs($this->dono)
-            ->postJson('/api/projeto', [
+            ->postJson("/api/leads/{$this->lead->id}/projetos", [
                 'nome' => 'Projeto com status alheio',
-                'usuario_id' => $this->lead->id,
                 'status_id' => $statusAlheioPerdido->id,
             ])
             ->assertStatus(422)
@@ -314,14 +310,14 @@ class DonoNoCorpoTest extends TestCase
     public function test_status_inexistente_vira_422_e_nao_500(): void
     {
         $this->actingAs($this->dono)
-            ->postJson('/api/projeto', [
-                'nome' => 'Projeto fantasma', 'usuario_id' => $this->lead->id, 'status_id' => 999999,
+            ->postJson("/api/leads/{$this->lead->id}/projetos", [
+                'nome' => 'Projeto fantasma',  'status_id' => 999999,
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('status_id');
 
         $this->actingAs($this->dono)
-            ->putJson("/api/projeto/{$this->projeto->id}", [
+            ->putJson("/api/projetos/{$this->projeto->id}", [
                 'nome' => 'Projeto renomeado', 'status_id' => 999999,
             ])
             ->assertStatus(422)
@@ -335,7 +331,7 @@ class DonoNoCorpoTest extends TestCase
         $arquivado->delete();
 
         $this->actingAs($this->dono)
-            ->putJson("/api/projeto/{$this->projeto->id}", [
+            ->putJson("/api/projetos/{$this->projeto->id}", [
                 'nome' => 'Projeto com status arquivado', 'status_id' => $arquivado->id,
             ])
             ->assertOk();
@@ -346,9 +342,8 @@ class DonoNoCorpoTest extends TestCase
         $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($this->dono)
-            ->postJson('/api/projeto', [
+            ->postJson("/api/leads/{$this->lead->id}/projetos", [
                 'nome' => 'Projeto legitimo',
-                'usuario_id' => $this->lead->id,
                 'status_id' => $status->id,
             ])
             ->assertCreated();

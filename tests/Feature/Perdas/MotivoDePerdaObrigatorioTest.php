@@ -118,7 +118,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
     {
         return [
             'cadastrar lead já perdido' => fn () => [
-                'postJson', '/api/usuarios',
+                'postJson', '/api/leads',
                 [
                     'nome' => 'Lead Perdido',
                     'email' => 'lead.perdido@example.com',
@@ -133,7 +133,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
                 $lead = $this->lead();
 
                 return [
-                    'putJson', "/api/usuarios/{$lead->id}",
+                    'putJson', "/api/leads/{$lead->id}",
                     [
                         'nome' => $lead->nome,
                         'email' => $lead->email,
@@ -149,7 +149,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
                 $lead = $this->lead();
 
                 return [
-                    'patchJson', "/api/usuarios/{$lead->id}/estagio",
+                    'patchJson', "/api/leads/{$lead->id}/estagio",
                     ['estagio_id' => $this->perdido->id],
                     200,
                 ];
@@ -159,17 +159,16 @@ class MotivoDePerdaObrigatorioTest extends TestCase
                 $lead = $this->lead();
 
                 return [
-                    'patchJson', "/api/usuarios/{$lead->id}/funil",
+                    'patchJson', "/api/leads/{$lead->id}/funil",
                     ['funil_id' => $this->outroFunil->id, 'estagio_id' => $this->perdidoNoOutroFunil->id],
                     200,
                 ];
             },
 
             'criar projeto já perdido' => fn () => [
-                'postJson', '/api/projeto',
+                'postJson', "/api/leads/{$this->lead()->id}/projetos",
                 [
                     'nome' => 'Projeto natimorto',
-                    'usuario_id' => $this->lead()->id,
                     'status_id' => $this->statusPerdido->id,
                 ],
                 201,
@@ -179,7 +178,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
                 $projeto = $this->projeto();
 
                 return [
-                    'putJson', "/api/projeto/{$projeto->id}",
+                    'putJson', "/api/projetos/{$projeto->id}",
                     ['nome' => $projeto->nome, 'status_id' => $this->statusPerdido->id],
                     200,
                 ];
@@ -199,7 +198,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
                 $resposta->status(),
                 "o caminho \"{$nome}\" deixou passar uma perda sem motivo",
             );
-            $resposta->assertJsonStructure(['erros' => ['motivo_perda_id']]);
+            $resposta->assertJsonStructure(['errors' => ['motivo_perda_id']]);
         }
 
         $this->assertSame(0, Perda::count(), 'nenhuma perda deveria ter sido gravada');
@@ -245,7 +244,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $lead = $this->lead();
 
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$lead->id}/estagio", [
+            ->patchJson("/api/leads/{$lead->id}/estagio", [
                 'estagio_id' => $this->perdido->id,
                 'perda' => ['motivo_perda_id' => $motivoAlheio->id],
             ])
@@ -263,7 +262,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $lead = $this->lead();
 
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$lead->id}/estagio", [
+            ->patchJson("/api/leads/{$lead->id}/estagio", [
                 'estagio_id' => $this->perdido->id,
                 'perda' => ['motivo_perda_id' => $this->motivo->id],
             ])
@@ -282,7 +281,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $lead = $this->lead();
 
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$lead->id}/estagio", [
+            ->patchJson("/api/leads/{$lead->id}/estagio", [
                 'estagio_id' => $this->perdido->id,
                 'perda' => ['motivo_perda_id' => $this->motivo->id],
             ])
@@ -291,7 +290,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $this->assertSame(1, Perda::count());
 
         $this->actingAs($this->staff)
-            ->putJson("/api/usuarios/{$lead->id}", [
+            ->putJson("/api/leads/{$lead->id}", [
                 'nome' => 'Nome Editado',
                 'email' => $lead->email,
                 'telefone' => '11888887777',
@@ -310,7 +309,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
     public function test_reabrir_e_perder_de_novo_gera_duas_perdas(): void
     {
         $lead = $this->lead();
-        $perder = fn () => $this->actingAs($this->staff)->patchJson("/api/usuarios/{$lead->id}/estagio", [
+        $perder = fn () => $this->actingAs($this->staff)->patchJson("/api/leads/{$lead->id}/estagio", [
             'estagio_id' => $this->perdido->id,
             'perda' => ['motivo_perda_id' => $this->motivo->id],
         ]);
@@ -318,7 +317,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         $perder()->assertOk();
 
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$lead->id}/estagio", ['estagio_id' => $this->aberto->id])
+            ->patchJson("/api/leads/{$lead->id}/estagio", ['estagio_id' => $this->aberto->id])
             ->assertOk();
 
         $perder()->assertOk();
@@ -338,7 +337,7 @@ class MotivoDePerdaObrigatorioTest extends TestCase
         }
 
         $this->actingAs($this->staff)
-            ->patchJson("/api/usuarios/{$lead->id}/estagio", [
+            ->patchJson("/api/leads/{$lead->id}/estagio", [
                 'estagio_id' => $this->perdido->id,
                 'perda' => ['motivo_perda_id' => $this->motivo->id],
             ])

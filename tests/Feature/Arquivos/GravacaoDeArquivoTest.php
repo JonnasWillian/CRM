@@ -45,8 +45,7 @@ class GravacaoDeArquivoTest extends TestCase
 
     public function test_anexo_de_lead_vai_para_o_disco_privado_na_pasta_do_lead(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'nome' => 'RG',
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 30, 'application/pdf'),
         ])->assertSuccessful();
@@ -63,8 +62,7 @@ class GravacaoDeArquivoTest extends TestCase
 
     public function test_anexo_de_projeto_vai_para_a_pasta_do_projeto(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $this->projeto->id,
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create('contrato.pdf', 10, 'application/pdf'),
         ])->assertSuccessful();
 
@@ -76,8 +74,7 @@ class GravacaoDeArquivoTest extends TestCase
 
     public function test_extensao_gravada_vem_do_conteudo_e_nao_do_nome(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('foto.pdf', 10, 'image/png'),
         ])->assertSuccessful();
 
@@ -88,8 +85,7 @@ class GravacaoDeArquivoTest extends TestCase
     {
         arquivo::creating(fn () => throw new \RuntimeException('falha simulada'));
 
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertServerError();
 
@@ -100,8 +96,7 @@ class GravacaoDeArquivoTest extends TestCase
     {
         ProjetoAnexo::creating(fn () => throw new \RuntimeException('falha simulada'));
 
-        $this->actingAs($this->dono)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $this->projeto->id,
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create('c.pdf', 10),
         ])->assertServerError();
 
@@ -116,8 +111,7 @@ class GravacaoDeArquivoTest extends TestCase
     {
         arquivo::created(fn () => throw new \RuntimeException('falha simulada no observer'));
 
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertServerError();
 
@@ -134,16 +128,14 @@ class GravacaoDeArquivoTest extends TestCase
      */
     public function test_resposta_do_upload_de_lead_nao_expoe_o_caminho_interno(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertSuccessful()->assertJsonMissingPath('data.local');
     }
 
     public function test_resposta_do_upload_de_projeto_nao_expoe_o_caminho_interno(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $this->projeto->id,
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$this->projeto->id}/anexos", [
             'arquivo' => UploadedFile::fake()->create('c.pdf', 10),
         ])->assertSuccessful()->assertJsonMissingPath('data.local');
     }

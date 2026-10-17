@@ -35,7 +35,7 @@ class UltimoContatoTest extends TestCase
         $antes = Activity::where('lead_id', $lead->id)->count();
         $this->travelTo(now()->addHours(5));
 
-        $this->actingAs($dono)->postJson('/api/anotacao', ['usuario_id' => $lead->id, 'descricao' => 'Ligamos e combinamos retorno.'])
+        $this->actingAs($dono)->postJson("/api/leads/{$lead->id}/anotacoes", ['descricao' => 'Ligamos e combinamos retorno.'])
             ->assertCreated();
 
         $this->assertTrue($lead->fresh()->ultimo_contato_em->isSameSecond(now()));
@@ -52,7 +52,7 @@ class UltimoContatoTest extends TestCase
 
         $this->travelTo(now()->addDays(3));
 
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$lead->id}/estagio", ['estagio_id' => $destino->id])->assertOk();
+        $this->actingAs($dono)->patchJson("/api/leads/{$lead->id}/estagio", ['estagio_id' => $destino->id])->assertOk();
 
         $this->assertTrue($lead->fresh()->ultimo_contato_em->isSameSecond(now()));
     }

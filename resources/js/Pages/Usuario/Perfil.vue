@@ -1,1155 +1,157 @@
 <script setup>
-    import { ref, onMounted, computed } from 'vue';
-    import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
-    import axios from 'axios';
-    import ModalMotivoPerda from '@/Components/ModalMotivoPerda.vue';
-    import { vMaska } from 'maska/vue';
-    import { ehTelefoneBrasileiro, formatarTelefone, MASCARA_TELEFONE } from '@/utils/telefone';
-    import { PlusCircle, FileText, Paperclip, Trash2, Edit, Save, X, Download, Upload, ChevronLeft, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-    import Swal from 'sweetalert2';
-    import ProjetoPanel from './ProjetoPanel.vue';
-    import TimelinePanel from './TimelinePanel.vue';
-    import TarefaPanel from './TarefaPanel.vue';
+import { computed, ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
+import { Calendar, ChevronRight, CircleDollarSign, Clock, FileText, FolderOpen, Mail, MessageCircle, Paperclip, Percent, Phone, Plus, SquareCheck, Trash2, UserRound } from 'lucide-vue-next';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppAvatar from '@/Components/ui/AppAvatar.vue';
+import AppBadge from '@/Components/ui/AppBadge.vue';
+import AppButton from '@/Components/ui/AppButton.vue';
+import AppDropdown from '@/Components/ui/AppDropdown.vue';
+import AppDropdownItem from '@/Components/ui/AppDropdownItem.vue';
+import AppTabs from '@/Components/ui/AppTabs.vue';
+import IconButton from '@/Components/ui/IconButton.vue';
+import PageContainer from '@/Components/ui/PageContainer.vue';
+import PageHeader from '@/Components/ui/PageHeader.vue';
+import AbaAnotacoes from '@/Components/leads/AbaAnotacoes.vue';
+import AbaDados from '@/Components/leads/AbaDados.vue';
+import AbaDocumentos from '@/Components/leads/AbaDocumentos.vue';
+import MoverEstagioMenu from '@/Components/leads/MoverEstagioMenu.vue';
+import ProjetoPanel from '@/Components/leads/ProjetoPanel.vue';
+import TarefaPanel from '@/Components/leads/TarefaPanel.vue';
+import TimelinePanel from '@/Components/leads/TimelinePanel.vue';
+import { useConfirm } from '@/Composables/useConfirm';
+import { useToast } from '@/Composables/useToast';
+import { formatBRL, formatarData } from '@/utils/formatadores';
+import { formatarTelefone } from '@/utils/telefone';
 
-    // Vem da rota /leads/{id}, não mais de sessionStorage: é o que torna o
-    // lead linkável, abrível em nova aba e compatível com o botão voltar.
-    const props = defineProps({
-        leadId: { type: [Number, String], required: true },
+/**
+ * Perfil do lead. Dados iniciais por props (Inertia); as abas carregam sob
+ * demanda e ficam vivas (KeepAlive) enquanto a página existe.
+ */
+const props = defineProps({
+    lead: { type: Object, required: true },
+    funis: { type: Array, required: true },
+    status: { type: Array, required: true },
+});
+
+const lead = ref(props.lead);
+const { confirmar } = useConfirm();
+const toast = useToast();
+const pode = (p) => usePage().props.auth.permissions?.[p] === true;
+
+// ── Abas ──
+const ABAS = ['atividades', 'tarefas', 'anotacoes', 'projetos', 'documentos', 'dados'];
+const abaInicial = new URLSearchParams(window.location.search).get('aba');
+const aba = ref(ABAS.includes(abaInicial) ? abaInicial : 'atividades');
+const abrirNovaTarefa = ref(0);
+
+const abas = computed(() => [
+    { chave: 'atividades', rotulo: 'Atividades', icone: Clock },
+    { chave: 'tarefas', rotulo: 'Tarefas', icone: SquareCheck, contagem: lead.value.tarefas_pendentes_count ?? 0 },
+    { chave: 'anotacoes', rotulo: 'Anotações', icone: FileText, contagem: lead.value.anotacoes_count ?? 0 },
+    { chave: 'projetos', rotulo: 'Projetos', icone: FolderOpen, contagem: lead.value.projetos_count ?? 0 },
+    { chave: 'documentos', rotulo: 'Documentos', icone: Paperclip, contagem: lead.value.arquivos_count ?? 0 },
+    { chave: 'dados', rotulo: 'Dados', icone: UserRound },
+]);
+
+const componentes = { atividades: TimelinePanel, tarefas: TarefaPanel, anotacoes: AbaAnotacoes, projetos: ProjetoPanel, documentos: AbaDocumentos, dados: AbaDados };
+
+// ── Cabeçalho ──
+const whatsapp = computed(() => {
+    const digitos = String(lead.value.telefone ?? '').replace(/\D/g, '');
+    return digitos.length >= 10 ? `https://wa.me/${digitos}` : null;
+});
+
+const origem = computed(() => {
+    const de = new URLSearchParams(window.location.search).get('de');
+    if (de === 'pipeline') return { rotulo: 'Pipeline', href: route('kanban') };
+    return route().has('leads.index') ? { rotulo: 'Leads', href: route('leads.index') } : { rotulo: 'Dashboard', href: route('dashboard') };
+});
+
+const atualizar = (novo) => { lead.value = { ...lead.value, ...novo }; };
+const atualizarContagem = ({ chave, total }) => { lead.value = { ...lead.value, [`${chave}_count`]: total }; };
+
+function novaTarefa() {
+    aba.value = 'tarefas';
+    abrirNovaTarefa.value++;
+}
+
+async function excluir() {
+    const ok = await confirmar({
+        titulo: `Mover “${lead.value.nome}” para a lixeira?`,
+        mensagem: 'O lead some das listas e do pipeline, com projetos, tarefas, anotações e documentos. Você pode restaurá-lo na Lixeira.',
+        rotuloConfirmar: 'Mover para a lixeira',
+        tom: 'danger',
     });
-    const idPerfil = props.leadId;
-
-    const user = computed(() => usePage().props.auth.user);
-    const limites = usePage().props.limites;
-
-    const usuario = ref(null);
-    const anotacoes = ref([]);
-    const arquivos = ref([]);
-    const estagios = ref([]);
-    const estagioSelecionado = ref(null);
-    const funis = ref([]);
-    const funilSelecionado = ref(null);
-    const editingNoteId = ref(null);
-    const showAddNote = ref(false);
-    const isUploading = ref(false);
-    const uploadProgress = ref(0);
-    const isSavingUser = ref(false);
-    const arquivosPendentes = ref([]);
-    const toast = ref({ show: false, message: '', type: 'success' });
-
-    const activeTab = ref('dados');
-    const totalProjetos = ref(0);
-
-    const tabs = [
-        { key: 'dados',      label: 'Dados',      icon: 'user' },
-        { key: 'documentos', label: 'Documentos', icon: 'paperclip' },
-        { key: 'anotacoes',  label: 'Anotações',  icon: 'file' },
-        { key: 'projetos',   label: 'Projetos',   icon: 'layers' },
-        { key: 'timeline',   label: 'Timeline',   icon: 'clock' },
-        { key: 'tarefas',    label: 'Tarefas',    icon: 'check' },
-    ];
-
-    const noteForm = useForm({ descricao: '', usuario_id: idPerfil });
-    const editNoteForm = useForm({ id: '', descricao: '', usuario_id: user.value.id });
-
-    let toastTimer = null;
-    const showToast = (message, type = 'success') => {
-        clearTimeout(toastTimer);
-        toast.value = { show: true, message, type };
-        toastTimer = setTimeout(() => { toast.value.show = false; }, 3500);
-    };
-
-    const messageError = (msg) => showToast(msg, 'error');
-
-    // A cor é atributo do estágio. O switch por id que existia aqui pressupunha
-    // um conjunto de estágios igual para todos os tenants.
-    const hexParaRgba = (hex, alpha) => {
-        const n = parseInt((hex || '').replace('#', ''), 16);
-        if (Number.isNaN(n)) return `rgba(148,163,184,${alpha})`;
-        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-    };
-
-    const estiloDoEstagio = (estagioId) => {
-        const cor = estagios.value.find(e => e.id === estagioId)?.cor || '#94a3b8';
-        return { color: cor, background: hexParaRgba(cor, 0.12) };
-    };
-
-    // O select de estágio só oferece o que existe no funil escolhido — é o
-    // mesmo par que o backend valida em UsuarioRequest.
-    const estagiosDoFunil = computed(() =>
-        estagios.value.filter(e => !funilSelecionado.value || e.funil_id === funilSelecionado.value)
-    );
-
-    // ── Usuário ──
-    const buscarUsuario = async (id) => {
-        try {
-            const response = await axios.get(`/api/usuarioPerfil/${id}`);
-            usuario.value = response.data[0];
-            usuario.value.telefone = formatarTelefone(usuario.value.telefone);
-            estagioSelecionado.value = usuario.value?.estagio_id ?? null;
-            funilSelecionado.value = usuario.value?.funil_id ?? null;
-        } catch {
-            messageError('Erro ao buscar usuário!');
-        }
-    };
-
-    // ── Perda ──
-    const perdaPendente = ref(null);
-    const perdaErro     = ref('');
-    const perdaSalvando = ref(false);
-
-    const estagioEhPerdido = (id) => estagios.value.find(e => e.id === id)?.tipo === 'perdido';
-
-    const cancelarPerda = () => { perdaPendente.value = null; perdaErro.value = ''; };
-
-    const confirmarPerda = async (perda) => {
-        perdaSalvando.value = true;
-        perdaErro.value = '';
-        try {
-            await perdaPendente.value.enviar(perda);
-            perdaPendente.value = null;
-            await buscarUsuario(idPerfil);
-            showToast('Perda registrada.');
-        } catch (e) {
-            perdaErro.value = e?.response?.data?.erros?.motivo_perda_id?.[0]
-                ?? e?.response?.data?.error
-                ?? 'Não foi possível registrar a perda.';
-        } finally {
-            perdaSalvando.value = false;
-        }
-    };
-
-    const editarUsuario = async () => {
-        const enviar = (perda) => axios.put(`/api/usuarios/${usuario.value.id}`, {
-            ...usuario.value,
-            funil_id: funilSelecionado.value,
-            estagio_id: estagioSelecionado.value,
-            perda,
+    if (!ok) return;
+    try {
+        await axios.delete(route('api.leads.destroy', lead.value.id));
+        toast.sucesso(`“${lead.value.nome}” movido para a lixeira.`, {
+            acao: { rotulo: 'Desfazer', onClick: () => axios.patch(route('api.leads.restaurar', lead.value.id)).then(() => toast.sucesso(`“${lead.value.nome}” restaurado.`)) },
         });
-
-        // Só a ENTRADA em perda pede motivo: salvar o telefone de um lead que
-        // já estava perdido não é uma perda nova.
-        if (estagioEhPerdido(estagioSelecionado.value) && !estagioEhPerdido(usuario.value?.estagio_id)) {
-            perdaErro.value = '';
-            perdaPendente.value = { titulo: `Perder "${usuario.value.nome}"`, enviar };
-            return;
-        }
-
-        isSavingUser.value = true;
-        try {
-            await enviar(null);
-            await buscarUsuario(idPerfil);
-            showToast('Dados do lead salvos com sucesso!');
-        } catch {
-            messageError('Erro ao atualizar usuário!');
-        } finally {
-            isSavingUser.value = false;
-        }
-    };
-
-    // ── Funis e estágios ──
-    const buscarEstagios = async () => {
-        try {
-            // Sem filtro de funil: a lista completa alimenta tanto o badge (que
-            // precisa resolver a cor do estágio atual, seja de que funil for)
-            // quanto o select, que é filtrado no cliente por estagiosDoFunil.
-            const response = await axios.get('/api/estagios');
-            estagios.value = response.data;
-        } catch {
-            messageError('Erro ao buscar estágios!');
-        }
-    };
-
-    const buscarFunis = async () => {
-        try {
-            const response = await axios.get('/api/funis');
-            funis.value = response.data;
-        } catch {
-            messageError('Erro ao buscar funis!');
-        }
-    };
-
-    // Trocar o funil invalida o estágio escolhido: ele é de outro quadro.
-    const aoTrocarFunil = () => {
-        const aindaVale = estagiosDoFunil.value.some(e => e.id === estagioSelecionado.value);
-        if (!aindaVale) {
-            estagioSelecionado.value = estagiosDoFunil.value.find(e => e.tipo === 'aberto')?.id
-                ?? estagiosDoFunil.value[0]?.id
-                ?? null;
-        }
-    };
-
-    // ── Anotações ──
-    const buscarAnotacao = async (id) => {
-        try {
-            const response = await axios.get(`/api/anotacao/${id}`);
-            anotacoes.value = response.data;
-        } catch {
-            messageError('Erro ao buscar anotação!');
-        }
-    };
-
-    const cadastrarAnotacao = async () => {
-        if (!noteForm.descricao.trim()) return;
-        try {
-            await axios.post(`/api/anotacao`, { ...noteForm });
-            showToast('Anotação criada com sucesso!');
-            await buscarAnotacao(idPerfil);
-            noteForm.descricao = '';
-            showAddNote.value = false;
-        } catch {
-            messageError('Erro ao criar anotação!');
-        }
-    };
-
-    const editarAnotacao = (anotacao) => {
-        editNoteForm.id = anotacao.id;
-        editNoteForm.descricao = anotacao.descricao;
-        editingNoteId.value = anotacao.id;
-    };
-
-    const cancelarEdicaoAnotacao = () => { editingNoteId.value = null; };
-
-    const salvarEdicaoAnotacao = async () => {
-        try {
-            await axios.put(`/api/anotacao/${editNoteForm.id}`, editNoteForm);
-            showToast('Anotação atualizada!');
-            buscarAnotacao(idPerfil);
-            editingNoteId.value = null;
-        } catch {
-            messageError('Erro ao editar anotação!');
-        }
-    };
-
-    const excluirAnotacao = async (id) => {
-        const result = await Swal.fire({
-            title: 'Apagar anotação?',
-            text: 'Esta ação não pode ser desfeita.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Excluir',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true,
-            background: '#13192a',
-            color: '#eaedf5',
-            confirmButtonColor: '#f06292',
-            cancelButtonColor: '#1e2840',
-        });
-        if (result.isConfirmed) {
-            try {
-                await axios.delete(`/api/anotacao/${id}`);
-                showToast('Anotação removida.');
-                buscarAnotacao(idPerfil);
-            } catch {
-                messageError('Erro ao apagar anotação!');
-            }
-        }
-    };
-
-    // ── Arquivos ──
-    const buscarAnexo = async (id) => {
-        try {
-            const response = await axios.get('/api/arquivos', { params: { usuario_id: id } });
-            arquivos.value = response.data;
-        } catch {
-            messageError('Erro ao buscar anexos!');
-        }
-    };
-
-    const adicionarArquivos = (event) => {
-        const files = Array.from(event.target.files);
-        files.forEach(file => {
-            const jaExiste = arquivosPendentes.value.some(a => a.name === file.name && a.size === file.size);
-            if (!jaExiste) {
-                arquivosPendentes.value.push({
-                    id: Date.now() + Math.random(),
-                    file, name: file.name, size: file.size, type: file.type, isPending: true,
-                });
-            }
-        });
-        event.target.value = null;
-    };
-
-    const removerArquivoPendente = (id) => {
-        arquivosPendentes.value = arquivosPendentes.value.filter(a => a.id !== id);
-    };
-
-    const salvarArquivos = async () => {
-        if (!arquivosPendentes.value.length) return;
-        isUploading.value = true;
-        uploadProgress.value = 0;
-        try {
-            const total = arquivosPendentes.value.length;
-            let processados = 0;
-            for (const arq of arquivosPendentes.value) {
-                const formData = new FormData();
-                formData.append('arquivo', arq.file);
-                formData.append('nome', arq.name);
-                formData.append('usuario_id', idPerfil);
-                await axios.post('/api/arquivos', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-                processados++;
-                uploadProgress.value = Math.round((processados / total) * 100);
-            }
-            arquivosPendentes.value = [];
-            buscarAnexo(idPerfil);
-            showToast(`${total} arquivo(s) enviado(s) com sucesso!`);
-        } catch (e) {
-            // O 422 da PoliticaDeUpload diz o porquê (tamanho, tipo); a
-            // mensagem genérica só quando não há resposta do servidor.
-            messageError(
-                e?.response?.data?.errors?.arquivo?.[0]
-                ?? e?.response?.data?.errors?.nome?.[0]
-                ?? e?.response?.data?.message
-                ?? 'Erro ao enviar arquivos!'
-            );
-        } finally {
-            isUploading.value = false;
-        }
-    };
-
-    const formatarTamanho = (bytes) => {
-        if (!bytes) return '—';
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / 1048576).toFixed(1) + ' MB';
-    };
-
-    const buscarProjetos = async (idPerfil) => {
-        try {
-            const res = await axios.get('/api/projetos', { params: { usuario_id: idPerfil } });
-            totalProjetos.value = res.data.length;
-        } catch {
-            showToast('Erro ao buscar projetos!', 'error');
-        }
-    };
-
-    const excluirArquivo = async (id) => {
-        const result = await Swal.fire({
-            title: 'Apagar documento?',
-            text: 'Esta ação não pode ser desfeita.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Excluir',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true,
-            background: '#13192a',
-            color: '#eaedf5',
-            confirmButtonColor: '#f06292',
-            cancelButtonColor: '#1e2840',
-        });
-        if (result.isConfirmed) {
-            try {
-                await axios.delete(`/api/arquivos/${id}`);
-                showToast('Documento removido.');
-                buscarAnexo(idPerfil);
-            } catch {
-                messageError('Erro ao apagar arquivo!');
-            }
-        }
-    };
-
-    const getInitials = (nome) =>
-        nome?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '?';
-
-    onMounted(() => {
-        if (idPerfil) {
-            buscarUsuario(idPerfil);
-            buscarAnotacao(idPerfil);
-            buscarAnexo(idPerfil);
-            buscarProjetos(idPerfil)
-            buscarEstagios();
-            buscarFunis();
-        } else {
-            router.visit(route('dashboard'));
-        }
-    });
+        router.visit(origem.value.href);
+    } catch {
+        /* interceptor */
+    }
+}
 </script>
 
 <template>
-    <ModalMotivoPerda
-        :aberto="!!perdaPendente"
-        :titulo="perdaPendente?.titulo ?? 'Registrar perda'"
-        :erro="perdaErro"
-        :salvando="perdaSalvando"
-        @confirmar="confirmarPerda"
-        @cancelar="cancelarPerda"
-    />
-    <Head title="Perfil do Lead" />
+    <Head :title="lead.nome" />
     <AuthenticatedLayout>
-        <div class="page">
-            <div class="dot-grid" aria-hidden="true" />
-            <div class="glow-blob" aria-hidden="true" />
+        <PageContainer>
+            <PageHeader :titulo="lead.nome">
+                <template #migalhas>
+                    <Link :href="origem.href" class="hover:text-fg-0">{{ origem.rotulo }}</Link>
+                    <ChevronRight :size="14" aria-hidden="true" />
+                    <span class="truncate text-fg-1">{{ lead.nome }}</span>
+                </template>
+                <template #abaixo>
+                    <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-fg-1">
+                        <MoverEstagioMenu :lead="lead" :funis="funis" @atualizado="atualizar" />
+                        <span v-if="lead.funil" class="text-fg-2">Funil <b class="font-medium text-fg-1">{{ lead.funil.nome }}</b></span>
+                        <span v-if="lead.responsavel" class="inline-flex items-center gap-1.5 text-fg-2"><UserRound :size="14" aria-hidden="true" /> {{ lead.responsavel.name }}</span>
+                        <a :href="`mailto:${lead.email}`" class="inline-flex items-center gap-1.5 hover:text-primary"><Mail :size="14" aria-hidden="true" /> {{ lead.email }}</a>
+                        <span v-if="lead.telefone" class="inline-flex items-center gap-1.5">
+                            <a :href="`tel:${lead.telefone}`" class="inline-flex items-center gap-1.5 hover:text-primary"><Phone :size="14" aria-hidden="true" /> {{ formatarTelefone(lead.telefone) }}</a>
+                            <IconButton v-if="whatsapp" :icone="MessageCircle" rotulo="Abrir no WhatsApp" tamanho="sm" as="a" :href="whatsapp" target="_blank" rel="noopener" />
+                        </span>
+                    </div>
+                    <div v-if="lead.valor_estimado || lead.probabilidade !== null || lead.previsao_fechamento" class="mt-2 flex flex-wrap items-center gap-2">
+                        <AppBadge v-if="lead.valor_estimado" tom="primary" tamanho="md"><CircleDollarSign :size="12" class="mr-1 inline" aria-hidden="true" />{{ formatBRL(lead.valor_estimado) }}</AppBadge>
+                        <AppBadge v-if="lead.probabilidade !== null && lead.probabilidade !== undefined" tom="info" tamanho="md"><Percent :size="12" class="mr-1 inline" aria-hidden="true" />{{ lead.probabilidade }}% de chance</AppBadge>
+                        <AppBadge v-if="lead.previsao_fechamento" :tom="new Date(lead.previsao_fechamento) < new Date() && lead.estagio?.tipo === 'aberto' ? 'danger' : 'neutral'" tamanho="md"><Calendar :size="12" class="mr-1 inline" aria-hidden="true" />Previsão {{ formatarData(lead.previsao_fechamento) }}</AppBadge>
+                    </div>
+                </template>
+                <template #acoes>
+                    <AppButton variante="secondary" @click="novaTarefa"><template #icone><Plus /></template>Nova tarefa</AppButton>
+                    <AppDropdown rotulo="Mais ações" alinhar="end">
+                        <AppDropdownItem rotulo="Mover para a lixeira" :icone="Trash2" tom="danger" @click="excluir" />
+                    </AppDropdown>
+                </template>
+            </PageHeader>
 
-            <Transition name="toast">
-                <div v-if="toast.show" class="toast" :class="`toast--${toast.type}`">
-                    <CheckCircle2 v-if="toast.type === 'success'" :size="15" />
-                    <AlertCircle v-else :size="15" />
-                    {{ toast.message }}
-                </div>
-            </Transition>
-
-            <div v-if="!usuario" class="loading-state">
-                <div class="spinner" />
-                <p class="loading-text">Carregando perfil...</p>
-            </div>
-
-            <div v-else class="content">
-
-                <div class="breadcrumb">
-                    <Link :href="route('dashboard')" class="breadcrumb-link">
-                        <ChevronLeft :size="14" />
-                        Dashboard
-                    </Link>
-                    <span class="breadcrumb-sep">/</span>
-                    <span class="breadcrumb-current">{{ usuario.nome }}</span>
-                </div>
-
-                <!-- ── Hero ── -->
-                <div class="profile-hero">
-                    <div class="hero-left">
-                        <div class="profile-avatar">{{ getInitials(usuario.nome) }}</div>
-                        <div class="profile-info">
-                            <h1 class="profile-name">{{ usuario.nome }}</h1>
-                            <div class="profile-meta">
-                                <span class="meta-item">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                    {{ usuario.email }}
-                                </span>
-                                <span class="meta-item" v-if="usuario.telefone">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                                    {{ usuario.telefone }}
-                                </span>
-                                <span class="meta-badge">
-                                    {{ arquivos.length }} doc{{ arquivos.length !== 1 ? 's' : '' }}
-                                </span>
-                                <span class="meta-badge meta-badge--note">
-                                    {{ anotacoes.length }} anotaç{{ anotacoes.length !== 1 ? 'ões' : 'ão' }}
-                                </span>
-                                <span class="meta-badge meta-badge--proj">
-                                    {{ totalProjetos }} projeto{{ totalProjetos !== 1 ? 's' : '' }}
-                                </span>
-                                <span v-if="usuario.estagio_id" class="meta-badge estagio-badge" :style="estiloDoEstagio(usuario.estagio_id)">
-                                    {{ estagios.find(t => t.id === usuario.estagio_id)?.descricao }}
-                                </span>
-                            </div>
-                        </div>
+            <div class="flex items-start gap-4">
+                <AppAvatar :nome="lead.nome" :tamanho="40" class="hidden sm:inline-flex" />
+                <div class="min-w-0 flex-1">
+                    <AppTabs v-model="aba" :abas="abas" sincronizar-url="aba" />
+                    <div class="mt-4" :id="`painel-${aba}`" role="tabpanel" :aria-labelledby="`aba-${aba}`">
+                        <KeepAlive>
+                            <component
+                                :is="componentes[aba]"
+                                :key="aba"
+                                :lead="lead"
+                                :status="status"
+                                :funis="funis"
+                                :abrir-formulario="abrirNovaTarefa"
+                                @atualizado="atualizar"
+                                @contagem="atualizarContagem"
+                            />
+                        </KeepAlive>
                     </div>
                 </div>
-
-                <div class="tabs-nav">
-                    <button
-                        v-for="tab in tabs"
-                        :key="tab.key"
-                        @click="activeTab = tab.key"
-                        class="tab-btn"
-                        :class="{ 'tab-btn--active': activeTab === tab.key }"
-                    >
-                        <svg v-if="tab.icon === 'user'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        <svg v-else-if="tab.icon === 'paperclip'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                        <svg v-else-if="tab.icon === 'file'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        <svg v-else-if="tab.icon === 'layers'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                        <svg v-else-if="tab.icon === 'clock'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <svg v-else-if="tab.icon === 'check'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-
-                        {{ tab.label }}
-                    </button>
-                </div>
-
-                <Transition name="tab-fade" mode="out-in">
-
-                    <section v-if="activeTab === 'dados'" key="dados" class="panel">
-                        <div class="panel-header">
-                            <div class="panel-title-group">
-                                <span class="panel-icon panel-icon--accent">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                </span>
-                                <h2 class="panel-title">Dados do Lead</h2>
-                            </div>
-                        </div>
-
-                        <div class="fields-stack">
-                            <div class="edit-field">
-                                <label class="edit-label">Nome completo</label>
-                                <input type="text" v-model="usuario.nome" class="edit-input" placeholder="Nome" />
-                            </div>
-                            <div class="edit-field">
-                                <label class="edit-label">E-mail</label>
-                                <input type="email" v-model="usuario.email" class="edit-input" placeholder="email@exemplo.com" />
-                            </div>
-                            <div class="edit-field">
-                                <label class="edit-label">Telefone</label>
-                                <input
-                                    v-model="usuario.telefone"
-                                    class="edit-input"
-                                    v-maska
-                                    :data-maska="ehTelefoneBrasileiro(usuario.telefone) ? MASCARA_TELEFONE : null"
-                                    placeholder="(00) 00000-0000"
-                                />
-                            </div>
-                            <div class="edit-field">
-                                <label class="edit-label">Descrição</label>
-                                <textarea
-                                    v-model="usuario.descricao"
-                                    class="edit-input edit-textarea"
-                                    rows="4"
-                                    placeholder="Observações gerais..."
-                                    :maxlength="limites.descricao"
-                                />
-                            </div>
-                            <div class="edit-field">
-                                <label class="edit-label">Funil</label>
-                                <div class="select-wrapper">
-                                    <select v-model="funilSelecionado" class="edit-input edit-select" @change="aoTrocarFunil">
-                                        <option :value="null">Sem funil</option>
-                                        <option v-for="f in funis" :key="f.id" :value="f.id">{{ f.nome }}</option>
-                                    </select>
-                                    <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </div>
-                            </div>
-                            <div class="edit-field">
-                                <label class="edit-label">Estágio</label>
-                                <div class="select-wrapper">
-                                    <select v-model="estagioSelecionado" class="edit-input edit-select">
-                                        <option :value="null">Sem estágio</option>
-                                        <option v-for="estagio in estagiosDoFunil" :key="estagio.id" :value="estagio.id">
-                                            {{ estagio.descricao }}
-                                        </option>
-                                    </select>
-                                    <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="panel-footer">
-                            <button @click="editarUsuario" class="btn-save-full" :disabled="isSavingUser">
-                                <span v-if="isSavingUser" class="btn-spinner" />
-                                <Save v-else :size="14" />
-                                {{ isSavingUser ? 'Salvando...' : 'Salvar dados' }}
-                            </button>
-                        </div>
-                    </section>
-
-                    <section v-else-if="activeTab === 'documentos'" key="documentos" class="panel">
-                        <div class="panel-header">
-                            <div class="panel-title-group">
-                                <span class="panel-icon panel-icon--green">
-                                    <Paperclip :size="14" />
-                                </span>
-                                <h2 class="panel-title">Documentos</h2>
-                                <span class="count-chip">{{ arquivos.length }}</span>
-                            </div>
-                            <label class="btn-icon-action" title="Selecionar arquivos">
-                                <PlusCircle :size="14" />
-                                <input type="file" multiple class="sr-only" @change="adicionarArquivos" />
-                            </label>
-                        </div>
-
-                        <Transition name="slide">
-                            <div v-if="arquivosPendentes.length > 0" class="pending-zone">
-                                <div class="pending-zone-header">
-                                    <span class="pending-label">
-                                        <Upload :size="12" />
-                                        {{ arquivosPendentes.length }} pendente(s)
-                                    </span>
-                                    <div class="pending-zone-actions">
-                                        <button @click="arquivosPendentes = []" class="btn-link-danger">
-                                            <X :size="12" /> Limpar
-                                        </button>
-                                        <button @click="salvarArquivos" class="btn-green" :disabled="isUploading">
-                                            <span v-if="isUploading" class="btn-spinner btn-spinner--dark" />
-                                            <Save v-else :size="13" />
-                                            {{ isUploading ? `${uploadProgress}%` : 'Enviar' }}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div v-if="isUploading" class="progress-bar-wrap">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" :style="{ width: uploadProgress + '%' }" />
-                                    </div>
-                                </div>
-                                <div class="pending-list">
-                                    <div v-for="arq in arquivosPendentes" :key="arq.id" class="pending-item">
-                                        <div class="pending-file-info">
-                                            <div class="file-type-dot" />
-                                            <div>
-                                                <p class="pending-filename">{{ arq.name }}</p>
-                                                <p class="pending-filesize">{{ formatarTamanho(arq.size) }}</p>
-                                            </div>
-                                        </div>
-                                        <button @click="removerArquivoPendente(arq.id)" class="icon-btn icon-btn--delete">
-                                            <X :size="12" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </Transition>
-
-                        <div class="panel-body panel-body--flush">
-                            <div v-if="arquivos.length > 0" class="files-list">
-                                <div v-for="arquivo in arquivos" :key="arquivo.id" class="file-item">
-                                    <div class="file-item-left">
-                                        <div class="file-icon-wrap"><FileText :size="13" /></div>
-                                        <div class="file-item-info">
-                                            <span class="file-name">{{ arquivo.nome }}</span>
-                                            <span class="file-size">{{ formatarTamanho(arquivo.tamanho || 0) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="file-item-actions">
-                                        <a :href="arquivo.url_download" :download="arquivo.nome" class="icon-btn icon-btn--download"><Download :size="13" /></a>
-                                        <button @click="excluirArquivo(arquivo.id)" class="icon-btn icon-btn--delete"><Trash2 :size="13" /></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else-if="!arquivosPendentes.length" class="empty-panel">
-                                <div class="empty-panel-icon"><Paperclip :size="22" /></div>
-                                <p class="empty-panel-title">Nenhum documento</p>
-                                <p class="empty-panel-sub">Clique em + para adicionar arquivos.</p>
-                            </div>
-                        </div>
-
-                        <div class="panel-footer" v-if="!arquivos.length && !arquivosPendentes.length">
-                            <label class="btn-save-full btn-save-full--ghost" style="cursor:pointer; justify-content:center;">
-                                <Paperclip :size="14" />
-                                Selecionar documentos
-                                <input type="file" multiple class="sr-only" @change="adicionarArquivos" />
-                            </label>
-                        </div>
-                    </section>
-
-                    <section v-else-if="activeTab === 'anotacoes'" key="anotacoes" class="panel">
-                        <div class="panel-header">
-                            <div class="panel-title-group">
-                                <span class="panel-icon panel-icon--purple">
-                                    <FileText :size="14" />
-                                </span>
-                                <h2 class="panel-title">Anotações</h2>
-                                <span class="count-chip count-chip--purple">{{ anotacoes.length }}</span>
-                            </div>
-                            <button v-if="!showAddNote" @click="showAddNote = true" class="btn-icon-action btn-icon-action--purple">
-                                <PlusCircle :size="14" />
-                            </button>
-                            <button v-else @click="showAddNote = false" class="btn-icon-action btn-icon-action--ghost">
-                                <X :size="14" />
-                            </button>
-                        </div>
-
-                        <Transition name="slide">
-                            <div v-if="showAddNote" class="note-form-inline">
-                                <textarea v-model="noteForm.descricao" rows="3" placeholder="Digite sua anotação..." class="note-textarea" autofocus :maxlength="limites.anotacao" />
-                                <small class="edit-label">{{ (noteForm.descricao?.length ?? 0) }} / {{ limites.anotacao }}</small>
-                                <div class="note-form-actions">
-                                    <button @click="showAddNote = false; noteForm.descricao = ''" class="btn-ghost btn-sm"><X :size="12" /> Cancelar</button>
-                                    <button @click="cadastrarAnotacao" class="btn-primary btn-sm" :disabled="!noteForm.descricao.trim()">
-                                        <Save :size="12" /> Salvar
-                                    </button>
-                                </div>
-                            </div>
-                        </Transition>
-
-                        <div class="panel-body panel-body--flush panel-body--scroll">
-                            <div v-if="anotacoes.length > 0" class="notes-list">
-                                <div v-for="(anotacao, i) in anotacoes" :key="anotacao.id" class="note-item" :style="{ animationDelay: `${i * 0.04}s` }">
-                                    <div v-if="editingNoteId !== anotacao.id" class="note-view">
-                                        <p class="note-text">{{ anotacao.descricao }}</p>
-                                        <div class="note-actions">
-                                            <button @click="editarAnotacao(anotacao)" class="icon-btn icon-btn--edit"><Edit :size="12" /></button>
-                                            <button @click="excluirAnotacao(anotacao.id)" class="icon-btn icon-btn--delete"><Trash2 :size="12" /></button>
-                                        </div>
-                                    </div>
-                                    <div v-else class="note-edit">
-                                        <textarea v-model="editNoteForm.descricao" rows="3" class="note-textarea" :maxlength="limites.anotacao" />
-                                        <div class="note-form-actions">
-                                            <button @click="cancelarEdicaoAnotacao" class="btn-ghost btn-sm"><X :size="12" /> Cancelar</button>
-                                            <button @click="salvarEdicaoAnotacao" class="btn-primary btn-sm"><Save :size="12" /> Salvar</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else-if="!showAddNote" class="empty-panel">
-                                <div class="empty-panel-icon"><FileText :size="22" /></div>
-                                <p class="empty-panel-title">Nenhuma anotação</p>
-                                <p class="empty-panel-sub">Clique em + para registrar uma observação.</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <div v-else-if="activeTab === 'projetos'" key="projetos">
-                        <ProjetoPanel :usuario-id="idPerfil" @update:total="totalProjetos = $event" />
-                    </div>
-
-                    <section v-else-if="activeTab === 'timeline'" key="timeline" class="panel">
-                        <div class="panel-header">
-                            <div class="panel-title-group">
-                                <span class="panel-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </span>
-                                <h2 class="panel-title">Timeline</h2>
-                            </div>
-                        </div>
-                        <div class="panel-body">
-                            <TimelinePanel :usuario-id="idPerfil" />
-                        </div>
-                    </section>
-
-                    <section v-else-if="activeTab === 'tarefas'" key="tarefas" class="panel">
-                        <div class="panel-header">
-                            <div class="panel-title-group">
-                                <span class="panel-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                                </span>
-                                <h2 class="panel-title">Tarefas & Follow-ups</h2>
-                            </div>
-                        </div>
-                        <div class="panel-body">
-                            <TarefaPanel :usuario-id="idPerfil" />
-                        </div>
-                    </section>
-
-                </Transition>
-
             </div>
-        </div>
+        </PageContainer>
     </AuthenticatedLayout>
 </template>
-
-<style>
-    body, #app { background: var(--bg-0) !important; margin: 0; padding: 0; }
-    /* ══════════════════════════════════════════════════════════
-       Escala e densidade alinhadas ao Pipeline e à Lista de Leads.
-       ══════════════════════════════════════════════════════════ */
-    .profile-name, .panel-title, .section-title {
-        font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px;
-    }
-    .tab {
-        font-size: var(--fs-md);
-        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
-    }
-    .edit-label, .meta-label { font-size: var(--fs-sm); color: var(--fg-1); }
-    .edit-input, .edit-select, .edit-textarea {
-        border-radius: var(--r-2); font-size: var(--fs-md);
-        transition: border-color var(--d-1) var(--e);
-    }
-
-</style>
-
-<style scoped>
-
-    .page {
-        font-family: 'DM Sans', sans-serif;
-        background: var(--bg);
-        min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
-    }
-
-    /* ── Background ── */
-    .dot-grid {
-        position: fixed; inset: 0;
-        background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
-        background-size: 30px 30px;
-        opacity: 0.45; pointer-events: none; z-index: 0;
-    }
-    .glow-blob {
-        position: fixed; top: -200px; right: -150px;
-        width: 600px; height: 600px;
-        background: radial-gradient(circle, rgba(109,93,252,0.14) 0%, transparent 70%);
-        pointer-events: none; z-index: 0;
-    }
-
-    /* ── Toast ── */
-    .toast {
-        position: fixed; top: 1.25rem; right: 1.5rem; z-index: 9999;
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        padding: 0.65rem 1.1rem;
-        border-radius: var(--r-2);
-        font-size: 0.82rem; font-weight: 500;
-        backdrop-filter: blur(12px);
-        border: 1px solid transparent;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-    .toast--success { background: rgba(62,207,142,0.15); border-color: rgba(62,207,142,0.3); color: var(--green); }
-    .toast--error   { background: rgba(240,98,146,0.15); border-color: rgba(240,98,146,0.3); color: var(--red); }
-    .toast-enter-active, .toast-leave-active { transition: opacity var(--d-1), transform 0.25s; }
-    .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(16px); }
-
-    /* ── Loading ── */
-    .loading-state {
-        position: relative; z-index: 1;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        min-height: 60vh; gap: 1rem;
-    }
-    .spinner {
-        width: 28px; height: 28px;
-        border: 2px solid var(--border);
-        border-top-color: var(--accent);
-        border-radius: 50%;
-        animation: spin 0.65s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 0.85rem; color: var(--t3); }
-
-    /* ── Content ── */
-    .content {
-        position: relative; z-index: 1;
-        padding: 2.5rem 2.5rem 3rem;
-    }
-
-    /* ── Breadcrumb ── */
-    .breadcrumb { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.75rem; }
-    .breadcrumb-link {
-        display: inline-flex; align-items: center; gap: 0.3rem;
-        font-size: 0.8rem; color: var(--t3); text-decoration: none; transition: color var(--d-1);
-    }
-    .breadcrumb-link:hover { color: var(--accent); }
-    .breadcrumb-sep { color: var(--t3); font-size: 0.8rem; }
-    .breadcrumb-current { font-size: 0.8rem; color: var(--t2); }
-
-    /* ── Hero ── */
-    .profile-hero {
-        display: flex; align-items: center;
-        justify-content: space-between;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-3);
-        padding: 1.5rem 1.75rem;
-        margin-bottom: 1.25rem;
-        gap: 1rem; flex-wrap: wrap;
-    }
-    .hero-left { display: flex; align-items: center; gap: 1.1rem; }
-    .profile-avatar {
-        width: 50px; height: 50px;
-        border-radius: var(--r-3);
-        background: var(--accent-dim); color: var(--accent-hi);
-        display: flex; align-items: center; justify-content: center;
-        font-family: 'Syne', sans-serif;
-        font-size: 1rem; font-weight: 700; color: #fff;
-        flex-shrink: 0;
-    }
-    .profile-name {
-        font-family: 'Syne', sans-serif;
-        font-size: 1.25rem; font-weight: 800;
-        color: var(--t1); margin: 0 0 0.3rem;
-        letter-spacing: -0.3px;
-    }
-    .profile-meta { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
-    .meta-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--t2); }
-    .meta-item svg { width: 12px; height: 12px; }
-    .meta-badge {
-        font-size: 0.7rem; font-weight: 500;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid var(--border);
-        color: var(--t3); border-radius: 100px;
-        padding: 0.15rem 0.6rem;
-    }
-    .meta-badge--note { background: var(--purple-bg); border-color: rgba(167,139,250,0.2); color: var(--purple); }
-    .meta-badge--proj {
-        background: rgba(251,146,60,0.1);
-        border-color: rgba(251,146,60,0.25);
-        color: var(--warn);
-    }
-
-    /* ── Tab Navigation ── */
-    .tabs-nav {
-        display: flex;
-        gap: 0.25rem;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-3);
-        padding: 0.3rem;
-        margin-bottom: 1.25rem;
-        width: fit-content;
-    }
-    .tab-btn {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        padding: 0.5rem 1rem;
-        border-radius: var(--r-2);
-        border: none; background: transparent;
-        color: var(--t3);
-        font-family: 'DM Sans', sans-serif;
-        font-size: 0.82rem; font-weight: 500;
-        cursor: pointer;
-        transition: color var(--d-1), background 0.2s;
-        white-space: nowrap;
-    }
-    .tab-btn:hover { color: var(--t2); background: rgba(255,255,255,0.04); }
-    .tab-btn--active {
-        background: rgba(109,93,252,0.15);
-        color: var(--accent);
-        border: 1px solid rgba(109,93,252,0.25);
-    }
-
-    /* ── Tab Transition ── */
-    .tab-fade-enter-active, .tab-fade-leave-active { transition: opacity var(--d-1), transform 0.18s; }
-    .tab-fade-enter-from { opacity: 0; transform: translateY(6px); }
-    .tab-fade-leave-to   { opacity: 0; transform: translateY(-4px); }
-
-    /* ── Panel ── */
-    .panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-3);
-        overflow: hidden;
-        display: flex; flex-direction: column;
-    }
-    .panel-header {
-        display: flex; align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--border);
-        gap: 0.5rem;
-    }
-    .panel-title-group { display: flex; align-items: center; gap: 0.55rem; }
-    .panel-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 0.875rem; font-weight: 700;
-        color: var(--t1); margin: 0;
-    }
-    .panel-icon {
-        width: 26px; height: 26px; border-radius: var(--r-1);
-        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .panel-icon--accent { background: rgba(109,93,252,0.15); color: var(--accent); }
-    .panel-icon--green  { background: var(--green-bg); color: var(--green); }
-    .panel-icon--purple { background: var(--purple-bg); color: var(--purple); }
-    .count-chip {
-        font-size: 0.68rem; font-weight: 600;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid var(--border);
-        color: var(--t3); border-radius: 100px;
-        padding: 0.1rem 0.5rem;
-    }
-    .count-chip--purple { background: var(--purple-bg); border-color: rgba(167,139,250,0.2); color: var(--purple); }
-
-    .panel-body { padding: 1.25rem; flex: 1; }
-    .panel-body--flush { padding: 0; }
-    .panel-body--scroll { max-height: 480px; overflow-y: auto; }
-    .panel-body--scroll::-webkit-scrollbar { width: 4px; }
-    .panel-body--scroll::-webkit-scrollbar-track { background: transparent; }
-    .panel-body--scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    .panel-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
-
-    /* ── Fields ── */
-    .fields-stack { display: flex; flex-direction: column; gap: 0.9rem; padding: 1.25rem; }
-    .edit-field { display: flex; flex-direction: column; gap: 0.35rem; }
-    .edit-label {
-        font-size: 0.7rem; font-weight: 500;
-        letter-spacing: 0.07em; text-transform: uppercase; color: var(--t3);
-    }
-    .edit-input {
-        background: var(--inp-bg); border: 1px solid var(--border);
-        border-radius: var(--r-2); color: var(--t1);
-        font-family: 'DM Sans', sans-serif; font-size: 0.875rem;
-        padding: 0.6rem 0.85rem; outline: none;
-        transition: border-color var(--d-1), box-shadow 0.2s;
-        width: 100%; box-sizing: border-box;
-    }
-    .edit-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
-    .edit-input::placeholder { color: var(--t3); }
-    .edit-textarea { resize: vertical; min-height: 96px; }
-    .select-wrapper { position: relative; display: flex; align-items: center; }
-    .edit-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 2.25rem; }
-    .edit-select option { background: var(--bg-0); color: var(--fg-0); }
-    .select-arrow { position: absolute; right: 0.85rem; pointer-events: none; color: var(--t3); flex-shrink: 0; }
-
-    /* ── Buttons ── */
-    .btn-save-full {
-        display: flex; align-items: center; justify-content: center; gap: 0.45rem;
-        width: 100%; background: var(--accent); color: #fff;
-        border: none; border-radius: var(--r-2);
-        padding: 0.7rem 1rem;
-        font-family: 'DM Sans', sans-serif;
-        font-size: 0.875rem; font-weight: 500; cursor: pointer;
-        transition: background var(--d-1), box-shadow 0.2s, opacity 0.2s;
-    }
-    .btn-save-full:hover:not(:disabled) { background: var(--accent-h); box-shadow: 0 0 20px var(--glow); }
-    .btn-save-full:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-save-full--ghost {
-        background: transparent; border: 1px dashed var(--border); color: var(--t3);
-    }
-    .btn-save-full--ghost:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
-
-    .btn-icon-action {
-        width: 28px; height: 28px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: var(--r-2); background: var(--green-bg);
-        border: 1px solid rgba(62,207,142,0.25); color: var(--green);
-        cursor: pointer; transition: background var(--d-1), border-color 0.2s; text-decoration: none;
-    }
-    .btn-icon-action:hover { background: rgba(62,207,142,0.2); border-color: rgba(62,207,142,0.4); }
-    .btn-icon-action--purple { background: var(--purple-bg); border-color: rgba(167,139,250,0.25); color: var(--purple); }
-    .btn-icon-action--purple:hover { background: rgba(167,139,250,0.2); border-color: rgba(167,139,250,0.45); }
-    .btn-icon-action--ghost { background: transparent; border-color: var(--border); color: var(--t3); }
-    .btn-icon-action--ghost:hover { color: var(--t2); border-color: var(--t3); }
-
-    .btn-primary {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
-        padding: 0.5rem 0.9rem;
-        font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer;
-        transition: background var(--d-1), box-shadow 0.2s;
-    }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-h); box-shadow: 0 0 14px var(--glow); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
-
-    .btn-ghost {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        padding: 0.5rem 0.9rem; background: transparent;
-        border: 1px solid var(--border); border-radius: var(--r-2); color: var(--t2);
-        font-family: 'DM Sans', sans-serif; font-size: 0.82rem; cursor: pointer;
-        transition: border-color var(--d-1), color 0.2s;
-    }
-    .btn-ghost:hover { border-color: var(--border-h); color: var(--t1); }
-    .btn-ghost.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
-
-    .btn-green {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--green-bg); border: 1px solid rgba(62,207,142,0.3);
-        color: var(--green); border-radius: var(--r-2); padding: 0.45rem 0.85rem;
-        font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer;
-        transition: background var(--d-1);
-    }
-    .btn-green:hover:not(:disabled) { background: rgba(62,207,142,0.2); }
-    .btn-green:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn-link-danger {
-        display: inline-flex; align-items: center; gap: 0.3rem;
-        font-size: 0.75rem; color: var(--t3);
-        background: transparent; border: none; cursor: pointer; padding: 0.3rem 0.5rem;
-        border-radius: var(--r-1); transition: color var(--d-1);
-    }
-    .btn-link-danger:hover { color: var(--red); }
-
-    .icon-btn {
-        width: 26px; height: 26px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: var(--r-1); border: 1px solid var(--border);
-        background: transparent; cursor: pointer; color: var(--t3);
-        transition: color var(--d-1), border-color 0.15s, background 0.15s;
-        text-decoration: none; flex-shrink: 0;
-    }
-    .icon-btn--edit:hover    { color: var(--accent); border-color: rgba(109,93,252,0.4); background: rgba(109,93,252,0.08); }
-    .icon-btn--delete:hover  { color: var(--red); border-color: rgba(240,98,146,0.4); background: var(--red-bg); }
-    .icon-btn--download:hover { color: var(--green); border-color: rgba(62,207,142,0.4); background: var(--green-bg); }
-
-    .btn-spinner {
-        width: 12px; height: 12px;
-        border: 1.5px solid rgba(255,255,255,0.3);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: spin 0.6s linear infinite;
-        display: inline-block;
-    }
-    .btn-spinner--dark { border-color: rgba(62,207,142,0.3); border-top-color: var(--green); }
-
-    /* ── Pending zone ── */
-    .pending-zone {
-        background: rgba(109,93,252,0.05);
-        border-bottom: 1px solid rgba(109,93,252,0.15);
-        padding: 0.85rem 1.1rem;
-        display: flex; flex-direction: column; gap: 0.65rem;
-    }
-    .pending-zone-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-    .pending-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 500; color: var(--accent); }
-    .pending-zone-actions { display: flex; gap: 0.4rem; align-items: center; }
-    .progress-bar { height: 3px; background: var(--border); border-radius: 100px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width var(--d-1) var(--e); }
-    .pending-list { display: flex; flex-direction: column; gap: 0.4rem; }
-    .pending-item {
-        display: flex; align-items: center; justify-content: space-between;
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--r-2); padding: 0.5rem 0.75rem;
-    }
-    .pending-file-info { display: flex; align-items: center; gap: 0.55rem; }
-    .file-type-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-    .pending-filename { font-size: 0.78rem; font-weight: 500; color: var(--t1); }
-    .pending-filesize { font-size: 0.68rem; color: var(--t3); }
-
-    /* ── Files ── */
-    .files-list { display: flex; flex-direction: column; }
-    .file-item {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0.8rem 1.25rem; border-bottom: 1px solid rgba(30,40,64,0.6); transition: background var(--d-1);
-    }
-    .file-item:last-child { border-bottom: none; }
-    .file-item:hover { background: rgba(109,93,252,0.04); }
-    .file-item-left { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
-    .file-icon-wrap { width: 28px; height: 28px; border-radius: var(--r-1); background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .file-item-info { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-    .file-name { font-size: 0.82rem; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
-    .file-size { font-size: 0.7rem; color: var(--t3); }
-    .file-item-actions { display: flex; gap: 0.35rem; }
-
-    /* ── Notes ── */
-    .note-form-inline {
-        padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border);
-        background: rgba(167,139,250,0.04); display: flex; flex-direction: column; gap: 0.6rem;
-    }
-    .note-textarea {
-        background: var(--inp-bg); border: 1px solid var(--border);
-        border-radius: var(--r-2); color: var(--t1);
-        font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
-        padding: 0.65rem 0.9rem; outline: none; resize: vertical; width: 100%; box-sizing: border-box;
-        transition: border-color var(--d-1), box-shadow 0.2s;
-    }
-    .note-textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(167,139,250,0.15); }
-    .note-textarea::placeholder { color: var(--t3); }
-    .note-form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
-    .notes-list { display: flex; flex-direction: column; }
-    .note-item {
-        padding: 0.9rem 1.25rem; border-bottom: 1px solid rgba(30,40,64,0.5);
-        animation: fadeRow 0.3s cubic-bezier(0.22,1,0.36,1) both; transition: background var(--d-1);
-    }
-    .note-item:last-child { border-bottom: none; }
-    .note-item:hover { background: rgba(167,139,250,0.03); }
-    @keyframes fadeRow { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    .note-view { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
-    .note-text { font-size: 0.85rem; color: var(--t2); line-height: 1.6; flex: 1; word-break: break-word; }
-    .note-actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
-    .note-edit { display: flex; flex-direction: column; gap: 0.6rem; }
-
-    /* ── Empty ── */
-    .empty-panel {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        padding: 2.5rem 1.5rem; gap: 0.4rem; text-align: center;
-    }
-    .empty-panel-icon { color: var(--t3); opacity: 0.35; margin-bottom: 0.25rem; }
-    .empty-panel-title { font-size: 0.875rem; font-weight: 500; color: var(--t2); }
-    .empty-panel-sub { font-size: 0.78rem; color: var(--t3); }
-
-    /* ── Transitions ── */
-    .slide-enter-active, .slide-leave-active { transition: opacity var(--d-1), transform 0.2s; }
-    .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-6px); }
-
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); }
-
-    /* ── Estágios ── */
-    .estagio-badge { font-size: 0.75rem; font-weight: 500; padding: 2px 8px; border-radius: var(--r-1); display: inline-block; margin-top: 4px; width: fit-content; }
-    /* As sete classes de cor por id saíram: a cor agora vem de estagios.cor e
-       é aplicada inline por estiloDoEstagio(). */
-
-    /* ── Responsive ── */
-    @media (max-width: 700px) {
-        .content { padding: 1.25rem 1rem 2rem; }
-        .profile-hero { padding: 1.1rem 1.25rem; }
-        .tabs-nav { width: 100%; overflow-x: auto; }
-        .tab-btn { padding: 0.45rem 0.75rem; font-size: 0.78rem; }
-    }
-    /* ══════════════════════════════════════════════════════════
-       Escala e densidade alinhadas ao Pipeline e à Lista de Leads.
-       ══════════════════════════════════════════════════════════ */
-    .profile-name, .panel-title, .section-title {
-        font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px;
-    }
-    .tab {
-        font-size: var(--fs-md);
-        transition: color var(--d-1) var(--e), border-color var(--d-1) var(--e);
-    }
-    .edit-label, .meta-label { font-size: var(--fs-sm); color: var(--fg-1); }
-    .edit-input, .edit-select, .edit-textarea {
-        border-radius: var(--r-2); font-size: var(--fs-md);
-        transition: border-color var(--d-1) var(--e);
-    }
-
-</style>

@@ -47,15 +47,13 @@ class DownloadProtegidoTest extends TestCase
         $this->lead = $this->lead($this->tenant, $this->dono);
         $projeto = $this->projeto($this->lead);
 
-        $this->actingAs($this->dono)->postJson('/api/arquivos', [
-            'usuario_id' => $this->lead->id,
+        $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'nome' => 'rg.pdf',
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertSuccessful();
         $this->arquivo = arquivo::firstOrFail();
 
-        $this->actingAs($this->dono)->postJson('/api/projetoAnexo', [
-            'usuario_id' => $projeto->id,
+        $this->actingAs($this->dono)->postJson("/api/projetos/{$projeto->id}/anexos", [
             'nome' => 'contrato.pdf',
             'arquivo' => UploadedFile::fake()->create('contrato.pdf', 10),
         ])->assertSuccessful();
@@ -155,10 +153,10 @@ class DownloadProtegidoTest extends TestCase
     public function test_listagem_nao_expoe_caminho_e_traz_url_de_download(): void
     {
         $this->actingAs($this->dono)
-            ->getJson("/api/arquivos?usuario_id={$this->lead->id}")
+            ->getJson("/api/leads/{$this->lead->id}/arquivos")
             ->assertOk()
-            ->assertJsonMissingPath('0.local')
-            ->assertJsonPath('0.url_download', route('arquivos.download', $this->arquivo));
+            ->assertJsonMissingPath('data.0.local')
+            ->assertJsonPath('data.0.url_download', route('arquivos.download', $this->arquivo));
     }
 
     public function test_anexo_de_projeto_segue_as_mesmas_regras(): void

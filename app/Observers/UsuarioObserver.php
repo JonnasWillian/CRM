@@ -52,13 +52,21 @@ class UsuarioObserver
 
         if ($estagio->tipo === Estagio::TIPO_ABERTO) {
             $usuario->fechado_em = null;
-        } elseif ($usuario->fechado_em === null) {
+            // A sugestão do estágio só preenche o que está vazio.
+            if ($usuario->probabilidade === null && $estagio->probabilidade_padrao !== null) {
+                $usuario->probabilidade = (int) $estagio->probabilidade_padrao;
+            }
+
+            return;
+        }
+
+        if ($usuario->fechado_em === null) {
             $usuario->fechado_em = now();
         }
 
-        if ($usuario->probabilidade === null && $estagio->probabilidade_padrao !== null) {
-            $usuario->probabilidade = (int) $estagio->probabilidade_padrao;
-        }
+        // Ganho é 100% e perdido é 0% por definição — o forecast só olha os
+        // abertos, mas "60% de chance" num lead ganho confunde quem lê.
+        $usuario->probabilidade = $estagio->tipo === Estagio::TIPO_GANHO ? 100 : 0;
     }
 
     public function created(Usuario $usuario): void

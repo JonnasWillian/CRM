@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\UsuarioRequest;
 use App\Models\Anotacao;
 use App\Models\arquivo as ArquivoModel;
 use App\Models\Estagio;
@@ -13,34 +12,18 @@ use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
 use App\Models\Tarefa;
 use App\Models\Usuario;
-use App\Services\Funis\MoverLeadDeFunil;
-use App\Services\Perdas\AplicarTransicao;
-use App\Support\LimitesDeTexto;
-use App\Support\Perdas\RegrasDePerda;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
+/**
+ * O que sobrou do controller original de leads: kanban (sai na Fase 3c),
+ * estágios (lookup), métricas legadas (só o teste de paridade) e o timeline
+ * deprecado (só o teste de paridade da Fase 5).
+ */
 class Userarios extends Controller
 {
-    /**
-     * Lista de leads do Dashboard: visibilidade, filtros, ordem e paginação
-     * ficam em ListagemDeLeads (Tarefa 14) — substitui o antigo `view()`, que
-     * devolvia a carteira inteira e deixava busca/filtro/paginação por conta
-     * do navegador.
-     */
-    public function index(\App\Http\Requests\ListagemDeLeadsRequest $request, \App\Queries\Leads\ListagemDeLeads $listagem)
-    {
-        $ordenacao = $request->ordenacao();
-
-        return response()->json(\App\Support\Listagem\Paginacao::resposta(
-            $listagem($request->user(), $request->filtrosValidados(), $ordenacao, $request->porPagina()),
-            $ordenacao,
-            $request->filtrosValidados(),
-        ));
-    }
-
     public function estagios(Request $request)
     {
         $estagios = Estagio::query()
@@ -50,80 +33,6 @@ class Userarios extends Controller
             ->get();
 
         return response()->json($estagios);
-    }
-
-    /**
-     * Funil em que o quadro/cadastro opera quando o cliente não escolhe um.
-     *
-     * Cai no padrão do tenant; se nenhum estiver marcado (tenant anterior à
-     * feature cujo backfill não rodou, ou padrão arquivado por caminho
-     * inesperado), usa o primeiro da ordem em vez de devolver nada — um Kanban
-     * vazio sem explicação é pior que um Kanban no funil errado.
-     */
-    private function funilPadrao(): ?Funil
-    {
-        return Funil::where('is_default', true)->first() ?? Funil::ordenados()->first();
-    }
-
-    public function create(UsuarioRequest $request)
-    {
-        try {
-            $validated = $request->validated();
-            $validated['user_id'] = auth()->id();
-
-            // Substitui o `payload.tag_id = 1` que o Dashboard mandava fixo. Um
-            // id chutado no cliente só funcionava porque o conjunto de estágios
-            // era o mesmo para todo mundo; com funis por tenant ele apontaria
-            // para o estágio de outra empresa ou para nada.
-            if (empty($validated['funil_id'])) {
-                $validated['funil_id'] = $this->funilPadrao()?->id;
-            }
-
-            if (empty($validated['estagio_id']) && ! empty($validated['funil_id'])) {
-                $validated['estagio_id'] = Estagio::where('funil_id', $validated['funil_id'])
-                    ->aberto()
-                    ->orderBy('ordem')
-                    ->orderBy('id')
-                    ->value('id');
-            }
-
-            // Via AplicarTransicao e não Usuario::create(): o quick-add do Kanban
-            // cadastra o lead direto na coluna clicada, e essa coluna pode ser
-            // um estágio perdido. Nascer perdido é perder.
-            app(AplicarTransicao::class)(new Usuario, $validated, RegrasDePerda::extrair($request));
-
-            return response()->json(['message' => 'Usuário cadastrado com sucesso'], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors(),
-            ], 422);
-        }
-    }
-
-    public function viewUsuario(Usuario $usuario)
-    {
-        $this->authorize('view', $usuario);
-
-        return response()->json([$usuario]);
-    }
-
-    public function update(UsuarioRequest $request, Usuario $usuario)
-    {
-        $this->authorize('update', $usuario);
-
-        try {
-            // O histórico de estágio é gravado pelo UsuarioObserver, que
-            // observa a mudança de estagio_id em qualquer caminho de escrita.
-            // A perda é do AplicarTransicao, que precisa ver o estado ANTERIOR
-            // e por isso roda antes do save, não num observer.
-            app(AplicarTransicao::class)($usuario, $request->validated(), RegrasDePerda::extrair($request));
-
-            return response()->json(['message' => 'Usuário atualizado com sucesso'], 200);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors(),
-            ], 422);
-        }
     }
 
     /**
@@ -217,86 +126,6 @@ class Userarios extends Controller
         return response()->json($events);
     }
 
-    public function destroy(Request $request, Usuario $usuario)
-    {
-        $this->authorize('delete', $usuario);
-
-        // Soft delete: vai para a lixeira. Filhos, perdas e histórico ficam.
-        $usuario->delete();
-
-        return response()->json(['message' => 'Lead movido para a lixeira']);
-    }
-
-    public function restaurar(Usuario $usuario)
-    {
-        $this->authorize('restore', $usuario);
-
-        // restore() não verifica se o registro estava na lixeira: chamado
-        // num lead ativo, ele só reatribui deleted_at = null (sem efeito) e
-        // ainda assim dispara o evento `restored`, gravando um
-        // "lead_restaurado" falso no histórico.
-        if (! $usuario->trashed()) {
-            return response()->json(['message' => 'Este lead não está na lixeira.'], 409);
-        }
-
-        $usuario->restore();
-
-        return response()->json(['message' => 'Lead restaurado']);
-    }
-
-    public function viewAnotacao(Usuario $usuario)
-    {
-        $this->authorize('view', $usuario);
-
-        return response()->json(Anotacao::where('usuario_id', $usuario->id)->get());
-    }
-
-    public function createAnotacao(Request $request)
-    {
-        try {
-            // O lead vem de um campo do CORPO: o binding nunca o enxerga,
-            // então a policy não roda sozinha. findOrFail primeiro — o
-            // TenantScope já devolve 404 para id de outro tenant — e só então
-            // autoriza, para que "não existe" e "não é seu" deem a mesma
-            // resposta. Antes, `usuario_id` só tinha `required`: nem
-            // existência, nem tenant, nem posse.
-            $lead = Usuario::findOrFail($request->integer('usuario_id'));
-
-            $this->authorize('update', $lead);
-
-            $validated = $request->validate(['descricao' => ['required', 'string', 'max:'.LimitesDeTexto::ANOTACAO]]);
-
-            Anotacao::create([
-                'descricao' => $validated['descricao'],
-                'usuario_id' => $lead->id,
-            ]);
-
-            return response()->json(['message' => 'Anotação cadastrada com sucesso'], 201);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json([
-                'erros' => $error->errors(),
-            ], 422);
-        }
-    }
-
-    public function updateAnotacao(Request $request, Anotacao $anotacao)
-    {
-        $this->authorize('update', $anotacao);
-
-        $anotacao->update($request->validate(['descricao' => ['required', 'string', 'max:'.LimitesDeTexto::ANOTACAO]]));
-
-        return response()->json(['message' => 'Anotação atualizada']);
-    }
-
-    public function destroyAnotacao(Anotacao $anotacao)
-    {
-        $this->authorize('delete', $anotacao);
-
-        $anotacao->delete();
-
-        return response()->json(['message' => 'Anotação removida']);
-    }
-
     public function kanban(Request $request)
     {
         // O quadro mostra um funil por vez. Sem funil_id, o padrão do tenant.
@@ -304,7 +133,7 @@ class Userarios extends Controller
         // calado faria o usuário ver um quadro que não é o que ele pediu.
         $funil = $request->filled('funil_id')
             ? Funil::findOrFail($request->integer('funil_id'))
-            : $this->funilPadrao();
+            : Funil::padrao();
 
         if ($funil === null) {
             return response()->json(['funil' => null, 'funis' => [], 'estagios' => [], 'leads' => []]);
@@ -372,80 +201,6 @@ class Userarios extends Controller
             'estagios' => $estagios,
             'leads' => $leads,
         ]);
-    }
-
-    public function patchEstagio(Request $request, Usuario $usuario)
-    {
-        $this->authorize('update', $usuario);
-
-        try {
-            $validated = $request->validate([
-                'estagio_id' => [
-                    'required',
-                    Rule::exists('estagios', 'id')
-                        ->where('tenant_id', app(CurrentTenant::class)->id())
-                        // Arrastar um card move o lead dentro do quadro, e o
-                        // quadro é um funil. Sem este filtro, um estagio_id de
-                        // outro funil deixaria o lead com funil e estágio
-                        // discordando — estado que nenhuma tela sabe desenhar.
-                        // Trocar de funil é outra ação: moverFunil().
-                        ->where('funil_id', $usuario->funil_id),
-                ],
-                // Ao marcar como ganho, o diálogo manda o valor fechado junto.
-                'valor_fechado' => ['nullable', 'numeric', 'min:0'],
-                ...RegrasDePerda::campos(),
-            ], RegrasDePerda::mensagens());
-
-            $atributos = ['estagio_id' => $validated['estagio_id']];
-            if (array_key_exists('valor_fechado', $validated)) {
-                $atributos['valor_fechado'] = $validated['valor_fechado'];
-            }
-
-            // Histórico de estágio e activity log ficam a cargo do UsuarioObserver.
-            app(AplicarTransicao::class)($usuario, $atributos, RegrasDePerda::extrair($request));
-
-            return response()->json(['message' => 'Estágio atualizado']);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json(['erros' => $error->errors()], 422);
-        }
-    }
-
-    /**
-     * Move o lead para outro funil, no estágio de destino escolhido.
-     *
-     * A regra de negócio mora em MoverLeadDeFunil; aqui só resolvem-se os
-     * models. O histórico e o evento `funil_alterado` saem do UsuarioObserver.
-     */
-    public function moverFunil(Request $request, MoverLeadDeFunil $mover, Usuario $usuario)
-    {
-        $this->authorize('update', $usuario);
-
-        try {
-            $tenantId = app(CurrentTenant::class)->id();
-
-            $validated = $request->validate([
-                'funil_id' => [
-                    'required',
-                    Rule::exists('funis', 'id')->where('tenant_id', $tenantId)->whereNull('deleted_at'),
-                ],
-                'estagio_id' => [
-                    'required',
-                    Rule::exists('estagios', 'id')->where('tenant_id', $tenantId),
-                ],
-                ...RegrasDePerda::campos(),
-            ], RegrasDePerda::mensagens());
-
-            $mover(
-                $usuario,
-                Funil::findOrFail($validated['funil_id']),
-                Estagio::findOrFail($validated['estagio_id']),
-                RegrasDePerda::extrair($request),
-            );
-
-            return response()->json(['message' => 'Lead movido de funil']);
-        } catch (\Illuminate\Validation\ValidationException $error) {
-            return response()->json(['erros' => $error->errors()], 422);
-        }
     }
 
     public function kanbanSettings(Request $request)

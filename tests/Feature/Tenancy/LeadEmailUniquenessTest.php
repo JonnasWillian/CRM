@@ -47,7 +47,7 @@ class LeadEmailUniquenessTest extends TestCase
             'email' => 'contato@cliente.com',
         ]);
 
-        $resposta = $this->actingAs($staffB)->postJson('/api/usuarios', [
+        $resposta = $this->actingAs($staffB)->postJson('/api/leads', [
             'nome' => 'Cliente Compartilhado',
             'email' => 'contato@cliente.com',
             'telefone' => '11999998888',
@@ -67,7 +67,7 @@ class LeadEmailUniquenessTest extends TestCase
             'email' => 'duplicado@cliente.com',
         ]);
 
-        $resposta = $this->actingAs($staff)->postJson('/api/usuarios', [
+        $resposta = $this->actingAs($staff)->postJson('/api/leads', [
             'nome' => 'Cliente Duplicado',
             'email' => 'duplicado@cliente.com',
             'telefone' => '11999998888',
@@ -89,7 +89,7 @@ class LeadEmailUniquenessTest extends TestCase
         ]);
 
         // Sem 'id' no corpo: o identificador autoritativo é o da rota.
-        $resposta = $this->actingAs($staff)->putJson("/api/usuarios/{$lead->id}", [
+        $resposta = $this->actingAs($staff)->putJson("/api/leads/{$lead->id}", [
             'nome' => 'Nome Atualizado',
             'email' => 'lead@cliente.com',
             'telefone' => '11999998888',

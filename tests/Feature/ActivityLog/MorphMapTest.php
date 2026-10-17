@@ -32,7 +32,7 @@ class MorphMapTest extends TestCase
         $perdido = Estagio::factory()->perdido()->create(['tenant_id' => $tenant->id, 'funil_id' => $funil->id]);
         $motivo = MotivoPerda::factory()->create(['tenant_id' => $tenant->id]);
 
-        $this->actingAs($dono)->patchJson("/api/usuarios/{$lead->id}/estagio", [
+        $this->actingAs($dono)->patchJson("/api/leads/{$lead->id}/estagio", [
             'estagio_id' => $perdido->id, 'perda' => ['motivo_perda_id' => $motivo->id],
         ])->assertOk();
 

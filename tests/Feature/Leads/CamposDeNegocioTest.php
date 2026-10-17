@@ -20,7 +20,7 @@ class CamposDeNegocioTest extends TestCase
         $tenant = $this->novoTenant();
         $dono = $this->agente($tenant);
 
-        $this->actingAs($dono)->postJson('/api/usuarios', [
+        $this->actingAs($dono)->postJson('/api/leads', [
             'nome' => 'Ana Souza Lima',
             'email' => 'ana@acme.test',
             'valor_estimado' => '1500.50',
@@ -33,10 +33,10 @@ class CamposDeNegocioTest extends TestCase
         $this->assertSame(60, $lead->probabilidade);
         $this->assertSame('2026-12-01', $lead->previsao_fechamento->toDateString());
 
-        $this->actingAs($dono)->getJson("/api/usuarioPerfil/{$lead->id}")
+        $this->actingAs($dono)->getJson("/api/leads/{$lead->id}")
             ->assertOk()
-            ->assertJsonPath('0.probabilidade', 60)
-            ->assertJsonPath('0.previsao_fechamento', '2026-12-01');
+            ->assertJsonPath('probabilidade', 60)
+            ->assertJsonPath('previsao_fechamento', '2026-12-01');
     }
 
     public function test_recusa_probabilidade_fora_de_0_a_100_e_valor_negativo(): void
@@ -44,11 +44,11 @@ class CamposDeNegocioTest extends TestCase
         $tenant = $this->novoTenant();
         $dono = $this->agente($tenant);
 
-        $this->actingAs($dono)->postJson('/api/usuarios', [
+        $this->actingAs($dono)->postJson('/api/leads', [
             'nome' => 'Ana Souza Lima', 'email' => 'ana@acme.test', 'probabilidade' => 101,
         ])->assertStatus(422);
 
-        $this->actingAs($dono)->postJson('/api/usuarios', [
+        $this->actingAs($dono)->postJson('/api/leads', [
             'nome' => 'Ana Souza Lima', 'email' => 'ana@acme.test', 'valor_estimado' => -1,
         ])->assertStatus(422);
 
@@ -61,7 +61,7 @@ class CamposDeNegocioTest extends TestCase
         $dono = $this->agente($tenant);
         $lead = $this->lead($tenant, $dono, ['nome' => 'Lead Teste Longo']);
 
-        $this->actingAs($dono)->putJson("/api/usuarios/{$lead->id}", [
+        $this->actingAs($dono)->putJson("/api/leads/{$lead->id}", [
             'nome' => $lead->nome,
             'email' => $lead->email,
             'valor_estimado' => 9000,

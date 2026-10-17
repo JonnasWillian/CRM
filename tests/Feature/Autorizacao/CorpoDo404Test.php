@@ -87,13 +87,13 @@ class CorpoDo404Test extends TestCase
     {
         return [
             'binding nao achou' => $this->actingAs($this->colega)
-                ->getJson('/api/usuarioPerfil/999999'),
+                ->getJson('/api/leads/999999'),
 
             'policy negou (lead do colega)' => $this->actingAs($this->colega)
-                ->getJson("/api/usuarioPerfil/{$this->leadDoDono->id}"),
+                ->getJson("/api/leads/{$this->leadDoDono->id}"),
 
             'failedAuthorization do FormRequest' => $this->actingAs($this->colega)
-                ->putJson("/api/usuarios/{$this->leadDoDono->id}", [
+                ->putJson("/api/leads/{$this->leadDoDono->id}", [
                     'nome' => 'Sequestrado',
                     'email' => $this->leadDoDono->email,
                     'telefone' => '11999998888',
@@ -105,7 +105,7 @@ class CorpoDo404Test extends TestCase
                 ]),
 
             'lead de outro tenant' => $this->actingAs($this->colega)
-                ->getJson("/api/usuarioPerfil/{$this->leadDeOutroTenant->id}"),
+                ->getJson("/api/leads/{$this->leadDeOutroTenant->id}"),
         ];
     }
 
@@ -146,9 +146,9 @@ class CorpoDo404Test extends TestCase
     public function test_colega_inexistente_e_outro_tenant_sao_indistinguiveis(): void
     {
         $respostas = [
-            'id do colega' => $this->actingAs($this->colega)->getJson("/api/usuarioPerfil/{$this->leadDoDono->id}"),
-            'id inexistente' => $this->actingAs($this->colega)->getJson('/api/usuarioPerfil/999999'),
-            'id de outro tenant' => $this->actingAs($this->colega)->getJson("/api/usuarioPerfil/{$this->leadDeOutroTenant->id}"),
+            'id do colega' => $this->actingAs($this->colega)->getJson("/api/leads/{$this->leadDoDono->id}"),
+            'id inexistente' => $this->actingAs($this->colega)->getJson('/api/leads/999999'),
+            'id de outro tenant' => $this->actingAs($this->colega)->getJson("/api/leads/{$this->leadDeOutroTenant->id}"),
         ];
 
         $assinaturas = array_map(
@@ -174,7 +174,7 @@ class CorpoDo404Test extends TestCase
         $semPapel = User::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($semPapel)
-            ->postJson('/api/usuarios', [
+            ->postJson('/api/leads', [
                 'nome' => 'Fulano de Tal', 'email' => 'fulano@example.com', 'telefone' => '11999998888',
             ])
             ->assertForbidden()

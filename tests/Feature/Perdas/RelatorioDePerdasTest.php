@@ -133,13 +133,13 @@ class RelatorioDePerdasTest extends TestCase
         $lead = $this->lead();
 
         Carbon::setTestNow(Carbon::parse('2026-08-15 10:00:00'));
-        $this->actingAs($this->gestor)->patchJson("/api/usuarios/{$lead->id}/estagio", [
+        $this->actingAs($this->gestor)->patchJson("/api/leads/{$lead->id}/estagio", [
             'estagio_id' => $this->perdido->id,
             'perda' => ['motivo_perda_id' => $motivo->id],
         ])->assertOk();
 
         Carbon::setTestNow(Carbon::parse('2026-09-20 10:00:00'));
-        $this->actingAs($this->gestor)->patchJson("/api/usuarios/{$lead->id}/estagio", [
+        $this->actingAs($this->gestor)->patchJson("/api/leads/{$lead->id}/estagio", [
             'estagio_id' => $this->aberto->id,
         ])->assertOk();
 

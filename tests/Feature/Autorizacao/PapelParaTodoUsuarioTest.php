@@ -127,7 +127,7 @@ class PapelParaTodoUsuarioTest extends TestCase
         // Antes: abre a tela (200) mas nao salva.
         $this->actingAs($orfao)->get("/leads/{$lead->id}")->assertOk();
         $this->actingAs($orfao)
-            ->putJson("/api/usuarios/{$lead->id}", [
+            ->putJson("/api/leads/{$lead->id}", [
                 'nome' => 'Nome Editado', 'email' => $lead->email, 'telefone' => '11999998888',
             ])
             ->assertForbidden();
@@ -137,17 +137,17 @@ class PapelParaTodoUsuarioTest extends TestCase
 
         $this->actingAs($orfao->fresh())->get("/leads/{$lead->id}")->assertOk();
         $this->actingAs($orfao->fresh())
-            ->putJson("/api/usuarios/{$lead->id}", [
+            ->putJson("/api/leads/{$lead->id}", [
                 'nome' => 'Nome Editado', 'email' => $lead->email, 'telefone' => '11999998888',
             ])
             ->assertOk();
         $this->actingAs($orfao->fresh())
-            ->postJson('/api/tarefas', [
-                'usuario_id' => $lead->id, 'titulo' => 'Ligar', 'data_limite' => now()->addDay()->toDateString(),
+            ->postJson("/api/leads/{$lead->id}/tarefas", [
+                'titulo' => 'Ligar', 'data_limite' => now()->addDay()->toDateString(),
             ])
             ->assertCreated();
         $this->actingAs($orfao->fresh())
-            ->postJson('/api/anotacao', ['usuario_id' => $lead->id, 'descricao' => 'Primeiro contato'])
+            ->postJson("/api/leads/{$lead->id}/anotacoes", ['descricao' => 'Primeiro contato'])
             ->assertCreated();
 
         $this->assertSame('Nome Editado', $lead->fresh()->nome);

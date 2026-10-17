@@ -96,7 +96,7 @@ class GestorAlcancaEquipeTest extends TestCase
                 $anotacao = Anotacao::create(['descricao' => 'Nota da equipe', 'usuario_id' => $this->leadDaEquipe->id]);
 
                 return $this->actingAs($this->gestor)
-                    ->putJson("/api/anotacao/{$anotacao->id}", ['descricao' => 'Editada pelo gestor']);
+                    ->putJson("/api/anotacoes/{$anotacao->id}", ['descricao' => 'Editada pelo gestor']);
             },
 
             // Wireado em arquivo::destroy -> $this->authorize('delete', $arquivo).
@@ -110,7 +110,7 @@ class GestorAlcancaEquipeTest extends TestCase
 
             // Wireado em ProjetoController::viewProjeto -> $this->authorize('view', $projeto).
             'ProjetoPolicy::view' => function (): TestResponse {
-                return $this->actingAs($this->gestor)->getJson("/api/projeto/{$this->projetoDaEquipe->id}");
+                return $this->actingAs($this->gestor)->getJson("/api/projetos/{$this->projetoDaEquipe->id}");
             },
 
             // Wireado em ProjetoController::updateAnotacao -> $this->authorize('update', $projetoAnotacao).
@@ -118,7 +118,7 @@ class GestorAlcancaEquipeTest extends TestCase
                 $anotacao = ProjetoAnotacao::create(['descricao' => 'Nota', 'projeto_id' => $this->projetoDaEquipe->id]);
 
                 return $this->actingAs($this->gestor)
-                    ->putJson("/api/projetoAnotacao/{$anotacao->id}", ['descricao' => 'Editada pelo gestor']);
+                    ->putJson("/api/projeto-anotacoes/{$anotacao->id}", ['descricao' => 'Editada pelo gestor']);
             },
 
             // Wireado em ProjetoController::destroyAnexo -> $this->authorize('delete', $projetoAnexo).
@@ -127,7 +127,7 @@ class GestorAlcancaEquipeTest extends TestCase
                     'nome' => 'anexo.pdf', 'local' => 'anexos/anexo.pdf', 'projeto_id' => $this->projetoDaEquipe->id,
                 ]);
 
-                return $this->actingAs($this->gestor)->deleteJson("/api/projetoAnexo/{$anexo->id}");
+                return $this->actingAs($this->gestor)->deleteJson("/api/projeto-anexos/{$anexo->id}");
             },
 
             // Wireado em TarefaController::update -> $this->authorize('update', $tarefa).

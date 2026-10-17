@@ -66,6 +66,21 @@ class Usuario extends Model implements Perdivel
         return $this->hasMany(Projeto::class, 'usuario_id');
     }
 
+    public function anotacoes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Anotacao::class, 'usuario_id');
+    }
+
+    public function arquivos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(arquivo::class, 'usuario_id');
+    }
+
+    public function tarefas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Tarefa::class, 'usuario_id');
+    }
+
     /**
      * Para o lead, "perdido" é o tipo do estágio em que ele está.
      *

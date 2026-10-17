@@ -42,7 +42,7 @@ class LixeiraDeLeadTest extends TestCase
 
     public function test_excluir_manda_para_a_lixeira_e_responde_200(): void
     {
-        $this->actingAs($this->dono)->deleteJson("/api/usuarios/{$this->lead->id}")->assertOk();
+        $this->actingAs($this->dono)->deleteJson("/api/leads/{$this->lead->id}")->assertOk();
 
         $this->assertSoftDeleted('usuarios', ['id' => $this->lead->id]);
         $this->assertDatabaseHas('anotacaos', ['id' => $this->anotacao->id, 'deleted_at' => null]);
@@ -53,7 +53,7 @@ class LixeiraDeLeadTest extends TestCase
     {
         $antes = $this->actingAs($this->dono)->getJson('/api/metricas')->json('total_leads');
 
-        $this->actingAs($this->dono)->deleteJson("/api/usuarios/{$this->lead->id}")->assertOk();
+        $this->actingAs($this->dono)->deleteJson("/api/leads/{$this->lead->id}")->assertOk();
 
         $this->assertSame($antes - 1, $this->actingAs($this->dono)->getJson('/api/metricas')->json('total_leads'));
         $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/leads')->json('data'))->pluck('id'));
@@ -66,26 +66,26 @@ class LixeiraDeLeadTest extends TestCase
         $this->lead->delete();
 
         $this->actingAs($this->gestor)->get("/leads/{$this->lead->id}")->assertNotFound();
-        $this->actingAs($this->gestor)->getJson("/api/usuarioPerfil/{$this->lead->id}")->assertNotFound();
-        $this->actingAs($this->gestor)->putJson("/api/anotacao/{$this->anotacao->id}", ['descricao' => 'x'])->assertNotFound();
+        $this->actingAs($this->gestor)->getJson("/api/leads/{$this->lead->id}")->assertNotFound();
+        $this->actingAs($this->gestor)->putJson("/api/anotacoes/{$this->anotacao->id}", ['descricao' => 'x'])->assertNotFound();
     }
 
     public function test_restaurar_traz_o_lead_de_volta_com_o_historico(): void
     {
         $this->lead->delete();
 
-        $this->actingAs($this->dono)->patchJson("/api/usuarios/{$this->lead->id}/restaurar")->assertOk();
+        $this->actingAs($this->dono)->patchJson("/api/leads/{$this->lead->id}/restaurar")->assertOk();
 
         $this->assertNotSoftDeleted('usuarios', ['id' => $this->lead->id]);
-        $this->actingAs($this->dono)->getJson("/api/anotacao/{$this->lead->id}")
-            ->assertOk()->assertJsonPath('0.id', $this->anotacao->id);
+        $this->actingAs($this->dono)->getJson("/api/leads/{$this->lead->id}/anotacoes")
+            ->assertOk()->assertJsonPath('data.0.id', $this->anotacao->id);
         $this->assertDatabaseHas('activity_log', ['lead_id' => $this->lead->id, 'event' => 'lead_restaurado']);
     }
 
     /** Restaurar algo que não está na lixeira não deve gravar um "restaurado" falso. */
     public function test_restaurar_lead_ativo_da_409_e_nao_grava_atividade(): void
     {
-        $this->actingAs($this->dono)->patchJson("/api/usuarios/{$this->lead->id}/restaurar")
+        $this->actingAs($this->dono)->patchJson("/api/leads/{$this->lead->id}/restaurar")
             ->assertStatus(409)
             ->assertJson(['message' => 'Este lead não está na lixeira.']);
 
@@ -94,11 +94,11 @@ class LixeiraDeLeadTest extends TestCase
 
     public function test_colega_nao_exclui_nem_restaura(): void
     {
-        $this->actingAs($this->intruso)->deleteJson("/api/usuarios/{$this->lead->id}")->assertNotFound();
+        $this->actingAs($this->intruso)->deleteJson("/api/leads/{$this->lead->id}")->assertNotFound();
         $this->assertNotSoftDeleted('usuarios', ['id' => $this->lead->id]);
 
         $this->lead->delete();
-        $this->actingAs($this->intruso)->patchJson("/api/usuarios/{$this->lead->id}/restaurar")->assertNotFound();
+        $this->actingAs($this->intruso)->patchJson("/api/leads/{$this->lead->id}/restaurar")->assertNotFound();
         $this->assertSoftDeleted('usuarios', ['id' => $this->lead->id]);
     }
 
@@ -106,14 +106,14 @@ class LixeiraDeLeadTest extends TestCase
     {
         $this->lead->delete();
 
-        $this->actingAs($this->gestor)->patchJson("/api/usuarios/{$this->lead->id}/restaurar")->assertOk();
+        $this->actingAs($this->gestor)->patchJson("/api/leads/{$this->lead->id}/restaurar")->assertOk();
     }
 
     public function test_email_de_lead_na_lixeira_explica_que_da_para_restaurar(): void
     {
         $this->lead->delete();
 
-        $this->actingAs($this->dono)->postJson('/api/usuarios', [
+        $this->actingAs($this->dono)->postJson('/api/leads', [
             'nome' => 'Cliente de novo',
             'email' => 'cliente@exemplo.com',
             'telefone' => '11999998888',
@@ -122,7 +122,7 @@ class LixeiraDeLeadTest extends TestCase
 
     public function test_email_de_lead_ativo_continua_com_a_mensagem_de_sempre(): void
     {
-        $this->actingAs($this->dono)->postJson('/api/usuarios', [
+        $this->actingAs($this->dono)->postJson('/api/leads', [
             'nome' => 'Cliente repetido',
             'email' => 'cliente@exemplo.com',
             'telefone' => '11999998888',
@@ -131,7 +131,7 @@ class LixeiraDeLeadTest extends TestCase
 
     public function test_editar_o_proprio_lead_sem_trocar_email_continua_valendo(): void
     {
-        $this->actingAs($this->dono)->putJson("/api/usuarios/{$this->lead->id}", [
+        $this->actingAs($this->dono)->putJson("/api/leads/{$this->lead->id}", [
             'nome' => 'Cliente renomeado',
             'email' => 'cliente@exemplo.com',
             'telefone' => '11999998888',
