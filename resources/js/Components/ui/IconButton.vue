@@ -9,6 +9,10 @@ import AppTooltip from './AppTooltip.vue';
  * dica — um ícone sem nome é um botão sem nome. Sempre visível (nada de
  * opacity 0 até o hover), com alvo mínimo de 32/36/40px.
  */
+// O invólucro do tooltip tem mais de uma raiz (span + Teleport), então os
+// atributos e ouvintes (@click, aria-expanded…) vão explicitamente ao botão.
+defineOptions({ inheritAttrs: false });
+
 const props = defineProps({
     icone: { type: [Object, Function], required: true },
     rotulo: { type: String, required: true },
@@ -46,6 +50,7 @@ const classes = computed(() => [
     <AppTooltip :texto="rotulo" :lado="ladoTooltip">
         <component
             :is="tag"
+            v-bind="$attrs"
             :type="ehBotao ? type : undefined"
             :href="ehBotao ? undefined : href"
             :disabled="ehBotao ? disabled || carregando : undefined"
