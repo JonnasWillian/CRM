@@ -1,0 +1,82 @@
+/*
+ * Regras globais que não são tokens: base do documento, foco, números,
+ * barra de rolagem, movimento reduzido, barra de progresso do Inertia.
+ */
+
+html, body, #app {
+    background: var(--bg-0);
+    min-height: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: var(--fs-md);
+    line-height: var(--lh-base);
+    color: var(--fg-0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+h1, h2, h3, h4 {
+    color: var(--fg-0);
+    line-height: var(--lh-tight);
+    font-weight: 600;
+}
+h1, h2 { font-family: var(--font-display); letter-spacing: -.01em; }
+h1 { font-size: var(--fs-2xl); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+
+/*
+ * Numerais tabulares em todo número: um contador que vai de 19 para 20 não
+ * muda de largura nem empurra o que está ao lado.
+ */
+.num,
+input[type="number"],
+time {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* Foco visível, uma vez, para o app inteiro. :focus-visible, não :focus,
+   para o anel não aparecer em clique de mouse. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--r-1);
+}
+
+/* Barra de rolagem discreta. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+}
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: var(--r-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-clip: content-box; background-color: var(--fg-disabled); }
+
+/* Barra de progresso do Inertia na cor primária (o padrão era um cinza). */
+#nprogress .bar { background: var(--primary) !important; }
+#nprogress .peg { box-shadow: 0 0 10px var(--primary), 0 0 5px var(--primary) !important; }
+
+/*
+ * Movimento reduzido: zerar a duração em vez de remover a transição
+ * preserva os estados finais — nada quebra, tudo chega instantâneo.
+ */
+@media (prefers-reduced-motion: reduce) {
+    :root { --d-1: 0.01ms; --d-2: 0.01ms; --d-3: 0.01ms; }
+
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

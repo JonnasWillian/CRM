@@ -5,12 +5,12 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
-import * as Maska from 'maska';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'UserFlow';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    // "Leads · UserFlow"; sem título de página, só o nome do produto.
+    title: (title) => (title ? `${title} · ${appName}` : appName),
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,
@@ -20,10 +20,8 @@ createInertiaApp({
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
-            .use(Maska.default)
             .mount(el);
     },
-    progress: {
-        color: '#4B5563',
-    },
+    // A cor da barra vem de base.css (#nprogress .bar), não daqui.
+    progress: { showSpinner: false },
 });

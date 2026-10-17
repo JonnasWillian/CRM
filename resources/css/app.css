@@ -1,4 +1,7 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
 @import './theme.css';
+@import './base.css';
 
 @tailwind base;
 @tailwind components;
