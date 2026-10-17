@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Leads\MoverEstagioEmMassaRequest;
+use App\Http\Requests\Leads\SelecaoDeLeadsRequest;
 use App\Http\Requests\ListagemDeLeadsRequest;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Estagio;
@@ -10,6 +12,8 @@ use App\Models\Funil;
 use App\Models\Usuario;
 use App\Queries\Leads\ListagemDeLeads;
 use App\Services\Funis\MoverLeadDeFunil;
+use App\Services\Leads\AcoesEmMassa;
+use App\Services\Leads\CadastrarLead;
 use App\Services\Perdas\AplicarTransicao;
 use App\Support\Listagem\Paginacao;
 use App\Support\Perdas\RegrasDePerda;
@@ -38,30 +42,38 @@ class LeadController extends Controller
         ));
     }
 
-    public function store(UsuarioRequest $request): JsonResponse
+    /** Quick-add do Pipeline e outros clientes JSON. O modal da grade usa a rota web (`leads.store`). */
+    public function store(UsuarioRequest $request, CadastrarLead $cadastrar): JsonResponse
     {
-        $validated = $request->validated();
-        $validated['user_id'] = auth()->id();
-
-        if (empty($validated['funil_id'])) {
-            $validated['funil_id'] = Funil::padrao()?->id;
-        }
-
-        if (empty($validated['estagio_id']) && ! empty($validated['funil_id'])) {
-            $validated['estagio_id'] = Estagio::where('funil_id', $validated['funil_id'])
-                ->aberto()
-                ->orderBy('ordem')
-                ->orderBy('id')
-                ->value('id');
-        }
-
-        // Via AplicarTransicao e não Usuario::create(): o quick-add do Kanban
-        // cadastra o lead direto na coluna clicada, e essa coluna pode ser
-        // um estágio perdido. Nascer perdido é perder.
-        $lead = new Usuario;
-        app(AplicarTransicao::class)($lead, $validated, RegrasDePerda::extrair($request));
+        $lead = $cadastrar($request->validated(), RegrasDePerda::extrair($request), $request->user());
 
         return response()->json(['message' => 'Lead cadastrado.', 'data' => $lead->fresh(['estagio', 'funil'])], 201);
+    }
+
+    /**
+     * Mover N leads de estágio (ids ou todos os resultados do filtro).
+     * Leads de outro funil, já no destino ou fora da carteira são ignorados
+     * e contados; destino perdido exige um motivo para todos (validado no
+     * request, antes de mover qualquer um).
+     */
+    public function moverEstagio(MoverEstagioEmMassaRequest $request, AcoesEmMassa $acoes): JsonResponse
+    {
+        $destino = $request->destino();
+        $resultado = $acoes->moverEstagio($request->selecao(), $request->tamanhoPedido(), $destino, RegrasDePerda::extrair($request));
+
+        return response()->json(['message' => self::frase($resultado['afetados'], "movido para “{$destino->descricao}”", "movidos para “{$destino->descricao}”"), ...$resultado]);
+    }
+
+    public function lixeira(SelecaoDeLeadsRequest $request, AcoesEmMassa $acoes): JsonResponse
+    {
+        $resultado = $acoes->lixeira($request->selecao(), $request->tamanhoPedido());
+
+        return response()->json(['message' => self::frase($resultado['afetados'], 'movido para a lixeira', 'movidos para a lixeira'), ...$resultado]);
+    }
+
+    private static function frase(int $n, string $singular, string $plural): string
+    {
+        return $n === 1 ? "1 lead {$singular}." : number_format($n, 0, ',', '.')." leads {$plural}.";
     }
 
     /** O lead com estágio, funil, responsável e os contadores do cabeçalho do perfil. */

@@ -400,7 +400,7 @@
                     </div>
                 </div>
 
-                <Link :href="route('dashboard')" class="kb-btn-ghost">
+                <Link :href="route('leads.index')" class="kb-btn-ghost">
                     <LayoutList :size="14" /> Lista
                 </Link>
             </header>

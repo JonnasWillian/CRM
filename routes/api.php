@@ -65,6 +65,9 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Leads ──
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+    // Ações em massa: ids[] (até 200) ou todos=true + filtros da grade.
+    Route::post('/leads/mover-estagio', [LeadController::class, 'moverEstagio'])->name('leads.mover-estagio');
+    Route::post('/leads/lixeira', [LeadController::class, 'lixeira'])->name('leads.lixeira');
     Route::get('/leads/{usuario}', [LeadController::class, 'show'])->name('leads.show');
     Route::put('/leads/{usuario}', [LeadController::class, 'update'])->name('leads.update');
     Route::delete('/leads/{usuario}', [LeadController::class, 'destroy'])->name('leads.destroy');
@@ -104,8 +107,8 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Tarefas: globais, resumo e por lead ──
     Route::get('/tarefas', [TarefaController::class, 'listar'])->name('tarefas.index');
     Route::get('/tarefas/resumo', [TarefaController::class, 'resumo'])->name('tarefas.resumo');
-    // Legado do Dashboard atual (sai na Fase 3b junto com a tela).
-    Route::get('/tarefasPendentes', [TarefaController::class, 'pendentes'])->name('tarefas.pendentes');
+    Route::post('/tarefas/concluir', [TarefaController::class, 'concluir'])->name('tarefas.concluir');
+    Route::post('/tarefas/excluir', [TarefaController::class, 'excluir'])->name('tarefas.excluir');
     Route::get('/leads/{usuario}/tarefas', [TarefaController::class, 'porLead'])->name('leads.tarefas.index');
     Route::post('/leads/{usuario}/tarefas', [TarefaController::class, 'store'])->name('leads.tarefas.store');
     Route::post('/leads/{usuario}/tarefas/aplicar-modelos', [TarefaPadraoController::class, 'aplicar'])->name('leads.tarefas.aplicar-modelos');

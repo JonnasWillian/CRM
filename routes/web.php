@@ -15,9 +15,12 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'tenant'])->name('dashboard');
+Route::middleware(['auth', 'tenant'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Web\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/leads', [\App\Http\Controllers\Web\LeadController::class, 'index'])->name('leads.index');
+    Route::post('/leads', [\App\Http\Controllers\Web\LeadController::class, 'store'])->name('leads.store');
+    Route::get('/tarefas', [\App\Http\Controllers\Web\TarefaController::class, 'index'])->name('tarefas.index');
+});
 
 /*
  * O lead tem URL própria.

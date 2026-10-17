@@ -14,13 +14,11 @@ use App\Models\Tarefa;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
  * O que sobrou do controller original de leads: kanban (sai na Fase 3c),
- * estágios (lookup), métricas legadas (só o teste de paridade) e o timeline
- * deprecado (só o teste de paridade da Fase 5).
+ * estágios (lookup) e o timeline deprecado (só o teste de paridade da Fase 5).
  */
 class Userarios extends Controller
 {
@@ -222,42 +220,5 @@ class Userarios extends Controller
         auth()->user()->update(['kanban_default_estagio_id' => $validated['default_estagio_id']]);
 
         return response()->json(['message' => 'Preferência salva']);
-    }
-
-    public function metricas(Request $request)
-    {
-        // Subconsulta, não lista: Usuario::idsVisiveisPara devolve um Builder
-        // para o banco resolver "quais leads este agente vê" dentro da
-        // própria consulta, sem mandar a carteira inteira como bindings.
-        $visiveis = fn () => Usuario::idsVisiveisPara(auth()->user());
-        // `is_active` foi removida: o que separa lead em pipeline de lead
-        // encerrado agora é o tipo do estágio. "Aberto" é o que antes era
-        // is_active = true; ganho e perdido, juntos, são o que era false.
-        $leadsAtivos = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->aberto())->count();
-        $leadsArquivados = Usuario::visibleTo(auth()->user())->whereHas('estagio', fn ($q) => $q->fechado())->count();
-        $leads30Dias = Usuario::visibleTo(auth()->user())->where('created_at', '>=', now()->subDays(30))->count();
-        $valorAberto = Projeto::whereIn('usuario_id', $visiveis())->whereHas('status', fn ($q) => $q->open())->sum('preco') ?? 0;
-        $valorFechadoMes = Projeto::whereIn('usuario_id', $visiveis())->whereHas('status', fn ($q) => $q->where('is_won', true))->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->sum('preco') ?? 0;
-        $leadsPorEstagio = Usuario::visibleTo(auth()->user())->select('estagio_id', DB::raw('count(*) as total'))->with('estagio')->groupBy('estagio_id')->get()
-            ->map(fn ($row) => [
-                'id' => $row->estagio_id,
-                'descricao' => $row->estagio->descricao ?? 'Sem estágio',
-                'total' => (int) $row->total,
-            ]);
-        $totalLeads = Usuario::visibleTo(auth()->user())->count();
-        $leadsComProjeto = Projeto::whereIn('usuario_id', $visiveis())->distinct('usuario_id')->count('usuario_id');
-        $taxaConversao = $totalLeads > 0 ? round($leadsComProjeto / $totalLeads * 100, 1) : 0;
-
-        return response()->json([
-            'leads_ativos' => $leadsAtivos,
-            'leads_arquivados' => $leadsArquivados,
-            'leads_30_dias' => $leads30Dias,
-            'valor_projetos_abertos' => (float) $valorAberto,
-            'valor_fechado_mes' => (float) $valorFechadoMes,
-            'leads_por_estagio' => $leadsPorEstagio,
-            'taxa_conversao' => $taxaConversao,
-            'total_com_projeto' => $leadsComProjeto,
-            'total_leads' => $totalLeads,
-        ]);
     }
 }

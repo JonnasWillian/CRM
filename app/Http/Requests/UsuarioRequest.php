@@ -97,6 +97,10 @@ class UsuarioRequest extends FormRequest
     {
         return [
             ...RegrasDeLead::campos(null, $this->filled('funil_id') ? $this->integer('funil_id') : null),
+            // Responsável escolhido no cadastro: só vale para quem tem
+            // leads.view-all (CadastrarLead ignora para os demais). Trocar o
+            // responsável de um lead existente é a transferência, não a edição.
+            'user_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('users', 'id')->where('tenant_id', app(\App\Support\Tenancy\CurrentTenant::class)->id())],
             ...RegrasDePerda::campos(),
         ];
     }
@@ -127,7 +131,7 @@ class UsuarioRequest extends FormRequest
             'email' => 'email',
             'telefone' => 'telefone',
             'descricao' => 'descrição',
-            'user_id' => 'usuário',
+            'user_id' => 'responsável',
         ];
     }
 }

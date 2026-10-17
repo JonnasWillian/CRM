@@ -62,9 +62,9 @@ class MetricasSemListaDeIdsTest extends TestCase
 
     public function test_tarefas_pendentes(): void
     {
-        $this->actingAs($this->vendedor)->getJson('/api/tarefasPendentes')->assertOk()
-            ->assertJsonCount(1, 'hoje')
-            ->assertJsonCount(1, 'atrasadas');
+        $this->actingAs($this->vendedor)->getJson('/api/tarefas/resumo')->assertOk()
+            ->assertJsonPath('hoje.total', 1)
+            ->assertJsonPath('atrasadas.total', 1);
     }
 
     public function test_nenhuma_consulta_carrega_a_carteira_como_lista_de_ids(): void
@@ -79,7 +79,7 @@ class MetricasSemListaDeIdsTest extends TestCase
         });
 
         $this->actingAs($this->vendedor)->getJson('/api/metricas')->assertOk();
-        $this->actingAs($this->vendedor)->getJson('/api/tarefasPendentes')->assertOk();
+        $this->actingAs($this->vendedor)->getJson('/api/tarefas/resumo')->assertOk();
 
         $this->assertLessThan(10, $maiorNumeroDeBindings, 'Alguma consulta recebeu a lista de ids dos leads como bindings.');
     }

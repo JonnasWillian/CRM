@@ -27,7 +27,7 @@ class VerbosDeLeituraTest extends TestCase
 
     public static function leituras(): array
     {
-        return [['/api/estagios'], ['/api/status'], ['/api/metricas'], ['/api/kanban'], ['/api/tarefasPendentes']];
+        return [['/api/estagios'], ['/api/status'], ['/api/metricas'], ['/api/kanban'], ['/api/tarefas/resumo']];
     }
 
     #[DataProvider('leituras')]

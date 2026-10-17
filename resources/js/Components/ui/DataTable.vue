@@ -52,7 +52,7 @@ const visiveis = computed(() => props.colunas.filter((c) => c === colunaPrimaria
 const ocultaveis = computed(() => props.colunas.filter((c) => c !== colunaPrimaria.value && !c.sempreVisivel));
 const compacta = computed(() => prefs.value.densidade === 'compacta');
 
-const RESPONSIVO = { sm: 'hidden sm:table-cell', md: 'hidden md:table-cell', lg: 'hidden lg:table-cell' };
+const RESPONSIVO = { sm: 'hidden sm:table-cell', md: 'hidden md:table-cell', lg: 'hidden lg:table-cell', xl: 'hidden xl:table-cell' };
 const ALINHAR = { direita: 'text-right', centro: 'text-center', esquerda: 'text-left' };
 
 const classesDaColuna = (c) => [RESPONSIVO[c.ocultarAbaixo] ?? '', ALINHAR[c.alinhar] ?? 'text-left'];

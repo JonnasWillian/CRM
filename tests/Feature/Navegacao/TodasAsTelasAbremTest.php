@@ -44,6 +44,8 @@ class TodasAsTelasAbremTest extends TestCase
 
         $telas = [
             'dashboard' => '/dashboard',
+            'leads' => '/leads',
+            'tarefas' => '/tarefas',
             'kanban' => '/kanban',
             'modelos' => '/modelos-tarefa',
             'perfil do lead' => "/leads/{$lead->id}",
