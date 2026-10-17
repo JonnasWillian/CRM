@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Support\LimitesDeTexto;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Spatie\Permission\PermissionRegistrar;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -34,21 +35,42 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
-                // Closure, não array pronto: Inertia::share() é chamado por
+                // Closures, não arrays prontos: Inertia::share() é chamado por
                 // este middleware ANTES de $next($request), e o middleware de
                 // rota `tenant` — que define o team do spatie via
                 // setPermissionsTeamId() — só roda depois. Avaliar can() aqui e
                 // agora consultaria tenant_id = null e devolveria false para
-                // todo mundo. A closure é resolvida na montagem da resposta,
-                // quando o team já está definido.
-                'permissions' => fn () => [
-                    'configuracoes.manage' => (bool) $request->user()?->can('configuracoes.manage'),
-                    'leads.view-all' => (bool) $request->user()?->can('leads.view-all'),
-                ],
+                // todo mundo. As closures são resolvidas na montagem da
+                // resposta, quando o team já está definido.
+                //
+                // O mapa é COMPLETO (toda permission conhecida => bool): o
+                // front decide menu e botões a partir dele, e uma permission
+                // ausente seria lida como "não tem" — indistinguível de
+                // "esqueceram de compartilhar".
+                'permissions' => fn () => $this->permissoesDe($request),
+                'roles' => fn () => $request->user()?->getRoleNames()->values()->all() ?? [],
+            ],
+            // Mensagens de uma requisição para a próxima (redirects do Inertia).
+            // O layout as converte em toast.
+            'flash' => fn () => [
+                'sucesso' => $request->session()->get('sucesso'),
+                'erro' => $request->session()->get('erro'),
             ],
             // Fonte única de limites de texto (validação e colunas), para o
             // front aplicar o mesmo `maxlength` sem duplicar o número.
             'limites' => LimitesDeTexto::paraOFront(),
         ];
+    }
+
+    /** @return array<string, bool> */
+    private function permissoesDe(Request $request): array
+    {
+        $user = $request->user();
+
+        return app(PermissionRegistrar::class)
+            ->getPermissions()
+            ->pluck('name')
+            ->mapWithKeys(fn (string $nome) => [$nome => $user !== null && $user->can($nome)])
+            ->all();
     }
 }

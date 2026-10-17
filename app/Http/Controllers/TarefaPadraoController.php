@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\TarefaPadrao;
 use App\Models\Tarefa;
 use App\Models\Usuario;
@@ -122,15 +123,15 @@ class TarefaPadraoController extends Controller
                 ->where('user_id', auth()->id())
                 ->get();
 
-            $criadas = [];
-            foreach ($padroes as $p) {
-                $criadas[] = Tarefa::create([
-                    'usuario_id'  => $lead->id,
-                    'titulo'      => $p->titulo,
-                    'anotacao'    => $p->anotacao,
-                    'data_limite' => Carbon::today()->addDays($p->prazo_dias),
-                ]);
-            }
+            // Ou todas as tarefas dos modelos escolhidos, ou nenhuma: cada
+            // create dispara um observer que grava no activity log, e uma
+            // falha no meio deixaria metade aplicada.
+            $criadas = DB::transaction(fn () => $padroes->map(fn ($p) => Tarefa::create([
+                'usuario_id'  => $lead->id,
+                'titulo'      => $p->titulo,
+                'anotacao'    => $p->anotacao,
+                'data_limite' => Carbon::today()->addDays($p->prazo_dias),
+            ]))->all());
 
             return response()->json(['message' => count($criadas) . ' tarefa(s) criada(s)', 'data' => $criadas], 201);
         } catch (\Illuminate\Validation\ValidationException $error) {

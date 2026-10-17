@@ -31,6 +31,8 @@ class MotivoPerdaController extends Controller
             && ($request->user()?->can('configuracoes.manage') ?? false);
 
         $motivos = MotivoPerda::query()
+            // Contagem de perdas por motivo numa consulta só, não uma por motivo.
+            ->withCount('perdas')
             ->when($incluirArquivados, fn ($q) => $q->withTrashed())
             ->ordenados()
             ->get()
@@ -88,7 +90,7 @@ class MotivoPerdaController extends Controller
             'arquivado' => $motivo->trashed(),
             // Quantas perdas já citam este motivo — é o que diz ao
             // administrador se renomeá-lo vai mexer no histórico do relatório.
-            'total_perdas' => $motivo->perdas()->count(),
+            'total_perdas' => $motivo->perdas_count ?? $motivo->loadCount('perdas')->perdas_count,
         ];
     }
 }

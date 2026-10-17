@@ -10,6 +10,16 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            // Ids de rota são numéricos. Com isto, `funis/reordenar` ou
+            // `leads/exportar` nunca são lidos como `{funil}`/`{usuario}`,
+            // e a ordem de declaração das rotas deixa de ser armadilha.
+            foreach (['usuario', 'projeto', 'anotacao', 'arquivo', 'tarefa', 'tarefaPadrao',
+                'projetoAnotacao', 'projetoAnexo', 'funil', 'estagio', 'motivo',
+                'agente', 'convite', 'importacao'] as $parametro) {
+                \Illuminate\Support\Facades\Route::pattern($parametro, '[0-9]+');
+            }
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [

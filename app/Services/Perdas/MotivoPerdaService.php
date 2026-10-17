@@ -2,9 +2,9 @@
 
 namespace App\Services\Perdas;
 
+use App\Support\Db\ReordenarPorIds;
 use App\Exceptions\RegraDePerdaException;
 use App\Models\MotivoPerda;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Manutenção do catálogo de motivos.
@@ -61,12 +61,8 @@ class MotivoPerdaService
      */
     public function reordenar(array $idsNaOrdem): void
     {
-        DB::transaction(function () use ($idsNaOrdem) {
-            foreach ($idsNaOrdem as $posicao => $id) {
-                // O where passa pelo TenantScope: um id de outro tenant não
-                // casa e nenhuma linha é tocada.
-                MotivoPerda::withTrashed()->whereKey($id)->update(['ordem' => $posicao + 1]);
-            }
-        });
+        // Um único UPDATE. O builder passa pelo TenantScope: um id de outro
+        // tenant não casa e nenhuma linha é tocada.
+        ReordenarPorIds::aplicar(MotivoPerda::withTrashed(), $idsNaOrdem);
     }
 }

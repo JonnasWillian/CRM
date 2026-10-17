@@ -18,7 +18,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified', 'tenant'])->name('dashboard');
+})->middleware(['auth', 'tenant'])->name('dashboard');
 
 /*
  * O lead tem URL própria.
@@ -40,7 +40,7 @@ Route::get('/dashboard', function () {
  * um plano que fechou oito.
  *
  * `->can('view', 'usuario')` e não Gate::authorize() dentro do closure: a
- * autorização fica na mesma linha em que já estão `auth`, `verified` e
+ * autorização fica na mesma linha em que já estão `auth` e
  * `tenant`, que é onde quem lê o arquivo de rotas procura por ela — um closure
  * de duas linhas é exatamente onde ninguém vai olhar. O middleware `can` roda
  * depois de SubstituteBindings (a prioridade padrão do framework põe
@@ -50,14 +50,14 @@ Route::get('/dashboard', function () {
  */
 Route::get('/leads/{usuario}', function (App\Models\Usuario $usuario) {
     return Inertia::render('Usuario/Perfil', ['leadId' => $usuario->id]);
-})->middleware(['auth', 'verified', 'tenant'])->can('view', 'usuario')->name('leads.show');
+})->middleware(['auth', 'tenant'])->can('view', 'usuario')->name('leads.show');
 
 /*
  * Download de anexos. Ver DownloadDeArquivoController: é a única saída do
  * conteúdo, e passa por auth, tenant e policy. O disco `public` não guarda
  * mais anexo nenhum.
  */
-Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
+Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/arquivos/{arquivo}/download', [DownloadDeArquivoController::class, 'lead'])
         ->name('arquivos.download');
     Route::get('/projeto-anexos/{projetoAnexo}/download', [DownloadDeArquivoController::class, 'projeto'])
@@ -66,23 +66,23 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
 Route::get('/modelos-tarefa', function () {
     return Inertia::render('ModelosTarefa');
-})->middleware(['auth', 'verified', 'tenant'])->name('modelosTarefa');
+})->middleware(['auth', 'tenant'])->name('modelosTarefa');
 
 Route::get('/kanban', function () {
     return Inertia::render('Kanban');
-})->middleware(['auth', 'verified', 'tenant'])->name('kanban');
+})->middleware(['auth', 'tenant'])->name('kanban');
 
 Route::get('/configuracoes/funis', function () {
     return Inertia::render('Configuracoes/Funis');
-})->middleware(['auth', 'verified', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.funis');
+})->middleware(['auth', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.funis');
 
 Route::get('/configuracoes/motivos-perda', function () {
     return Inertia::render('Configuracoes/MotivosPerda');
-})->middleware(['auth', 'verified', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.motivosPerda');
+})->middleware(['auth', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.motivosPerda');
 
 Route::get('/relatorios/perdas', function () {
     return Inertia::render('Relatorios/Perdas');
-})->middleware(['auth', 'verified', 'tenant', 'can:leads.view-all'])->name('relatorios.perdas');
+})->middleware(['auth', 'tenant', 'can:leads.view-all'])->name('relatorios.perdas');
 
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

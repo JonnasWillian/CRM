@@ -32,6 +32,8 @@ class FunilController extends Controller
     public function index(): JsonResponse
     {
         $funis = Funil::ordenados()
+            // Contagem de leads por funil numa consulta só, não uma por funil.
+            ->withCount('leads')
             // withTrashed: um estágio arquivado continua aparecendo no Kanban
             // enquanto segura leads. Escondê-lo da tela de configuração deixaria
             // o administrador olhando para uma coluna do quadro que ele não acha
@@ -131,7 +133,7 @@ class FunilController extends Controller
             'descricao' => $funil->descricao,
             'ordem' => $funil->ordem,
             'is_default' => $funil->is_default,
-            'total_leads' => $funil->leads()->count(),
+            'total_leads' => $funil->leads_count ?? $funil->loadCount('leads')->leads_count,
             'estagios' => $funil->estagios->map(fn (Estagio $e) => $this->serializarEstagio($e))->values(),
         ];
     }

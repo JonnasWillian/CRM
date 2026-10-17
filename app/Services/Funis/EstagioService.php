@@ -2,10 +2,10 @@
 
 namespace App\Services\Funis;
 
+use App\Support\Db\ReordenarPorIds;
 use App\Exceptions\RegraDeFunilException;
 use App\Models\Estagio;
 use App\Models\Funil;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Operações de estágio dentro de um funil.
@@ -75,17 +75,13 @@ class EstagioService
      */
     public function reordenar(Funil $funil, array $idsNaOrdem): void
     {
-        DB::transaction(function () use ($funil, $idsNaOrdem) {
-            foreach ($idsNaOrdem as $posicao => $id) {
-                // O filtro por funil_id impede reordenar, por id, um estágio de
-                // outro funil do mesmo tenant — o TenantScope não pegaria isso,
-                // já que os dois funis pertencem ao mesmo tenant.
-                Estagio::withTrashed()
-                    ->whereKey($id)
-                    ->where('funil_id', $funil->id)
-                    ->update(['ordem' => $posicao + 1]);
-            }
-        });
+        // Um único UPDATE. O filtro por funil_id impede reordenar, por id, um
+        // estágio de outro funil do mesmo tenant — o TenantScope não pegaria
+        // isso, já que os dois funis pertencem ao mesmo tenant.
+        ReordenarPorIds::aplicar(
+            Estagio::withTrashed()->where('funil_id', $funil->id),
+            $idsNaOrdem,
+        );
     }
 
     private function garantirQueSobraEstagioAberto(Estagio $estagio): void

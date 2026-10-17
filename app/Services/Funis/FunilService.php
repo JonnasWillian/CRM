@@ -2,6 +2,7 @@
 
 namespace App\Services\Funis;
 
+use App\Support\Db\ReordenarPorIds;
 use App\Exceptions\RegraDeFunilException;
 use App\Models\Estagio;
 use App\Models\Funil;
@@ -102,12 +103,8 @@ class FunilService
      */
     public function reordenar(array $idsNaOrdem): void
     {
-        DB::transaction(function () use ($idsNaOrdem) {
-            foreach ($idsNaOrdem as $posicao => $id) {
-                // O where passa pelo TenantScope, então um id de outro tenant
-                // simplesmente não casa — nenhuma linha é tocada.
-                Funil::whereKey($id)->update(['ordem' => $posicao + 1]);
-            }
-        });
+        // Um único UPDATE. O builder passa pelo TenantScope, então um id de
+        // outro tenant simplesmente não casa — nenhuma linha é tocada.
+        ReordenarPorIds::aplicar(Funil::query(), $idsNaOrdem);
     }
 }
