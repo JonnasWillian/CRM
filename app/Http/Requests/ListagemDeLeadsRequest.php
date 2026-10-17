@@ -2,37 +2,56 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Listagem\ListagemRequest;
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Validation\Rule;
 
 /**
- * Só valida a FORMA dos filtros. Quem decide o que cada agente enxerga é
- * Usuario::scopeVisibleTo, dentro de ListagemDeLeads — por isso authorize()
- * é true: não há recurso de terceiro identificado na requisição.
+ * Filtros da grade de leads. Só valida a FORMA: quem decide o que cada agente
+ * enxerga é Usuario::scopeVisibleTo, dentro de ListagemDeLeads.
  */
-class ListagemDeLeadsRequest extends FormRequest
+class ListagemDeLeadsRequest extends ListagemRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
+    public const SITUACOES = ['todos', 'ativos', 'ganhos', 'perdidos', 'fechados', 'sem_projeto', 'com_projeto_aberto'];
 
-    public function rules(): array
+    protected function colunasOrdenaveis(): array
     {
         return [
-            'busca' => ['nullable', 'string', 'max:100'],
+            'nome' => 'usuarios.nome',
+            'created_at' => 'usuarios.created_at',
+            'estagio' => 'estagios.ordem',
+            'ultimo_contato' => 'usuarios.ultimo_contato_em',
+            'valor_estimado' => 'usuarios.valor_estimado',
+            'previsao_fechamento' => 'usuarios.previsao_fechamento',
+            'responsavel' => 'users.name',
+        ];
+    }
+
+    protected function filtros(): array
+    {
+        $tenantId = app(CurrentTenant::class)->id();
+
+        return [
             'estagios' => ['nullable', 'array'],
             'estagios.*' => ['integer'],
             'de' => ['nullable', 'date'],
             'ate' => ['nullable', 'date', 'after_or_equal:de'],
-            'status' => ['nullable', 'in:todos,arquivado,aberto,sem_projeto'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            // Sem `max`: acima do teto é limitado, não recusado.
-            'per_page' => ['nullable', 'integer', 'min:1'],
+            'situacao' => ['nullable', Rule::in(self::SITUACOES)],
+            'funil_id' => ['nullable', 'integer', Rule::exists('funis', 'id')->where('tenant_id', $tenantId)],
+            // Responsável: só honrado para quem tem leads.view-all (ver ListagemDeLeads).
+            'user_id' => ['nullable', 'integer'],
+            'estagnados' => ['nullable', 'boolean'],
+            'previsao_de' => ['nullable', 'date'],
+            'previsao_ate' => ['nullable', 'date', 'after_or_equal:previsao_de'],
         ];
     }
 
     public function messages(): array
     {
-        return ['ate.after_or_equal' => 'A data final precisa ser igual ou posterior à inicial.'];
+        return [
+            ...parent::messages(),
+            'ate.after_or_equal' => 'A data final precisa ser igual ou posterior à inicial.',
+            'previsao_ate.after_or_equal' => 'A previsão final precisa ser igual ou posterior à inicial.',
+        ];
     }
 }

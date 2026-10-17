@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Services\Perdas\RelatorioDePerdas;
+use App\Services\Reports\Periodo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 /**
  * Relatório "por que perdemos".
@@ -22,6 +24,7 @@ class PerdaRelatorioController extends Controller
     public function resumo(Request $request): JsonResponse
     {
         $dados = $request->validate([
+            'periodo' => ['nullable', Rule::in([...Periodo::PRESETS, 'custom'])],
             'de' => ['nullable', 'date'],
             'ate' => ['nullable', 'date', 'after_or_equal:de'],
             'tipo' => ['nullable', 'in:lead,projeto'],
@@ -29,10 +32,17 @@ class PerdaRelatorioController extends Controller
             'ate.after_or_equal' => 'A data final não pode ser anterior à inicial.',
         ]);
 
-        return response()->json($this->relatorio->resumo(
-            isset($dados['de']) ? Carbon::parse($dados['de']) : null,
-            isset($dados['ate']) ? Carbon::parse($dados['ate']) : null,
-            $dados['tipo'] ?? null,
-        ));
+        // `de`/`ate` soltos (sem `periodo`) continuam valendo: é o que a tela
+        // atual manda. Sem nada, os 90 dias padrão deste relatório.
+        $periodo = match (true) {
+            isset($dados['periodo']) => Periodo::de($dados['periodo'], $dados['de'] ?? null, $dados['ate'] ?? null),
+            isset($dados['de']) || isset($dados['ate']) => Periodo::customizado(
+                isset($dados['de']) ? Carbon::parse($dados['de']) : Carbon::now()->subDays(RelatorioDePerdas::DIAS_PADRAO),
+                isset($dados['ate']) ? Carbon::parse($dados['ate']) : Carbon::now(),
+            ),
+            default => RelatorioDePerdas::periodoPadrao(),
+        };
+
+        return response()->json($this->relatorio->resumo($periodo, $dados['tipo'] ?? null));
     }
 }

@@ -76,7 +76,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // Deprecado: sem consumidor no front desde a fase 4 do activity log. Só o TimelineParityTest usa.
     Route::get('/timeline/{usuario}', [Userarios::class, 'timeline'])->name('timeline.show');
     Route::get('/leads/{usuario}/atividades', [LeadAtividadeController::class, 'index'])->name('leads.atividades.index');
-    Route::get('/metricas', [Userarios::class, 'metricas'])->name('metricas');
+    Route::get('/metricas', [\App\Http\Controllers\Api\DashboardController::class, 'metricas'])->name('metricas');
     Route::get('/kanban', [Userarios::class, 'kanban'])->name('kanban.index');
     Route::patch('/kanban/settings', [Userarios::class, 'kanbanSettings'])->name('kanban.settings');
     Route::patch('/usuarios/{usuario}/estagio', [Userarios::class, 'patchEstagio'])->name('leads.estagio');
@@ -116,7 +116,10 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::post('/projetoAnexo', [ProjetoController::class, 'createAnexo'])->name('projetos.anexos.store');
     Route::delete('/projetoAnexo/{projetoAnexo}', [ProjetoController::class, 'destroyAnexo'])->name('projeto-anexos.destroy');
 
-    // Tarefas de Lead
+    // Tarefas — globais (página Tarefas e resumo do dashboard) e por lead.
+    // `resumo` não colide com `{usuario}`: o parâmetro é numérico (Route::pattern).
+    Route::get('/tarefas', [TarefaController::class, 'listar'])->name('tarefas.index');
+    Route::get('/tarefas/resumo', [TarefaController::class, 'resumo'])->name('tarefas.resumo');
     Route::get('/tarefas/{usuario}', [TarefaController::class, 'index'])->name('leads.tarefas.index');
     Route::post('/tarefas', [TarefaController::class, 'store'])->name('leads.tarefas.store');
     Route::put('/tarefas/{tarefa}', [TarefaController::class, 'update'])->name('tarefas.update');

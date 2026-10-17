@@ -2,51 +2,65 @@
 
 namespace App\Queries\Leads;
 
-use App\Models\Projeto;
+use App\Models\Estagio;
 use App\Models\User;
 use App\Models\Usuario;
+use App\Support\Listagem\Ordenacao;
+use App\Support\Listagem\Paginacao;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
- * A lista de leads do Dashboard: visibilidade, filtros, ordem e paginação,
- * todos no banco.
+ * A grade de leads: visibilidade, filtros, ordem e paginação, todos no banco.
  *
- * Os filtros são os mesmos que Dashboard.vue aplicava no navegador sobre a
- * carteira inteira (busca, estágios, período, situação), com a mesma
- * semântica — só mudou onde rodam.
+ * `query()` devolve o Builder para quem precisa da mesma seleção sem
+ * paginar (exportação CSV, ações em massa por filtro); `__invoke()` pagina.
  */
 class ListagemDeLeads
 {
-    public const POR_PAGINA = 25;
-
-    public const MAX_POR_PAGINA = 100;
-
     /**
-     * @param  array{busca?:string, estagios?:list<int>, de?:string, ate?:string, status?:string, per_page?:int}  $filtros
+     * @param  array{busca?:string, estagios?:list<int>, de?:string, ate?:string, situacao?:string, funil_id?:int, user_id?:int, estagnados?:bool, previsao_de?:string, previsao_ate?:string}  $filtros
      */
-    public function __invoke(User $user, array $filtros): LengthAwarePaginator
+    public function query(User $user, array $filtros, ?Ordenacao $ordenacao = null): Builder
     {
-        $porPagina = min(max((int) ($filtros['per_page'] ?? self::POR_PAGINA), 1), self::MAX_POR_PAGINA);
+        $ordenacao ??= new Ordenacao('created_at', 'desc', 'usuarios.created_at');
 
-        return Usuario::visibleTo($user)
-            ->with('estagio')
-            ->addSelect([
-                'usuarios.*',
-                'tem_projeto' => Projeto::whereColumn('usuario_id', 'usuarios.id')->selectRaw('COUNT(*) > 0'),
-                'tem_projeto_aberto' => Projeto::whereColumn('usuario_id', 'usuarios.id')
-                    ->whereHas('status', fn ($q) => $q->open())
-                    ->selectRaw('COUNT(*) > 0'),
+        $q = Usuario::visibleTo($user)
+            ->select('usuarios.*')
+            ->with(['estagio', 'responsavel:id,name'])
+            // EXISTS para na primeira linha; COUNT(*) > 0 varria todas.
+            ->withExists([
+                'projetos as tem_projeto',
+                'projetos as tem_projeto_aberto' => fn ($p) => $p->whereHas('status', fn ($s) => $s->open()),
             ])
             ->when($filtros['busca'] ?? null, fn (Builder $q, string $busca) => $this->buscar($q, $busca))
             ->when($filtros['estagios'] ?? null, fn (Builder $q, array $ids) => $q->whereIn('usuarios.estagio_id', $ids))
             ->when($filtros['de'] ?? null, fn (Builder $q, string $de) => $q->where('usuarios.created_at', '>=', $this->limite($de, 'inicio')))
             ->when($filtros['ate'] ?? null, fn (Builder $q, string $ate) => $q->where('usuarios.created_at', '<=', $this->limite($ate, 'fim')))
-            ->when($filtros['status'] ?? null, fn (Builder $q, string $status) => $this->situacao($q, $status))
-            ->orderByDesc('usuarios.created_at')
-            ->orderByDesc('usuarios.id')
-            ->paginate($porPagina)
+            ->when($filtros['situacao'] ?? null, fn (Builder $q, string $situacao) => $this->situacao($q, $situacao))
+            ->when($filtros['funil_id'] ?? null, fn (Builder $q, int $funilId) => $q->where('usuarios.funil_id', $funilId))
+            // Vendedor já vê só a própria carteira: o parâmetro é ignorado para ele.
+            ->when(($filtros['user_id'] ?? null) && $user->can('leads.view-all'), fn (Builder $q) => $q->where('usuarios.user_id', (int) $filtros['user_id']))
+            ->when(filter_var($filtros['estagnados'] ?? false, FILTER_VALIDATE_BOOL), fn (Builder $q) => $q
+                ->where('usuarios.ultimo_contato_em', '<', now()->subDays((int) config('leads.dias_estagnado', 14))))
+            ->when($filtros['previsao_de'] ?? null, fn (Builder $q, string $de) => $q->whereDate('usuarios.previsao_fechamento', '>=', $de))
+            ->when($filtros['previsao_ate'] ?? null, fn (Builder $q, string $ate) => $q->whereDate('usuarios.previsao_fechamento', '<=', $ate));
+
+        // Joins só quando a ordem pede a coluna da outra tabela.
+        if ($ordenacao->por === 'estagio') {
+            $q->leftJoin('estagios', 'estagios.id', '=', 'usuarios.estagio_id');
+        } elseif ($ordenacao->por === 'responsavel') {
+            $q->leftJoin('users', 'users.id', '=', 'usuarios.user_id');
+        }
+
+        return $ordenacao->aplicar($q, 'usuarios.id');
+    }
+
+    public function __invoke(User $user, array $filtros, ?Ordenacao $ordenacao = null, ?int $porPagina = null): LengthAwarePaginator
+    {
+        return $this->query($user, $filtros, $ordenacao)
+            ->paginate($porPagina ?? Paginacao::clamp($filtros['per_page'] ?? null))
             ->withQueryString();
     }
 
@@ -55,7 +69,6 @@ class ListagemDeLeads
      * de quem filtra (00:00 em Brasília = 03:00Z); esse vale como veio —
      * arredondar para o dia em UTC deslocava o período em um dia. Valor só
      * data (YYYY-MM-DD, de outros clientes) continua cobrindo o dia inteiro.
-     * O fuso da aplicação é o do banco, então o instante é convertido para ele.
      */
     private function limite(string $valor, string $lado): Carbon
     {
@@ -70,7 +83,7 @@ class ListagemDeLeads
 
     private function buscar(Builder $q, string $busca): void
     {
-        // Review Focus 4: % e _ do usuário são texto, não curinga.
+        // % e _ do usuário são texto, não curinga.
         $termo = '%'.addcslashes($busca, '%_\\').'%';
         $digitos = preg_replace('/\D/', '', $busca);
 
@@ -86,11 +99,14 @@ class ListagemDeLeads
         });
     }
 
-    private function situacao(Builder $q, string $status): void
+    private function situacao(Builder $q, string $situacao): void
     {
-        match ($status) {
-            'arquivado' => $q->whereHas('estagio', fn ($e) => $e->fechado()),
-            'aberto' => $q->whereHas('projetos', fn ($p) => $p->whereHas('status', fn ($s) => $s->open())),
+        match ($situacao) {
+            'ativos' => $q->whereHas('estagio', fn ($e) => $e->aberto()),
+            'ganhos' => $q->whereHas('estagio', fn ($e) => $e->where('tipo', Estagio::TIPO_GANHO)),
+            'perdidos' => $q->whereHas('estagio', fn ($e) => $e->where('tipo', Estagio::TIPO_PERDIDO)),
+            'fechados' => $q->whereHas('estagio', fn ($e) => $e->fechado()),
+            'com_projeto_aberto' => $q->whereHas('projetos', fn ($p) => $p->whereHas('status', fn ($s) => $s->open())),
             'sem_projeto' => $q->whereDoesntHave('projetos'),
             default => null,
         };

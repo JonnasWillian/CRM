@@ -134,7 +134,10 @@
         estagios: filterEstagios.value.length ? filterEstagios.value : undefined,
         de: dataISO(dateFromComputed.value),
         ate: dataISO(dateToComputed.value),
-        status: filterStatus.value !== 'todos' ? filterStatus.value : undefined,
+        // `situacao` substituiu `status`: arquivado → fechados, aberto → com_projeto_aberto.
+        situacao: filterStatus.value !== 'todos'
+            ? ({ arquivado: 'fechados', aberto: 'com_projeto_aberto' }[filterStatus.value] ?? filterStatus.value)
+            : undefined,
     });
 
     // Duas buscas em sequência rápida (digitação + filtro, por exemplo) podem
@@ -153,7 +156,7 @@
                 ...usuario,
                 telefone: usuario.telefone ?? ''
             }));
-            paginacao.value = { pagina: data.current_page, ultimaPagina: data.last_page, total: data.total };
+            paginacao.value = { pagina: data.meta.current_page, ultimaPagina: data.meta.last_page, total: data.meta.total };
         } catch (error) {
             console.error('Erro ao buscar leads:', error);
         } finally {

@@ -3,9 +3,11 @@
 namespace App\Services\Perdas;
 
 use App\Models\Perda;
-use App\Models\Projeto;
-use Carbon\CarbonInterface;
+use App\Services\Reports\Periodo;
+use App\Support\Reports\MetricasCache;
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * "Por que perdemos": agrega as perdas de um período por motivo.
@@ -15,11 +17,9 @@ use Illuminate\Support\Carbon;
  * foram perdidos" — um lead reaberto em setembro continua sendo uma perda de
  * agosto, e some da segunda resposta.
  *
- * O período ainda não usa o objeto `Periodo` do spec da camada de relatórios,
- * que não foi implementado. Quando aquela camada entrar, este serviço passa a
- * receber `Periodo` no lugar de duas datas, e ganha cache pela chave composta.
- * Até lá são duas datas e nenhuma cache — o volume de perdas é baixo e a
- * consulta é indexada por (tenant_id, created_at).
+ * Recebe um `Periodo` e fica em cache pela mesma chave versionada das
+ * métricas (MetricasCache): registrar uma perda passa pelo lead/projeto e
+ * invalida a versão.
  */
 class RelatorioDePerdas
 {
@@ -34,10 +34,25 @@ class RelatorioDePerdas
      * @param  'lead'|'projeto'|null  $tipo  null = os dois
      * @return array<string, mixed>
      */
-    public function resumo(?CarbonInterface $de = null, ?CarbonInterface $ate = null, ?string $tipo = null): array
+    public function resumo(?Periodo $periodo = null, ?string $tipo = null): array
     {
-        $de = $de ? $de->copy()->startOfDay() : Carbon::now()->subDays(self::DIAS_PADRAO)->startOfDay();
-        $ate = $ate ? $ate->copy()->endOfDay() : Carbon::now()->endOfDay();
+        $periodo ??= self::periodoPadrao();
+
+        $chave = MetricasCache::chave(app(CurrentTenant::class)->id(), null, null, 'perdas:'.($tipo ?? 'todos').':'.$periodo->hash());
+
+        return Cache::remember($chave, (int) config('reports.metricas_ttl', 300), fn () => $this->calcular($periodo, $tipo));
+    }
+
+    /** 90 dias, não 30 (ver DIAS_PADRAO). */
+    public static function periodoPadrao(): Periodo
+    {
+        return Periodo::customizado(Carbon::now()->subDays(self::DIAS_PADRAO), Carbon::now());
+    }
+
+    private function calcular(Periodo $periodo, ?string $tipo): array
+    {
+        $de = $periodo->inicio();
+        $ate = $periodo->fim();
 
         $base = Perda::query()
             ->noPeriodo($de, $ate)
@@ -60,6 +75,8 @@ class RelatorioDePerdas
             'periodo' => [
                 'de' => $de->toDateString(),
                 'ate' => $ate->toDateString(),
+                'preset' => $periodo->chave(),
+                'rotulo' => $periodo->rotulo(),
             ],
             'tipo' => $tipo,
             'total' => $total,

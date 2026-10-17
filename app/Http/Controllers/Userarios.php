@@ -32,7 +32,13 @@ class Userarios extends Controller
      */
     public function index(\App\Http\Requests\ListagemDeLeadsRequest $request, \App\Queries\Leads\ListagemDeLeads $listagem)
     {
-        return response()->json($listagem($request->user(), $request->validated()));
+        $ordenacao = $request->ordenacao();
+
+        return response()->json(\App\Support\Listagem\Paginacao::resposta(
+            $listagem($request->user(), $request->filtrosValidados(), $ordenacao, $request->porPagina()),
+            $ordenacao,
+            $request->filtrosValidados(),
+        ));
     }
 
     public function estagios(Request $request)
@@ -385,11 +391,18 @@ class Userarios extends Controller
                         // Trocar de funil é outra ação: moverFunil().
                         ->where('funil_id', $usuario->funil_id),
                 ],
+                // Ao marcar como ganho, o diálogo manda o valor fechado junto.
+                'valor_fechado' => ['nullable', 'numeric', 'min:0'],
                 ...RegrasDePerda::campos(),
             ], RegrasDePerda::mensagens());
 
+            $atributos = ['estagio_id' => $validated['estagio_id']];
+            if (array_key_exists('valor_fechado', $validated)) {
+                $atributos['valor_fechado'] = $validated['valor_fechado'];
+            }
+
             // Histórico de estágio e activity log ficam a cargo do UsuarioObserver.
-            app(AplicarTransicao::class)($usuario, ['estagio_id' => $validated['estagio_id']], RegrasDePerda::extrair($request));
+            app(AplicarTransicao::class)($usuario, $atributos, RegrasDePerda::extrair($request));
 
             return response()->json(['message' => 'Estágio atualizado']);
         } catch (\Illuminate\Validation\ValidationException $error) {

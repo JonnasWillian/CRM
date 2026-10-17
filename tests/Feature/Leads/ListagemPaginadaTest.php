@@ -47,14 +47,14 @@ class ListagemPaginadaTest extends TestCase
         }
 
         $pagina1 = $this->listar($this->vendedor, ['per_page' => 25]);
-        $pagina1->assertJsonCount(25, 'data')->assertJsonPath('total', 30)->assertJsonPath('last_page', 2);
+        $pagina1->assertJsonCount(25, 'data')->assertJsonPath('meta.total', 30)->assertJsonPath('meta.last_page', 2);
 
         $this->listar($this->vendedor, ['per_page' => 25, 'page' => 2])->assertJsonCount(5, 'data');
     }
 
     public function test_per_page_tem_teto(): void
     {
-        $this->listar($this->vendedor, ['per_page' => 500])->assertJsonPath('per_page', 100);
+        $this->listar($this->vendedor, ['per_page' => 500])->assertJsonPath('meta.per_page', 100);
     }
 
     public function test_mais_recente_primeiro(): void
@@ -86,7 +86,7 @@ class ListagemPaginadaTest extends TestCase
     {
         $this->lead($this->tenant, $this->vendedor)->delete();
 
-        $this->listar($this->vendedor)->assertJsonPath('total', 0);
+        $this->listar($this->vendedor)->assertJsonPath('meta.total', 0);
     }
 
     public function test_busca_por_nome_email_descricao_e_telefone(): void
@@ -138,12 +138,19 @@ class ListagemPaginadaTest extends TestCase
             collect([$emAberto->id, $comProjetoAberto->id])->sort()->values()->all(),
             $this->ids($this->listar($this->vendedor, ['estagios' => [$aberto->id]]))
         );
-        $this->assertSame([$fechado->id], $this->ids($this->listar($this->vendedor, ['status' => 'arquivado'])));
-        $this->assertSame([$comProjetoAberto->id], $this->ids($this->listar($this->vendedor, ['status' => 'aberto'])));
+        $this->assertSame([$fechado->id], $this->ids($this->listar($this->vendedor, ['situacao' => 'fechados'])));
+        $this->assertSame([$fechado->id], $this->ids($this->listar($this->vendedor, ['situacao' => 'ganhos'])));
+        $this->assertSame([], $this->ids($this->listar($this->vendedor, ['situacao' => 'perdidos'])));
+        $this->assertSame(
+            collect([$emAberto->id, $comProjetoAberto->id])->sort()->values()->all(),
+            $this->ids($this->listar($this->vendedor, ['situacao' => 'ativos']))
+        );
+        $this->assertSame([$comProjetoAberto->id], $this->ids($this->listar($this->vendedor, ['situacao' => 'com_projeto_aberto'])));
         $this->assertSame(
             collect([$emAberto->id, $fechado->id])->sort()->values()->all(),
-            $this->ids($this->listar($this->vendedor, ['status' => 'sem_projeto']))
+            $this->ids($this->listar($this->vendedor, ['situacao' => 'sem_projeto']))
         );
+        $this->assertTrue($this->listar($this->vendedor, ['busca' => $comProjetoAberto->nome])->json('data.0.tem_projeto_aberto'));
     }
 
     public function test_filtro_por_periodo(): void
@@ -180,6 +187,58 @@ class ListagemPaginadaTest extends TestCase
             ->getJson('/api/leads?de=2026-09-10&ate=2026-09-01')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('ate');
+    }
+
+    public function test_ordena_por_nome_valor_estimado_e_ultimo_contato(): void
+    {
+        $b = $this->lead($this->tenant, $this->vendedor, ['nome' => 'Bruno Silva', 'valor_estimado' => 500]);
+        $a = $this->lead($this->tenant, $this->vendedor, ['nome' => 'Ana Souza', 'valor_estimado' => 9000]);
+        $c = $this->lead($this->tenant, $this->vendedor, ['nome' => 'Carla Lima', 'valor_estimado' => null]);
+
+        $this->assertSame([$a->id, $b->id, $c->id], collect($this->listar($this->vendedor, ['sort' => 'nome', 'dir' => 'asc'])->json('data'))->pluck('id')->all());
+        $this->assertSame([$c->id, $b->id, $a->id], collect($this->listar($this->vendedor, ['sort' => 'nome', 'dir' => 'desc'])->json('data'))->pluck('id')->all());
+        $this->assertSame([$a->id, $b->id, $c->id], collect($this->listar($this->vendedor, ['sort' => 'valor_estimado', 'dir' => 'desc'])->json('data'))->pluck('id')->all());
+
+        \App\Models\Usuario::whereKey($b->id)->update(['ultimo_contato_em' => now()->subDays(20)]);
+        \App\Models\Usuario::whereKey($a->id)->update(['ultimo_contato_em' => now()->subDays(1)]);
+        \App\Models\Usuario::whereKey($c->id)->update(['ultimo_contato_em' => now()->subDays(5)]);
+        $this->assertSame([$a->id, $c->id, $b->id], collect($this->listar($this->vendedor, ['sort' => 'ultimo_contato', 'dir' => 'desc'])->json('data'))->pluck('id')->all());
+        $this->assertSame([$b->id], $this->ids($this->listar($this->vendedor, ['estagnados' => 1])));
+    }
+
+    public function test_ordena_por_estagio_e_filtra_por_funil(): void
+    {
+        $funil = Funil::where('is_default', true)->first() ?? Funil::factory()->padrao()->create(['tenant_id' => $this->tenant->id]);
+        $primeiro = Estagio::factory()->create(['tenant_id' => $this->tenant->id, 'funil_id' => $funil->id, 'ordem' => 1]);
+        $segundo = Estagio::factory()->create(['tenant_id' => $this->tenant->id, 'funil_id' => $funil->id, 'ordem' => 2]);
+        $outroFunil = Funil::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        $noSegundo = $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $segundo->id]);
+        $noPrimeiro = $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $primeiro->id]);
+        $noOutro = $this->lead($this->tenant, $this->vendedor, ['funil_id' => $outroFunil->id]);
+
+        $this->assertSame([$noPrimeiro->id, $noSegundo->id], collect($this->listar($this->vendedor, ['sort' => 'estagio', 'dir' => 'asc', 'funil_id' => $funil->id])->json('data'))->pluck('id')->all());
+        $this->assertSame([$noOutro->id], $this->ids($this->listar($this->vendedor, ['funil_id' => $outroFunil->id])));
+    }
+
+    public function test_filtro_por_responsavel_so_vale_para_quem_ve_tudo(): void
+    {
+        $meu = $this->lead($this->tenant, $this->vendedor);
+        $colega = $this->agente($this->tenant);
+        $doColega = $this->lead($this->tenant, $colega);
+
+        $this->assertSame([$doColega->id], $this->ids($this->listar($this->gestor, ['user_id' => $colega->id])));
+        // Vendedor: o parâmetro é ignorado, continua vendo só a própria carteira.
+        $this->assertSame([$meu->id], $this->ids($this->listar($this->vendedor, ['user_id' => $colega->id])));
+    }
+
+    public function test_filtro_por_previsao_de_fechamento(): void
+    {
+        $dentro = $this->lead($this->tenant, $this->vendedor, ['previsao_fechamento' => '2026-11-15']);
+        $this->lead($this->tenant, $this->vendedor, ['previsao_fechamento' => '2027-02-01']);
+        $this->lead($this->tenant, $this->vendedor);
+
+        $this->assertSame([$dentro->id], $this->ids($this->listar($this->vendedor, ['previsao_de' => '2026-11-01', 'previsao_ate' => '2026-11-30'])));
     }
 
     public function test_rota_antiga_nao_existe_mais(): void
