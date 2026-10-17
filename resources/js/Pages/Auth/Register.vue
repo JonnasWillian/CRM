@@ -18,7 +18,7 @@
 </script>
 
 <template>
-    <Head title="Criar conta — UserFlow" />
+    <Head title="Criar conta" />
 
     <div class="page">
         <div class="dot-grid" aria-hidden="true" />

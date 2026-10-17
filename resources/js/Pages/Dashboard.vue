@@ -240,7 +240,7 @@
 </script>
 
 <template>
-    <Head title="Dashboard — UserFlow" />
+    <Head title="Dashboard" />
 
     <AuthenticatedLayout>
         <div class="page">

@@ -367,7 +367,7 @@
 </script>
 
 <template>
-    <Head title="Pipeline — UserFlow" />
+    <Head title="Pipeline" />
     <AuthenticatedLayout>
         <div class="kb">
 

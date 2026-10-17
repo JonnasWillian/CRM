@@ -374,7 +374,7 @@
         @confirmar="confirmarPerda"
         @cancelar="cancelarPerda"
     />
-    <Head title="Perfil do Lead — UserFlow" />
+    <Head title="Perfil do Lead" />
     <AuthenticatedLayout>
         <div class="page">
             <div class="dot-grid" aria-hidden="true" />

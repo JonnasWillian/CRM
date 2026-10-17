@@ -23,7 +23,7 @@
 </script>
 
 <template>
-    <Head title="Login — UserFlow" />
+    <Head title="Login" />
 
     <div class="page">
         <div class="dot-grid" aria-hidden="true" />

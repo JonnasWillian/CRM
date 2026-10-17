@@ -97,7 +97,7 @@
 </script>
 
 <template>
-    <Head title="Motivos de perda — UserFlow" />
+    <Head title="Motivos de perda" />
     <AuthenticatedLayout>
         <div class="mt-page">
 

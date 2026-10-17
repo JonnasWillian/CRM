@@ -66,7 +66,7 @@
 </script>
 
 <template>
-    <Head title="Por que perdemos — UserFlow" />
+    <Head title="Por que perdemos" />
     <AuthenticatedLayout>
         <div class="rp-page">
 

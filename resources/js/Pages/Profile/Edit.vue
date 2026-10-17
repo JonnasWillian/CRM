@@ -20,7 +20,7 @@ defineProps({
 </script>
 
 <template>
-    <Head title="Perfil — UserFlow" />
+    <Head title="Perfil" />
 
     <AuthenticatedLayout>
         <div class="pf-page">

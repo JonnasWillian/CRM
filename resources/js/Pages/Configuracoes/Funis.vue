@@ -177,7 +177,7 @@
 </script>
 
 <template>
-    <Head title="Funis — UserFlow" />
+    <Head title="Funis" />
     <AuthenticatedLayout>
         <div class="cf-page">
 

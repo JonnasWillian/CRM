@@ -46,7 +46,7 @@ onBeforeUnmount(fechar);
 </script>
 
 <template>
-    <span ref="invólucro" class="inline-flex" @mouseover="abrir" @mouseout="fechar" @focusin="abrir" @focusout="fechar">
+    <span ref="invólucro" class="inline-flex" @mouseover="abrir" @mouseout="fechar" @focusin="abrir" @focusout="fechar" @click="fechar">
         <slot />
     </span>
     <Teleport to="body">

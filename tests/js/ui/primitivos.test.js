@@ -54,6 +54,15 @@ describe('IconButton e AppTooltip', () => {
         w.unmount();
     });
 
+    it('clicar no gatilho esconde a dica (o clique já respondeu)', async () => {
+        const w = mount(IconButton, { props: { icone: Trash2, rotulo: 'Excluir' }, attachTo: document.body });
+        await w.find('button').trigger('mouseover');
+        expect(document.body.querySelector('[role="tooltip"]')).not.toBeNull();
+        await w.find('button').trigger('click');
+        expect(document.body.querySelector('[role="tooltip"]')).toBeNull();
+        w.unmount();
+    });
+
     it('AppTooltip aparece no foco por teclado', async () => {
         const w = mount(AppTooltip, { props: { texto: 'Abrir no WhatsApp' }, slots: { default: '<button>wa</button>' }, attachTo: document.body });
         await w.find('button').trigger('focusin');
