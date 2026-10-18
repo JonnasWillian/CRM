@@ -1,181 +1,110 @@
 <script setup>
+import { computed } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
+import AppAlert from '@/Components/ui/AppAlert.vue';
+import AppBadge from '@/Components/ui/AppBadge.vue';
+import AppButton from '@/Components/ui/AppButton.vue';
+import AppCard from '@/Components/ui/AppCard.vue';
+import AppInput from '@/Components/ui/AppInput.vue';
+import AppModal from '@/Components/ui/AppModal.vue';
+import FormField from '@/Components/ui/FormField.vue';
+import PageContainer from '@/Components/ui/PageContainer.vue';
+import PageHeader from '@/Components/ui/PageHeader.vue';
+import SectionHeader from '@/Components/ui/SectionHeader.vue';
+import { useToast } from '@/Composables/useToast';
+import { ref } from 'vue';
 
-defineProps({
-    mustVerifyEmail: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
-    impedimentosDeExclusao: {
-        type: Array,
-        default: () => [],
-    },
+/** Perfil: empresa, dados pessoais, senha e exclusão da conta. */
+const props = defineProps({
+    mustVerifyEmail: { type: Boolean },
+    status: { type: String },
+    impedimentosDeExclusao: { type: Array, default: () => [] },
+    empresa: { type: Object, required: true }, // { nome, papel, editavel }
 });
+
+const toast = useToast();
+const user = computed(() => usePage().props.auth.user);
+const PAPEIS = { admin: 'Admin', gestor: 'Gestor', vendedor: 'Vendedor' };
+
+const formEmpresa = useForm({ nome: props.empresa.nome ?? '' });
+const formPerfil = useForm({ name: user.value.name, email: user.value.email });
+const formSenha = useForm({ current_password: '', password: '', password_confirmation: '' });
+const formExcluir = useForm({ password: '' });
+const excluindo = ref(false);
+
+const salvarPerfil = () => formPerfil.patch(route('profile.update'), { preserveScroll: true, onSuccess: () => toast.sucesso('Dados salvos.') });
+const salvarSenha = () => formSenha.put(route('password.update'), {
+    preserveScroll: true,
+    onSuccess: () => { formSenha.reset(); toast.sucesso('Senha atualizada.'); },
+    onError: () => formSenha.reset('password', 'password_confirmation', 'current_password'),
+});
+const excluir = () => formExcluir.delete(route('profile.destroy'), { preserveScroll: true, onFinish: () => formExcluir.reset() });
 </script>
 
 <template>
     <Head title="Perfil" />
-
     <AuthenticatedLayout>
-        <div class="pf-page">
-            <header class="pf-topbar">
-                <h1 class="pf-title">Perfil <span class="pf-accent">e conta</span></h1>
-                <p class="pf-sub">Seus dados de acesso e as configurações da sua conta.</p>
-            </header>
+        <PageContainer>
+            <PageHeader titulo="Perfil" subtitulo="Seus dados de acesso e a empresa." />
+            <div class="mx-auto max-w-2xl space-y-4">
+                <AppCard>
+                    <SectionHeader titulo="Minha empresa">
+                        <template #acoes><AppBadge :tom="empresa.papel === 'admin' ? 'primary' : 'neutral'">{{ PAPEIS[empresa.papel] ?? empresa.papel }}</AppBadge></template>
+                    </SectionHeader>
+                    <form v-if="empresa.editavel" class="mt-4 flex flex-wrap items-end gap-3" @submit.prevent="formEmpresa.patch(route('profile.empresa'), { preserveScroll: true })">
+                        <FormField rotulo="Nome da empresa" :erro="formEmpresa.errors.nome" class="min-w-0 flex-1">
+                            <AppInput v-model="formEmpresa.nome" :maxlength="255" />
+                        </FormField>
+                        <AppButton type="submit" variante="secondary" :carregando="formEmpresa.processing" :disabled="!formEmpresa.isDirty">Salvar</AppButton>
+                    </form>
+                    <p v-else class="mt-3 text-md text-fg-0">{{ empresa.nome }}</p>
+                </AppCard>
 
-            <div class="pf-cards">
-                <UpdateProfileInformationForm
-                    :must-verify-email="mustVerifyEmail"
-                    :status="status"
-                />
-                <UpdatePasswordForm />
-                <DeleteUserForm :impedimentos="impedimentosDeExclusao" />
+                <AppCard>
+                    <SectionHeader titulo="Dados pessoais" />
+                    <form class="mt-4 space-y-4" @submit.prevent="salvarPerfil">
+                        <FormField rotulo="Nome" :erro="formPerfil.errors.name"><AppInput v-model="formPerfil.name" autocomplete="name" /></FormField>
+                        <FormField rotulo="E-mail" :erro="formPerfil.errors.email"><AppInput v-model="formPerfil.email" type="email" autocomplete="username" /></FormField>
+                        <AppAlert v-if="mustVerifyEmail && user.email_verified_at === null" tom="warn">
+                            Seu e-mail ainda não foi confirmado.
+                            <Link :href="route('verification.send')" method="post" as="button" class="font-medium underline">Reenviar link</Link>
+                        </AppAlert>
+                        <div class="flex justify-end"><AppButton type="submit" :carregando="formPerfil.processing" :disabled="!formPerfil.isDirty">Salvar</AppButton></div>
+                    </form>
+                </AppCard>
+
+                <AppCard>
+                    <SectionHeader titulo="Senha" descricao="Use uma senha longa e que você não usa em outro lugar." />
+                    <form class="mt-4 space-y-4" @submit.prevent="salvarSenha">
+                        <FormField rotulo="Senha atual" :erro="formSenha.errors.current_password"><AppInput v-model="formSenha.current_password" type="password" autocomplete="current-password" /></FormField>
+                        <FormField rotulo="Nova senha" :erro="formSenha.errors.password"><AppInput v-model="formSenha.password" type="password" autocomplete="new-password" /></FormField>
+                        <FormField rotulo="Confirmar nova senha" :erro="formSenha.errors.password_confirmation"><AppInput v-model="formSenha.password_confirmation" type="password" autocomplete="new-password" /></FormField>
+                        <div class="flex justify-end"><AppButton type="submit" :carregando="formSenha.processing" :disabled="!formSenha.password">Atualizar senha</AppButton></div>
+                    </form>
+                </AppCard>
+
+                <AppCard>
+                    <SectionHeader titulo="Excluir conta" descricao="Apaga o seu acesso. Os leads da empresa continuam com ela." />
+                    <AppAlert v-if="impedimentosDeExclusao.length" tom="warn" class="mt-4">
+                        <ul class="list-disc space-y-1 pl-4"><li v-for="m in impedimentosDeExclusao" :key="m">{{ m }}</li></ul>
+                        <template v-if="empresa.editavel" #acao><AppButton variante="secondary" tamanho="sm" as="Link" :href="route('configuracoes.equipe')">Ir para Equipe</AppButton></template>
+                    </AppAlert>
+                    <div class="mt-4 flex justify-end">
+                        <AppButton variante="danger" :disabled="impedimentosDeExclusao.length > 0" @click="excluindo = true">Excluir minha conta</AppButton>
+                    </div>
+                </AppCard>
             </div>
-        </div>
+        </PageContainer>
+
+        <AppModal :aberto="excluindo" titulo="Excluir sua conta?" descricao="Não dá para desfazer. Confirme com a sua senha." tamanho="sm" @fechar="excluindo = false">
+            <form id="form-excluir" @submit.prevent="excluir">
+                <FormField rotulo="Senha" :erro="formExcluir.errors.password || formExcluir.errors.conta"><AppInput v-model="formExcluir.password" type="password" autocomplete="current-password" autofocus /></FormField>
+            </form>
+            <template #rodape>
+                <AppButton variante="secondary" @click="excluindo = false">Cancelar</AppButton>
+                <AppButton type="submit" form="form-excluir" variante="danger" :carregando="formExcluir.processing" :disabled="!formExcluir.password">Excluir conta</AppButton>
+            </template>
+        </AppModal>
     </AuthenticatedLayout>
 </template>
-
-<!--
-    Bloco NÃO escopado, de propósito.
-
-    As três seções do perfil são componentes separados e precisam dos mesmos
-    estilos de campo e botão. Estilo escopado não atravessa componente, então as
-    alternativas eram duplicar o CSS três vezes ou juntar tudo num arquivo só.
-    Um bloco global com prefixo `pf-` em toda classe resolve sem nenhum dos dois
-    custos — e o prefixo torna a colisão com o resto do app impossível.
-
-    Os tokens são os mesmos de AuthenticatedLayout e das telas de Funis,
-    Motivos de perda e Por que perdemos.
--->
-<style>
-    .pf-page {
-
-        font-family: 'DM Sans', sans-serif;
-        padding: 2rem 2.25rem 4rem;
-        color: var(--t1);
-        min-height: 100vh;
-    }
-
-    .pf-topbar { margin-bottom: 1.5rem; }
-    .pf-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
-    .pf-accent { color: var(--accent); }
-    /* Só o subtítulo tem medida de leitura, igual às telas de Funis,
-       Motivos de perda e Por que perdemos. */
-    .pf-sub { font-size: 0.85rem; color: var(--t2); margin-top: 0.25rem; max-width: 62ch; }
-
-    /* Sem max-width: os cards ocupam a largura do conteúdo, como em todas as
-       outras páginas. Limitar a coluna aqui era o que deixava a tela ocupando
-       metade do espaço e destoando do resto. */
-    .pf-cards { display: flex; flex-direction: column; gap: 1rem; }
-
-    .pf-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-3);
-        padding: 1.2rem 1.3rem;
-    }
-    .pf-card--perigo { border-color: rgba(240, 98, 146, 0.3); }
-
-    .pf-card-titulo { font-family: 'Syne', sans-serif; font-size: 1.02rem; font-weight: 700; }
-    .pf-card-desc { font-size: 0.8rem; color: var(--t2); margin-top: 0.3rem; line-height: 1.55; }
-
-    .pf-form { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 1.1rem; }
-    .pf-campo { display: flex; flex-direction: column; gap: 0.35rem; }
-    .pf-label { font-size: 0.76rem; color: var(--t2); }
-
-    .pf-input {
-        width: 100%;
-        background: rgba(13, 17, 23, 0.7);
-        border: 1px solid var(--border);
-        border-radius: var(--r-2);
-        padding: 0.55rem 0.75rem;
-        color: var(--t1);
-        font-size: 0.85rem;
-        font-family: inherit;
-        outline: none;
-        transition: border-color var(--d-1);
-    }
-    .pf-input:focus { border-color: var(--accent); }
-    .pf-input::placeholder { color: var(--t3); }
-
-    .pf-erro { font-size: 0.74rem; color: var(--danger); }
-
-    .pf-aviso {
-        font-size: 0.78rem;
-        color: var(--t2);
-        background: rgba(245, 158, 11, 0.08);
-        border: 1px solid rgba(245, 158, 11, 0.28);
-        border-radius: var(--r-2);
-        padding: 0.6rem 0.75rem;
-        line-height: 1.55;
-    }
-    .pf-link {
-        background: none;
-        border: none;
-        padding: 0;
-        color: var(--accent);
-        font: inherit;
-        cursor: pointer;
-        text-decoration: underline;
-    }
-    .pf-ok { font-size: 0.78rem; color: var(--ok); }
-
-    .pf-acoes { display: flex; align-items: center; gap: 0.7rem; margin-top: 0.25rem; }
-
-    .pf-btn-primary {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
-        padding: 0.5rem 0.95rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
-    }
-    .pf-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .pf-btn-ghost {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: transparent; color: var(--t2); border: 1px solid var(--border);
-        border-radius: var(--r-2); padding: 0.5rem 0.95rem; font-size: 0.82rem;
-        font-family: inherit; cursor: pointer;
-    }
-    .pf-btn-ghost:hover { color: var(--t1); }
-
-    /* Na página, o destrutivo é discreto: ele só ABRE a confirmação. O botão
-       que de fato apaga, dentro do diálogo, é o sólido. */
-    .pf-btn-perigo {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: rgba(240, 98, 146, 0.1); color: var(--perigo);
-        border: 1px solid rgba(240, 98, 146, 0.35); border-radius: var(--r-2);
-        padding: 0.5rem 0.95rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
-    }
-    .pf-btn-perigo:hover { background: rgba(240, 98, 146, 0.18); }
-
-    .pf-btn-perigo--solido {
-        background: var(--perigo); color: #fff; border-color: var(--perigo);
-    }
-    .pf-btn-perigo--solido:hover { background: var(--danger); }
-    .pf-btn-perigo--solido:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Diálogo de confirmação ── */
-    .pf-overlay {
-        position: fixed; inset: 0; z-index: 90;
-        background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
-        display: flex; align-items: center; justify-content: center; padding: 1rem;
-    }
-    .pf-dialogo {
-        width: 100%; max-width: 440px;
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--r-3); padding: 1.2rem 1.3rem; color: var(--t1);
-    }
-    .pf-dialogo-acoes { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.1rem; }
-
-    .pf-fade-enter-active, .pf-fade-leave-active { transition: opacity var(--d-1); }
-    .pf-fade-enter-from, .pf-fade-leave-to { opacity: 0; }
-
-    @media (max-width: 768px) {
-        .pf-page { padding: 1.25rem 1rem 3rem; }
-    }
-</style>

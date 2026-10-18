@@ -1,101 +1,29 @@
 <script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import AuthLayout from '@/Layouts/AuthLayout.vue';
+import AppButton from '@/Components/ui/AppButton.vue';
+import AppInput from '@/Components/ui/AppInput.vue';
+import FormField from '@/Components/ui/FormField.vue';
 
-const props = defineProps({
-    email: {
-        type: String,
-        required: true,
-    },
-    token: {
-        type: String,
-        required: true,
-    },
-});
-
-const form = useForm({
-    token: props.token,
-    email: props.email,
-    password: '',
-    password_confirmation: '',
-});
-
-const submit = () => {
-    form.post(route('password.store'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
-};
+const props = defineProps({ email: { type: String, required: true }, token: { type: String, required: true } });
+const form = useForm({ token: props.token, email: props.email, password: '', password_confirmation: '' });
+const enviar = () => form.post(route('password.store'), { onFinish: () => form.reset('password', 'password_confirmation') });
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Reset Password" />
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
-
-                <TextInput
-                    id="password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password_confirmation"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
-            </div>
-
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Reset Password
-                </PrimaryButton>
-            </div>
+    <Head title="Nova senha" />
+    <AuthLayout titulo="Nova senha" descricao="Escolha a senha que você vai usar daqui para frente.">
+        <form class="space-y-4" @submit.prevent="enviar">
+            <FormField rotulo="E-mail" :erro="form.errors.email">
+                <AppInput v-model="form.email" type="email" autocomplete="username" readonly />
+            </FormField>
+            <FormField rotulo="Nova senha" :erro="form.errors.password" dica="Mínimo de 8 caracteres.">
+                <AppInput v-model="form.password" type="password" autocomplete="new-password" autofocus />
+            </FormField>
+            <FormField rotulo="Confirmar senha" :erro="form.errors.password_confirmation">
+                <AppInput v-model="form.password_confirmation" type="password" autocomplete="new-password" />
+            </FormField>
+            <AppButton type="submit" bloco :carregando="form.processing">Salvar senha</AppButton>
         </form>
-    </GuestLayout>
+    </AuthLayout>
 </template>

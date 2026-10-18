@@ -23,7 +23,21 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'impedimentosDeExclusao' => $exclusao->impedimentos($request->user()),
+            'empresa' => [
+                'nome' => $request->user()->tenant?->nome,
+                'papel' => $request->user()->getRoleNames()->first(),
+                'editavel' => $request->user()->can('agentes.manage'),
+            ],
         ]);
+    }
+
+    /** Nome da empresa (admin). */
+    public function empresa(Request $request): RedirectResponse
+    {
+        $dados = $request->validate(['nome' => ['required', 'string', 'min:2', 'max:255']], ['nome.required' => 'Informe o nome da empresa.']);
+        $request->user()->tenant->update(['nome' => $dados['nome']]);
+
+        return Redirect::route('profile.edit')->with('sucesso', 'Nome da empresa atualizado.');
     }
 
     /**

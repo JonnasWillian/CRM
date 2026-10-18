@@ -2,18 +2,10 @@
 
 use App\Http\Controllers\DownloadDeArquivoController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Inicial', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// Sem página inicial de marketing: a raiz leva ao login ou ao dashboard.
+Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'));
 
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Web\DashboardController::class, 'index'])->name('dashboard');
@@ -87,6 +79,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::patch('/profile/empresa', [ProfileController::class, 'empresa'])->middleware('can:agentes.manage')->name('profile.empresa');
 });
 
 // Aceitar convite: visitante; o token (hash no banco) é a credencial.

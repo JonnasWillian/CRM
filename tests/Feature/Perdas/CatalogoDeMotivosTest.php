@@ -142,6 +142,7 @@ class CatalogoDeMotivosTest extends TestCase
             'email' => 'empresa.nova@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'empresa' => 'Empresa de Teste',
         ]);
 
         $this->assertAuthenticated();

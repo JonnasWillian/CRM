@@ -36,17 +36,18 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'empresa' => 'required|string|min:2|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ], ['empresa.required' => 'Informe o nome da empresa.']);
 
         // Todo o registro (tenant + seed de estágios/status + user) roda numa única
         // transação: se a semeadura de estágios/status falhar, o tenant recém-criado
         // não fica "pela metade" (sem estágios/status, inutilizável) no banco.
         $user = DB::transaction(function () use ($request) {
             $tenant = Tenant::create([
-                'nome' => $request->name,
-                'slug' => Str::slug($request->name).'-'.Str::random(6),
+                'nome' => $request->empresa,
+                'slug' => Str::slug($request->empresa).'-'.Str::random(6),
             ]);
 
             TenantBootstrapper::bootstrap($tenant);

@@ -24,6 +24,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'empresa' => 'Empresa de Teste',
         ]);
 
         $this->assertAuthenticated();
@@ -37,6 +38,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'empresa' => 'Empresa de Teste',
         ]);
 
         $this->assertAuthenticated();
@@ -57,6 +59,7 @@ class RegistrationTest extends TestCase
             'email' => 'user-one@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'empresa' => 'Empresa de Teste',
         ]);
         $userOne = User::where('email', 'user-one@example.com')->firstOrFail();
 
@@ -67,11 +70,22 @@ class RegistrationTest extends TestCase
             'email' => 'user-two@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'empresa' => 'Empresa de Teste',
         ]);
         $userTwo = User::where('email', 'user-two@example.com')->firstOrFail();
 
         $this->assertNotNull($userOne->tenant_id);
         $this->assertNotNull($userTwo->tenant_id);
         $this->assertNotEquals($userOne->tenant_id, $userTwo->tenant_id);
+    }
+
+    public function test_nome_da_empresa_e_obrigatorio_e_vira_o_nome_do_tenant(): void
+    {
+        $this->post('/register', ['name' => 'Ana', 'email' => 'ana@ex.test', 'password' => 'password', 'password_confirmation' => 'password'])
+            ->assertSessionHasErrors('empresa');
+        $this->assertGuest();
+
+        $this->post('/register', ['name' => 'Ana Souza', 'empresa' => 'Acme Vendas', 'email' => 'ana@ex.test', 'password' => 'password', 'password_confirmation' => 'password']);
+        $this->assertSame('Acme Vendas', \App\Models\User::firstWhere('email', 'ana@ex.test')->tenant->nome);
     }
 }
