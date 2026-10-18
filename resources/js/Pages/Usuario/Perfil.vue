@@ -2,9 +2,11 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { ArrowRightLeft, Calendar, ChevronRight, CircleDollarSign, Clock, FileText, FolderOpen, Mail, MessageCircle, Paperclip, Percent, Phone, Plus, SquareCheck, Trash2, UserRound } from 'lucide-vue-next';
+import { ArchiveRestore, ArrowRightLeft, Calendar, ChevronRight, CircleDollarSign, Clock, FileText, FolderOpen, Mail, MessageCircle, Paperclip, Percent, Phone, Plus, SquareCheck, Trash2, UserRound } from 'lucide-vue-next';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppAlert from '@/Components/ui/AppAlert.vue';
 import AppAvatar from '@/Components/ui/AppAvatar.vue';
+import EmptyState from '@/Components/ui/EmptyState.vue';
 import AppBadge from '@/Components/ui/AppBadge.vue';
 import AppButton from '@/Components/ui/AppButton.vue';
 import AppDropdown from '@/Components/ui/AppDropdown.vue';
@@ -36,6 +38,7 @@ const props = defineProps({
     funis: { type: Array, required: true },
     status: { type: Array, required: true },
     agentes: { type: Array, default: () => [] },
+    naLixeira: { type: Boolean, default: false },
 });
 
 const lead = ref(props.lead);
@@ -100,6 +103,15 @@ async function transferir({ user_id }) {
     }
 }
 
+async function restaurarDaLixeira() {
+    try {
+        const { data } = await axios.patch(route('api.leads.restaurar', lead.value.id));
+        toast.sucesso(`“${lead.value.nome}” restaurado.`);
+        if (data.aviso) toast.aviso(data.aviso);
+        router.reload();
+    } catch { /* interceptor */ }
+}
+
 async function excluir() {
     const ok = await confirmar({
         titulo: `Mover “${lead.value.nome}” para a lixeira?`,
@@ -132,11 +144,11 @@ async function excluir() {
                 </template>
                 <template #abaixo>
                     <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-fg-1">
-                        <MoverEstagioMenu :lead="lead" :funis="funis" @atualizado="atualizar" />
+                        <MoverEstagioMenu :lead="lead" :funis="funis" :somente-leitura="naLixeira" @atualizado="atualizar" />
                         <span v-if="lead.funil" class="text-fg-2">Funil <b class="font-medium text-fg-1">{{ lead.funil.nome }}</b></span>
                         <span v-if="lead.responsavel" class="inline-flex items-center gap-1.5 text-fg-2">
                             <UserRound :size="14" aria-hidden="true" /> {{ lead.responsavel.name }}
-                            <button v-if="agentes.length" type="button" class="ml-1 text-sm font-medium text-primary hover:underline" @click="transferencia = { aberto: true, salvando: false, erro: '' }">Transferir</button>
+                            <button v-if="agentes.length && !naLixeira" type="button" class="ml-1 text-sm font-medium text-primary hover:underline" @click="transferencia = { aberto: true, salvando: false, erro: '' }">Transferir</button>
                         </span>
                         <a :href="`mailto:${lead.email}`" class="inline-flex items-center gap-1.5 hover:text-primary"><Mail :size="14" aria-hidden="true" /> {{ lead.email }}</a>
                         <span v-if="lead.telefone" class="inline-flex items-center gap-1.5">
@@ -150,7 +162,10 @@ async function excluir() {
                         <AppBadge v-if="lead.previsao_fechamento" :tom="new Date(lead.previsao_fechamento) < new Date() && lead.estagio?.tipo === 'aberto' ? 'danger' : 'neutral'" tamanho="md"><Calendar :size="12" class="mr-1 inline" aria-hidden="true" />Previsão {{ formatarData(lead.previsao_fechamento) }}</AppBadge>
                     </div>
                 </template>
-                <template #acoes>
+                <template v-if="naLixeira" #acoes>
+                    <AppButton @click="restaurarDaLixeira"><template #icone><ArchiveRestore /></template>Restaurar</AppButton>
+                </template>
+                <template v-else #acoes>
                     <AppButton variante="secondary" @click="novaTarefa"><template #icone><Plus /></template>Nova tarefa</AppButton>
                     <AppDropdown rotulo="Mais ações" alinhar="end">
                         <AppDropdownItem v-if="agentes.length" rotulo="Transferir…" :icone="ArrowRightLeft" @click="transferencia = { aberto: true, salvando: false, erro: '' }" />
@@ -159,7 +174,13 @@ async function excluir() {
                 </template>
             </PageHeader>
 
-            <div class="flex items-start gap-4">
+            <template v-if="naLixeira">
+                <AppAlert tom="warn" titulo="Este lead está na Lixeira">
+                    Ele não aparece nas listas nem no Pipeline. Restaure para voltar a trabalhar nele; atividades, tarefas, anotações e documentos voltam junto.
+                </AppAlert>
+                <EmptyState :icone="Trash2" titulo="Somente leitura" descricao="O histórico e os documentos ficam disponíveis depois de restaurar." class="mt-4" />
+            </template>
+            <div v-else class="flex items-start gap-4">
                 <AppAvatar :nome="lead.nome" :tamanho="40" class="hidden sm:inline-flex" />
                 <div class="min-w-0 flex-1">
                     <AppTabs v-model="aba" :abas="abas" sincronizar-url="aba" />

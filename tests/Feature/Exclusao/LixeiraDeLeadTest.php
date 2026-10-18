@@ -60,12 +60,17 @@ class LixeiraDeLeadTest extends TestCase
         $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/kanban')->json('estagios'))->flatMap(fn ($e) => $e['leads'])->pluck('id'));
     }
 
-    /** Review Focus 2 */
-    public function test_link_salvo_para_lead_na_lixeira_da_404_limpo(): void
+    /**
+     * Review Focus 2, revisto na Fase 4b: o link salvo abre o perfil em modo
+     * leitura (faixa "Este lead está na Lixeira" + Restaurar); a API de
+     * escrita continua 404 para o lead e os filhos.
+     */
+    public function test_link_salvo_para_lead_na_lixeira_abre_em_modo_leitura(): void
     {
         $this->lead->delete();
 
-        $this->actingAs($this->gestor)->get("/leads/{$this->lead->id}")->assertNotFound();
+        $this->actingAs($this->gestor)->get("/leads/{$this->lead->id}")->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Usuario/Perfil')->where('naLixeira', true));
         $this->actingAs($this->gestor)->getJson("/api/leads/{$this->lead->id}")->assertNotFound();
         $this->actingAs($this->gestor)->putJson("/api/anotacoes/{$this->anotacao->id}", ['descricao' => 'x'])->assertNotFound();
     }

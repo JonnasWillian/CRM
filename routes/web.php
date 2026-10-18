@@ -51,7 +51,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
  * não existe.
  */
 Route::get('/leads/{usuario}', [\App\Http\Controllers\Web\LeadController::class, 'show'])
-    ->middleware(['auth', 'tenant'])->can('view', 'usuario')->name('leads.show');
+    ->middleware(['auth', 'tenant'])->withTrashed()->can('view', 'usuario')->name('leads.show');
+
+Route::get('/lixeira', [\App\Http\Controllers\Web\LixeiraController::class, 'index'])->middleware(['auth', 'tenant'])->name('lixeira');
 
 /*
  * Download de anexos. Ver DownloadDeArquivoController: é a única saída do

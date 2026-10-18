@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FunilController;
 use App\Http\Controllers\Api\KanbanController;
 use App\Http\Controllers\Api\LeadAtividadeController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\LixeiraController;
 use App\Http\Controllers\Api\MotivoPerdaController;
 use App\Http\Controllers\Api\PerdaRelatorioController;
 use App\Http\Controllers\Api\ProjetoAnexoController;
@@ -125,6 +126,10 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::post('/tarefa-padroes', [TarefaPadraoController::class, 'store'])->name('tarefa-padroes.store');
     Route::put('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'update'])->name('tarefa-padroes.update');
     Route::delete('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'destroy'])->name('tarefa-padroes.destroy');
+
+    // ── Lixeira (o que o agente enxerga) ──
+    Route::get('/lixeira', [LixeiraController::class, 'index'])->name('lixeira.index');
+    Route::post('/lixeira/restaurar', [LixeiraController::class, 'restaurar'])->name('lixeira.restaurar');
 
     // ── Equipe ──
     Route::get('/equipe/opcoes', [EquipeController::class, 'opcoes'])->middleware('can:leads.view-all')->name('equipe.opcoes');

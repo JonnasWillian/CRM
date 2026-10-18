@@ -64,6 +64,8 @@ class LeadController extends Controller
             'funis' => Funil::ordenados()->with(['estagios' => fn ($q) => $q->orderBy('ordem')->orderBy('id')])->get(['id', 'nome', 'is_default']),
             'status' => Statu::orderBy('ordem')->orderBy('id')->get(['id', 'descricao', 'is_won', 'is_lost']),
             'agentes' => self::agentes($request->user()),
+            // Lead na lixeira abre em modo leitura (faixa + Restaurar).
+            'naLixeira' => $usuario->trashed(),
         ]);
     }
 

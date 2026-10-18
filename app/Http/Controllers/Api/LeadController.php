@@ -161,7 +161,11 @@ class LeadController extends Controller
 
         $usuario->restore();
 
-        return response()->json(['message' => 'Lead restaurado.']);
+        // O estágio pode ter sido arquivado enquanto o lead estava na lixeira:
+        // ele volta, mas fica numa coluna somente-saída até ser movido.
+        $aviso = $usuario->estagio?->trashed() ? 'O estágio original está arquivado; mova o lead para um estágio ativo.' : null;
+
+        return response()->json(['message' => 'Lead restaurado.', 'aviso' => $aviso]);
     }
 
     /** Move dentro do funil atual (arrastar o card). Trocar de funil é `funil()`. */
