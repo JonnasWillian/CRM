@@ -62,7 +62,11 @@ class LeadController extends Controller
         $q->with('funil:id,nome');
         $decimal = fn ($v) => $v === null ? '' : number_format((float) $v, 2, ',', '');
 
-        return response()->streamDownload(function () use ($q, $decimal) {
+        $autor = $request->user();
+        $filtrosUsados = $ids !== [] ? ['ids' => count($ids)] : $request->filtrosValidados();
+
+        return response()->streamDownload(function () use ($q, $decimal, $autor, $filtrosUsados) {
+            $linhas = 0;
             $saida = fopen('php://output', 'w');
             fwrite($saida, "\xEF\xBB\xBF");
             fputcsv($saida, ['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'responsavel', 'criado_em', 'ultimo_contato'], ';', '"', '');
@@ -72,8 +76,15 @@ class LeadController extends Controller
                     $decimal($l->valor_estimado), $l->probabilidade, $l->previsao_fechamento?->toDateString(), $l->responsavel?->name,
                     $l->created_at?->format('Y-m-d H:i'), $l->ultimo_contato_em?->format('Y-m-d H:i'),
                 ]), ';', '"', '');
+                $linhas++;
             }
             fclose($saida);
+
+            // Rastro de quem levou a base: um registro por exportação, não por lead.
+            activity()->causedBy($autor)->event('leads_exportados')
+                ->withProperties(['linhas' => $linhas, 'filtros' => $filtrosUsados])
+                ->tap(fn ($a) => $a->tenant_id = $autor->tenant_id)
+                ->log("Exportou {$linhas} lead(s) em CSV");
         }, 'leads-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 

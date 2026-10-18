@@ -43,8 +43,10 @@ class ListagemDeLeads
             ->when($filtros['funil_id'] ?? null, fn (Builder $q, int $funilId) => $q->where('usuarios.funil_id', $funilId))
             // Vendedor já vê só a própria carteira: o parâmetro é ignorado para ele.
             ->when(($filtros['user_id'] ?? null) && $user->can('leads.view-all'), fn (Builder $q) => $q->where('usuarios.user_id', (int) $filtros['user_id']))
+            // "Parado" é lead em andamento sem contato: ganho e perdido não estão parados.
             ->when(filter_var($filtros['estagnados'] ?? false, FILTER_VALIDATE_BOOL), fn (Builder $q) => $q
-                ->where('usuarios.ultimo_contato_em', '<', now()->subDays((int) config('leads.dias_estagnado', 14))))
+                ->where('usuarios.ultimo_contato_em', '<', now()->subDays((int) config('leads.dias_estagnado', 14)))
+                ->whereDoesntHave('estagio', fn ($e) => $e->fechado()))
             ->when($filtros['previsao_de'] ?? null, fn (Builder $q, string $de) => $q->whereDate('usuarios.previsao_fechamento', '>=', $de))
             ->when($filtros['previsao_ate'] ?? null, fn (Builder $q, string $ate) => $q->whereDate('usuarios.previsao_fechamento', '<=', $ate));
 

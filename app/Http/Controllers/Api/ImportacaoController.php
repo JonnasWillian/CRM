@@ -50,11 +50,15 @@ class ImportacaoController extends Controller
             'mapeamento.*' => ['nullable', 'integer', "between:0,{$colunas}"],
             'opcoes.duplicados' => ['required', Rule::in(['ignorar', 'atualizar'])],
             'opcoes.funil_id' => ['nullable', 'integer', Rule::exists('funis', 'id')->where('tenant_id', $tenant)->whereNull('deleted_at')],
-            'opcoes.estagio_id' => ['nullable', 'integer', Rule::exists('estagios', 'id')->where('tenant_id', $tenant)->whereNull('deleted_at')],
+            // O estágio de entrada tem de ser do funil escolhido (ou do padrão): lead com
+            // funil de um lado e estágio de outro não aparece em quadro nenhum.
+            'opcoes.estagio_id' => ['nullable', 'integer', Rule::exists('estagios', 'id')->where('tenant_id', $tenant)->whereNull('deleted_at')
+                ->where('funil_id', $request->integer('opcoes.funil_id') ?: \App\Models\Funil::padrao()?->id)],
             'opcoes.user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('tenant_id', $tenant)->where('ativo', true)],
         ], [
             'mapeamento.nome.required' => 'Escolha a coluna do nome.',
             'mapeamento.email.required' => 'Escolha a coluna do e-mail.',
+            'opcoes.estagio_id.exists' => 'Escolha um estágio do funil selecionado.',
         ]);
 
         $mapa = array_intersect_key(array_filter($dados['mapeamento'], fn ($v) => $v !== null), CamposDeImportacao::CAMPOS);

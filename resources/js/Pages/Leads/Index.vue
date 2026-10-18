@@ -20,7 +20,7 @@ import PageContainer from '@/Components/ui/PageContainer.vue';
 import PageHeader from '@/Components/ui/PageHeader.vue';
 import LeadFormModal from '@/Components/leads/LeadFormModal.vue';
 import TransferirDialog from '@/Components/leads/TransferirDialog.vue';
-import { mensagemDeErro } from '@/utils/erros';
+import { ehErroDeValidacao, mensagemDeErro } from '@/utils/erros';
 import { useConfirm } from '@/Composables/useConfirm';
 import { useListagem } from '@/Composables/useListagem';
 import { usePerda } from '@/Composables/usePerda';
@@ -108,6 +108,9 @@ onMounted(() => {
 const recarregar = () => router.reload({ only: ['leads'] });
 
 // ── Seleção e ações em massa ──
+// O interceptor cala 422 com `errors` (formulários mostram no campo). Aqui não há
+// campo: a recusa (ex.: mais de 200 selecionados) vira toast.
+const avisarRecusa = (e) => { if (ehErroDeValidacao(e)) toast.erro(mensagemDeErro(e, 'Não foi possível concluir.')); };
 const selecionadas = ref([]);
 const todos = ref(false); // "todos os N resultados"
 const totalSelecionado = computed(() => (todos.value ? props.leads.meta.total : selecionadas.value.length));
@@ -129,7 +132,9 @@ async function moverEmMassa(estagio) {
         toast.sucesso(resumo(data));
         limparSelecao();
         recarregar();
-    } catch { /* interceptor */ }
+    } catch (e) {
+        avisarRecusa(e);
+    }
 }
 
 async function excluirEmMassa() {
@@ -146,7 +151,9 @@ async function excluirEmMassa() {
         toast.sucesso(resumo(data));
         limparSelecao();
         recarregar();
-    } catch { /* interceptor */ }
+    } catch (e) {
+        avisarRecusa(e);
+    }
 }
 
 async function excluir(l) {

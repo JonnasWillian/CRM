@@ -65,8 +65,12 @@ class Membros
         $membro->forceFill(['ativo' => true, 'desativado_em' => null])->save();
     }
 
-    private static function recusar(string $mensagem): ValidationException
+    /**
+     * Regra de negócio, não erro de campo: `{message}` sem `errors`, para o
+     * interceptor do front mostrar como toast.
+     */
+    private static function recusar(string $mensagem): \Illuminate\Http\Exceptions\HttpResponseException
     {
-        return ValidationException::withMessages(['membro' => $mensagem]);
+        return new \Illuminate\Http\Exceptions\HttpResponseException(response()->json(['message' => $mensagem], 422));
     }
 }

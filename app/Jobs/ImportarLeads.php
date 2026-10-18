@@ -71,6 +71,15 @@ class ImportarLeads implements ShouldQueue
         }
     }
 
+    /** Timeout ou queda do worker: o catch de handle() não roda; sem isto a importação ficaria "processando" para sempre. */
+    public function failed(Throwable $e): void
+    {
+        Importacao::withoutGlobalScopes()->whereKey($this->importacaoId)->update([
+            'status' => Importacao::FALHOU,
+            'mensagem_falha' => 'A importação foi interrompida (tempo esgotado ou falha do servidor). As linhas já processadas foram mantidas; importe de novo o restante.',
+        ]);
+    }
+
     private function processar(User $autor): void
     {
         $linhas = PreviaDeImportacao::ler((string) Storage::disk('local')->get($this->imp->arquivo), $this->imp->delimitador);

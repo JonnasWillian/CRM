@@ -146,7 +146,7 @@ async function concluir(tarefa) {
                         <KpiCard rotulo="Ganhos" :valor="m.fluxo.ganhos.total" :sub="`${formatBRL(m.fluxo.ganhos.valor)} no período`" :icone="CircleCheck" tom="ok" contar :href="route('leads.index', { situacao: 'ganhos', ...periodoQuery })" />
                         <KpiCard rotulo="Perdidos" :valor="m.fluxo.perdidos.total" :sub="`${formatBRL(m.fluxo.perdidos.valor)} no período`" :icone="CircleX" tom="danger" contar :href="pode('leads.view-all') ? route('relatorios.perdas') : null" />
                         <KpiCard rotulo="Taxa de ganho" :valor="taxaGanho" :sub="m.fluxo.ticket_medio ? `Ticket médio ${formatBRL(m.fluxo.ticket_medio)}` : 'ganhos ÷ (ganhos + perdidos)'" :icone="TrendingUp" />
-                        <KpiCard rotulo="Sem contato +14d" :valor="m.estado.sem_contato_14d" sub="leads abertos parados" :icone="AlertTriangle" :tom="m.estado.sem_contato_14d ? 'warn' : 'neutral'" contar :href="route('leads.index', { estagnados: 1 })" />
+                        <KpiCard rotulo="Sem contato +14d" :valor="m.estado.sem_contato_14d" sub="leads abertos parados" :icone="AlertTriangle" :tom="m.estado.sem_contato_14d ? 'warn' : 'neutral'" contar :href="route('leads.index', { estagnados: 1, ...(filtros.user_id ? { user_id: filtros.user_id } : {}), ...(filtros.funil_id ? { funil_id: filtros.funil_id } : {}) })" />
                     </div>
 
                     <div class="mt-4 grid gap-4 lg:grid-cols-2">

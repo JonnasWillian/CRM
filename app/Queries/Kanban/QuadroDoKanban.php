@@ -113,7 +113,7 @@ class QuadroDoKanban
             ->where('usuarios.funil_id', $funil->id)
             ->when($filtros['busca'], fn (Builder $q, string $busca) => BuscaDeLeads::aplicar($q, $busca))
             ->when($filtros['user_id'], fn (Builder $q, int $id) => $q->where('usuarios.user_id', $id))
-            ->when($filtros['estagnados'], fn (Builder $q) => $q->where('usuarios.ultimo_contato_em', '<', self::limiteEstagnado()));
+            ->when($filtros['estagnados'], fn (Builder $q) => $q->where('usuarios.ultimo_contato_em', '<', self::limiteEstagnado())->whereDoesntHave('estagio', fn ($e) => $e->fechado()));
     }
 
     private function cardsQuery(Builder $q): Builder

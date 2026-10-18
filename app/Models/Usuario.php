@@ -116,6 +116,12 @@ class Usuario extends Model implements Perdivel
      */
     public function valorDaPerda(): ?float
     {
+        // O valor do negócio, quando informado, é o que se perdeu; sem ele,
+        // a soma dos projetos em aberto (como era antes dos campos de negócio).
+        if ($this->valor_estimado !== null && (float) $this->valor_estimado > 0) {
+            return (float) $this->valor_estimado;
+        }
+
         $soma = Projeto::where('usuario_id', $this->id)
             ->whereHas('status', fn ($q) => $q->open())
             ->sum('preco');

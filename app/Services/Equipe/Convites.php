@@ -30,7 +30,7 @@ class Convites
     public function reenviar(Convite $convite, User $autor): Convite
     {
         if ($convite->aceito_em || $convite->cancelado_em) {
-            throw ValidationException::withMessages(['convite' => 'Este convite já foi usado ou cancelado.']);
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(response()->json(['message' => 'Este convite já foi usado ou cancelado; envie um novo.'], 422));
         }
 
         return $this->enviar($convite, $autor);

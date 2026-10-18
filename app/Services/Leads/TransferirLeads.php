@@ -4,6 +4,7 @@ namespace App\Services\Leads;
 
 use App\Models\User;
 use App\Models\Usuario;
+use App\Support\Reports\MetricasCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -31,6 +32,11 @@ class TransferirLeads
 
     /** @return array{afetados:int, ignorados:int} */
     public function varios(Builder $selecao, int $pedidos, User $destino): array
+    {
+        return MetricasCache::emLote(fn () => $this->transferirTodos($selecao, $pedidos, $destino));
+    }
+
+    private function transferirTodos(Builder $selecao, int $pedidos, User $destino): array
     {
         $afetados = 0;
 

@@ -58,7 +58,7 @@ class LeadMetricsService
         $leadsFechados = $leads()->whereHas('estagio', fn ($q) => $q->fechado())->count();
         $totalLeads = $leads()->count();
         $valorProjetosAbertos = (float) Projeto::whereIn('usuario_id', $ids())->whereHas('status', fn ($q) => $q->open())->sum('preco');
-        $semContato = $leads()->whereHas('estagio', fn ($q) => $q->aberto())
+        $semContato = $leads()->whereDoesntHave('estagio', fn ($q) => $q->fechado())
             ->where('usuarios.ultimo_contato_em', '<', now()->subDays((int) config('leads.dias_estagnado', 14)))
             ->count();
 

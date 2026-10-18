@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import { ChevronRight, Download, FileUp, Upload } from 'lucide-vue-next';
@@ -95,6 +95,7 @@ function prepararMapeamento() {
 }
 const opcoesColuna = computed(() => (imp.value?.cabecalhos ?? []).map((c, i) => ({ valor: i, rotulo: c || `Coluna ${i + 1}` })));
 const estagiosDoFunil = computed(() => props.estagios.filter((e) => e.funil_id === opcoes.funil_id && e.tipo !== 'perdido').map((e) => ({ valor: e.id, rotulo: e.descricao })));
+watch(() => opcoes.funil_id, () => { opcoes.estagio_id = null; });
 const faltaObrigatorio = computed(() => mapa.nome === null || mapa.email === null);
 async function iniciar() {
     const ok = await confirmar({ titulo: `Importar ${imp.value.total_linhas} linha${imp.value.total_linhas === 1 ? '' : 's'}?`, mensagem: opcoes.duplicados === 'atualizar' ? 'Leads com o mesmo e-mail serão atualizados (campos vazios não apagam nada).' : 'Linhas com e-mail que já existe serão puladas.', rotuloConfirmar: `Importar ${imp.value.total_linhas} linhas`, tom: 'primary' });

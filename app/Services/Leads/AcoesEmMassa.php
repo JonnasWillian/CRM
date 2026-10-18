@@ -5,6 +5,7 @@ namespace App\Services\Leads;
 use App\Models\Estagio;
 use App\Models\Usuario;
 use App\Services\Perdas\AplicarTransicao;
+use App\Support\Reports\MetricasCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -29,6 +30,11 @@ class AcoesEmMassa
      */
     public function moverEstagio(Builder $selecao, int $pedidos, Estagio $destino, array $perda): array
     {
+        return MetricasCache::emLote(fn () => $this->mover($selecao, $pedidos, $destino, $perda));
+    }
+
+    private function mover(Builder $selecao, int $pedidos, Estagio $destino, array $perda): array
+    {
         $afetados = 0;
 
         $selecao
@@ -45,6 +51,11 @@ class AcoesEmMassa
     }
 
     public function lixeira(Builder $selecao, int $pedidos): array
+    {
+        return MetricasCache::emLote(fn () => $this->excluir($selecao, $pedidos));
+    }
+
+    private function excluir(Builder $selecao, int $pedidos): array
     {
         $afetados = 0;
 

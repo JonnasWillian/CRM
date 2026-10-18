@@ -15,6 +15,7 @@ import PageContainer from '@/Components/ui/PageContainer.vue';
 import PageHeader from '@/Components/ui/PageHeader.vue';
 import { useListagem } from '@/Composables/useListagem';
 import { useToast } from '@/Composables/useToast';
+import { ehErroDeValidacao, mensagemDeErro } from '@/utils/erros';
 import { formatBRL, formatarDataHora } from '@/utils/formatadores';
 
 /** Leads e projetos excluídos que você enxerga. Restaurar devolve tudo como estava; nada é apagado de vez. */
@@ -46,7 +47,9 @@ async function restaurar(ids) {
         toast.sucesso(data.message + extra);
         selecionadas.value = [];
         recarregar();
-    } catch { /* interceptor */ }
+    } catch (e) {
+        if (ehErroDeValidacao(e)) toast.erro(mensagemDeErro(e, 'Não foi possível restaurar.'));
+    }
 }
 </script>
 

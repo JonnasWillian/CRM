@@ -34,9 +34,40 @@ final class MetricasCache
         return (int) Cache::get(self::chaveVersao($tenantId), 1);
     }
 
+    /** @var array<int, true>|null tenants pendentes enquanto um lote está aberto */
+    private static ?array $lote = null;
+
+    /**
+     * Agrupa as invalidações de uma operação em massa: os observers chamam
+     * invalidar() por lead, e o contador só sobe uma vez no fim.
+     */
+    public static function emLote(callable $operacao): mixed
+    {
+        if (self::$lote !== null) {
+            return $operacao();
+        }
+
+        self::$lote = [];
+        try {
+            return $operacao();
+        } finally {
+            $pendentes = array_keys(self::$lote);
+            self::$lote = null;
+            foreach ($pendentes as $tenantId) {
+                self::invalidar($tenantId);
+            }
+        }
+    }
+
     public static function invalidar(?int $tenantId): void
     {
         if ($tenantId === null) {
+            return;
+        }
+
+        if (self::$lote !== null) {
+            self::$lote[$tenantId] = true;
+
             return;
         }
 
