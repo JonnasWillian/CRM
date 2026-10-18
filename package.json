@@ -37,5 +37,8 @@
         "lucide-vue-next": "^0.484.0",
         "maska": "^3.1.0",
         "vuedraggable": "^4.1.0"
+    },
+    "allowScripts": {
+        "esbuild@0.24.2": true
     }
 }
