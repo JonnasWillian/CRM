@@ -21,7 +21,7 @@ import MoverFunilDialog from './MoverFunilDialog.vue';
  * Emite `atualizado(lead)` com o lead que o backend devolveu.
  */
 const props = defineProps({
-    lead: { type: Object, required: true }, // { id, nome, estagio_id, funil_id, estagio: { descricao, cor, tipo }, valor_estimado, projetos_count }
+    lead: { type: Object, required: true }, // { id, nome, estagio_id, funil_id, estagio: { descricao, cor, tipo }, valor_estimado, projetos_abertos_count }
     funis: { type: Array, required: true },
     somenteLeitura: { type: Boolean, default: false },
 });
@@ -48,7 +48,7 @@ async function escolher(destino) {
     if (destino.tipo === 'perdido') {
         const ok = await pedirPerda({
             titulo: `Perder “${props.lead.nome}”`,
-            detalhe: props.lead.projetos_count > 0 ? `Este lead tem ${props.lead.projetos_count} projeto(s). Eles continuam como estão; feche-os na aba Projetos se for o caso.` : null,
+            detalhe: props.lead.projetos_abertos_count > 0 ? `Este lead tem ${props.lead.projetos_abertos_count} projeto(s) em aberto. Eles continuam como estão; feche-os na aba Projetos se for o caso.` : null,
             enviar: async (perda) => {
                 const { data } = await patchEstagio({ estagio_id: destino.id, perda });
                 emit('atualizado', data.data);
@@ -153,7 +153,7 @@ async function confirmarFunil({ funil_id, estagio_id }) {
         :aberto="ganho.aberto"
         :nome="lead.nome"
         :valor-estimado="lead.valor_estimado"
-        :projetos-abertos="lead.projetos_count ?? 0"
+        :projetos-abertos="lead.projetos_abertos_count ?? 0"
         :salvando="ganho.salvando"
         :erro="ganho.erro"
         @confirmar="confirmarGanho"

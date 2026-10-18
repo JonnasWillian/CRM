@@ -123,6 +123,7 @@ class LeadController extends Controller
                 'anotacoes',
                 'arquivos',
                 'projetos',
+                'projetos as projetos_abertos_count' => fn ($q) => $q->whereHas('status', fn ($s) => $s->open()),
                 'tarefas as tarefas_pendentes_count' => fn ($q) => $q->where('concluido', false),
             ])
             ->loadSum(['projetos as valor_projetos_abertos' => fn ($q) => $q->whereHas('status', fn ($s) => $s->open())], 'preco');
