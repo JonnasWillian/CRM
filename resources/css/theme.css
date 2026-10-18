@@ -124,6 +124,56 @@
     --sidebar-w-colapsada: 56px;
 }
 
+/* ══ Tema escuro ══════════════════════════════════════════════════════
+   Mesmos nomes, outros valores: nenhum componente sabe em que tema está.
+   Ativado por <html data-theme="escuro"> (useTema + script no <head>).
+   Mesmas metas de contraste do claro, conferidas em tokens.contraste.test.js. */
+:root[data-theme='escuro'] {
+    color-scheme: dark;
+
+    --bg-0: #0f141b;
+    --bg-1: #161c25;
+    --bg-2: #1d2530;
+
+    --line:   #2b3543;
+    --line-2: #3b4757;
+
+    --fg-0: #e7ebf1;
+    --fg-1: #b7c0cc;
+    --fg-2: #939eae;
+    --fg-disabled: #5f6a7a;
+
+    --primary:        #6aa6dc;
+    --primary-hover:  #85b7e4;
+    --primary-active: #5596d0;
+    --primary-subtle: #1a2b3d;
+    --primary-fg:     #0b1420;
+    --focus-ring:     #7ab3e6;
+
+    --ok:     #4fc38c;
+    --warn:   #e3a646;
+    --danger: #f2776d;
+    --info:   #72b4ec;
+
+    --ok-subtle:     #12291f;
+    --warn-subtle:   #2d2414;
+    --danger-subtle: #331a1b;
+    --info-subtle:   #142638;
+
+    --warn-accent:   #e3a646;
+    --danger-hover:  #f4918a;
+
+    --cat-1: #72aeea;
+    --cat-2: #d7a650;
+    --cat-3: #a990f2;
+    --cat-4: #e47fb7;
+    --cat-neutral: #9ea9b8;
+
+    --sh-1: 0 1px 2px rgb(0 0 0 / .35);
+    --sh-2: 0 4px 12px rgb(0 0 0 / .45);
+    --sh-3: 0 12px 32px rgb(0 0 0 / .55);
+}
+
 @media (min-width: 768px)  { :root { --page-x: 16px; } }
 @media (min-width: 1024px) { :root { --page-x: 24px; } }
 @media (min-width: 1280px) { :root { --page-x: 32px; } }

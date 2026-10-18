@@ -1,3 +1,4 @@
+import './Composables/useTema';
 import '../css/app.css';
 import './bootstrap';
 

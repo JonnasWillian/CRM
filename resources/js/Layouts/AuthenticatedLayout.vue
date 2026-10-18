@@ -9,6 +9,7 @@ import AppDropdownSeparador from '@/Components/ui/AppDropdownSeparador.vue';
 import ConfirmHost from '@/Components/ui/ConfirmHost.vue';
 import PerdaHost from '@/Components/leads/PerdaHost.vue';
 import IconButton from '@/Components/ui/IconButton.vue';
+import SeletorDeTema from '@/Components/ui/SeletorDeTema.vue';
 import ToastHost from '@/Components/ui/ToastHost.vue';
 import { usePrefsLocais } from '@/Composables/usePrefsLocais';
 import { useToast } from '@/Composables/useToast';
@@ -97,7 +98,7 @@ watch(
             </nav>
 
             <div class="border-t border-line p-2">
-                <AppDropdown rotulo="Conta" alinhar="start" lado="top">
+                <AppDropdown rotulo="Conta" alinhar="start" lado="top" bloco>
                     <template #gatilho="{ alternar, atributos }">
                         <button
                             type="button"
@@ -115,6 +116,11 @@ watch(
                             <ChevronsUpDown v-if="!colapsada" :size="14" class="shrink-0 text-fg-2" aria-hidden="true" />
                         </button>
                     </template>
+                    <div class="px-2.5 pb-2 pt-1.5">
+                        <p class="mb-1.5 text-xs font-medium uppercase tracking-wider text-fg-2">Tema</p>
+                        <SeletorDeTema compacto />
+                    </div>
+                    <AppDropdownSeparador />
                     <AppDropdownItem rotulo="Perfil e conta" :icone="UserCircle" as="Link" :href="route('profile.edit')" />
                     <AppDropdownSeparador />
                     <AppDropdownItem rotulo="Sair" :icone="LogOut" as="Link" :href="route('logout')" method="post" />
@@ -151,10 +157,12 @@ watch(
                     <Link :href="route('logout')" method="post" as="button" class="flex w-full items-center gap-2.5 rounded px-2 py-2 text-left text-md text-fg-1 hover:bg-bg-2 hover:text-fg-0">
                         <LogOut :size="18" aria-hidden="true" /> Sair
                     </Link>
+                    <p class="px-2 pb-1.5 pt-4 text-xs font-medium uppercase tracking-wider text-fg-2">Tema</p>
+                    <div class="px-2"><SeletorDeTema /></div>
                 </nav>
                 <div class="flex items-center gap-2 border-t border-line p-3">
                     <AppAvatar :nome="user.name" :tamanho="28" />
-                    <span class="min-w-0 leading-tight">
+                    <span class="min-w-0 flex-1 leading-tight">
                         <span class="block truncate text-sm font-medium">{{ user.name }}</span>
                         <span class="block truncate text-xs text-fg-2">{{ user.email }}</span>
                     </span>

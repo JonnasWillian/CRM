@@ -172,6 +172,13 @@ describe('FormField + campos', () => {
 });
 
 describe('AppDropdown', () => {
+    it('com `bloco`, o invólucro do gatilho ocupa a largura toda (texto longo trunca em vez de vazar)', () => {
+        const w = mount(AppDropdown, { props: { rotulo: 'Conta', bloco: true }, global: { stubs: { Teleport: true } } });
+        const invólucro = w.find('span').element;
+        expect(invólucro.className).toContain('w-full');
+        expect(invólucro.className).toContain('min-w-0');
+    });
+
     const montar = () =>
         mount(
             {

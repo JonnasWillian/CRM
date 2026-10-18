@@ -17,6 +17,7 @@ const props = defineProps({
     alinhar: { type: String, default: 'end' }, // start | end
     lado: { type: String, default: 'bottom' },
     tamanho: { type: String, default: 'md' },
+    bloco: { type: Boolean, default: false }, // gatilho ocupa a largura do pai (texto longo trunca)
 });
 
 const aberto = ref(false);
@@ -91,7 +92,7 @@ const atributos = () => ({ 'aria-haspopup': 'menu', 'aria-expanded': aberto.valu
 </script>
 
 <template>
-    <span ref="invólucro" class="inline-flex">
+    <span ref="invólucro" :class="bloco ? 'flex w-full min-w-0' : 'inline-flex'">
         <slot name="gatilho" :alternar="alternar" :aberto="aberto" :atributos="atributos()">
             <button
                 type="button"

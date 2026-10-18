@@ -10,9 +10,16 @@ import { describe, expect, it } from 'vitest';
  */
 const css = readFileSync(resolve(process.cwd(), 'resources/css/theme.css'), 'utf8');
 
-function token(nome) {
-    const m = css.match(new RegExp(`--${nome}:\\s*(#[0-9a-fA-F]{6})\\b`));
-    if (!m) throw new Error(`token --${nome} não encontrado como hex literal no theme.css`);
+// Cada tema é um bloco: o claro em `:root { … }`, o escuro em `:root[data-theme='escuro'] { … }`.
+function bloco(tema) {
+    const inicio = tema === 'escuro' ? css.indexOf(":root[data-theme='escuro']") : css.indexOf(':root {');
+    if (inicio < 0) throw new Error(`bloco do tema ${tema} não encontrado no theme.css`);
+    return css.slice(inicio, css.indexOf('\n}', inicio));
+}
+
+function tokenDe(tema, nome) {
+    const m = bloco(tema).match(new RegExp(`--${nome}:\\s*(#[0-9a-fA-F]{6})\\b`));
+    if (!m) throw new Error(`token --${nome} não encontrado como hex literal no tema ${tema}`);
     return m[1];
 }
 
@@ -36,55 +43,64 @@ export function contraste(a, b) {
 
 const superficies = ['bg-0', 'bg-1', 'bg-2'];
 
-describe('tokens de texto', () => {
-    it.each(['fg-0', 'fg-1', 'fg-2'])('--%s tem ≥ 4.5:1 sobre as três superfícies', (fg) => {
-        for (const bg of superficies) {
-            expect(contraste(token(fg), token(bg)), `${fg} sobre ${bg}`).toBeGreaterThanOrEqual(4.5);
-        }
+describe.each(['claro', 'escuro'])('tema %s', (tema) => {
+    const token = (nome) => tokenDe(tema, nome);
+
+    describe('tokens de texto', () => {
+        it.each(['fg-0', 'fg-1', 'fg-2'])('--%s tem ≥ 4.5:1 sobre as três superfícies', (fg) => {
+            for (const bg of superficies) {
+                expect(contraste(token(fg), token(bg)), `${fg} sobre ${bg}`).toBeGreaterThanOrEqual(4.5);
+            }
+        });
+
+        it('texto primário sobre o botão primário tem ≥ 4.5:1', () => {
+            expect(contraste(token('primary-fg'), token('primary'))).toBeGreaterThanOrEqual(4.5);
+            expect(contraste(token('primary-fg'), token('primary-hover'))).toBeGreaterThanOrEqual(4.5);
+        });
+
+        it('a cor primária funciona como texto sobre a superfície e sobre o fundo sutil', () => {
+            expect(contraste(token('primary'), token('bg-1'))).toBeGreaterThanOrEqual(4.5);
+            expect(contraste(token('primary'), token('primary-subtle'))).toBeGreaterThanOrEqual(4.5);
+        });
     });
 
-    it('texto primário sobre o botão primário tem ≥ 4.5:1', () => {
-        expect(contraste(token('primary-fg'), token('primary'))).toBeGreaterThanOrEqual(4.5);
-        expect(contraste(token('primary-fg'), token('primary-hover'))).toBeGreaterThanOrEqual(4.5);
+    describe('tokens de status e categóricos como texto', () => {
+        it.each(['ok', 'warn', 'danger', 'info'])('--%s tem ≥ 4.5:1 sobre a superfície e sobre o próprio fundo sutil', (tom) => {
+            expect(contraste(token(tom), token('bg-1')), `${tom} sobre bg-1`).toBeGreaterThanOrEqual(4.5);
+            expect(contraste(token(tom), token(`${tom}-subtle`)), `${tom} sobre ${tom}-subtle`).toBeGreaterThanOrEqual(4.5);
+        });
+
+        it.each(['cat-1', 'cat-2', 'cat-3', 'cat-4', 'cat-neutral'])('--%s tem ≥ 4.5:1 sobre a superfície', (cat) => {
+            expect(contraste(token(cat), token('bg-1'))).toBeGreaterThanOrEqual(4.5);
+        });
     });
 
-    it('a cor primária funciona como texto sobre branco e sobre o fundo sutil', () => {
-        expect(contraste(token('primary'), token('bg-1'))).toBeGreaterThanOrEqual(4.5);
-        expect(contraste(token('primary'), token('primary-subtle'))).toBeGreaterThanOrEqual(4.5);
+    describe('marcas não textuais', () => {
+        it('anel de foco tem ≥ 3:1 sobre a superfície e sobre o fundo da página', () => {
+            expect(contraste(token('focus-ring'), token('bg-1'))).toBeGreaterThanOrEqual(3);
+            expect(contraste(token('focus-ring'), token('bg-0'))).toBeGreaterThanOrEqual(3);
+        });
+
+        it('acento de alerta (barras e ícones) tem ≥ 3:1 sobre a superfície', () => {
+            expect(contraste(token('warn-accent'), token('bg-1'))).toBeGreaterThanOrEqual(3);
+        });
+
+        it('bordas são distinguíveis da superfície (≥ 1.2:1) sem gritar (≤ 3:1)', () => {
+            const r = contraste(token('line'), token('bg-1'));
+            expect(r).toBeGreaterThanOrEqual(1.2);
+            expect(r).toBeLessThanOrEqual(3);
+        });
     });
 });
 
-describe('tokens de status e categóricos como texto', () => {
-    it.each(['ok', 'warn', 'danger', 'info'])('--%s tem ≥ 4.5:1 sobre branco e sobre o próprio fundo sutil', (tom) => {
-        expect(contraste(token(tom), token('bg-1')), `${tom} sobre bg-1`).toBeGreaterThanOrEqual(4.5);
-        expect(contraste(token(tom), token(`${tom}-subtle`)), `${tom} sobre ${tom}-subtle`).toBeGreaterThanOrEqual(4.5);
+describe('identidade de cada tema', () => {
+    it('claro: superfícies claras e texto principal escuro', () => {
+        for (const bg of superficies) expect(luminancia(tokenDe('claro', bg))).toBeGreaterThan(0.8);
+        expect(luminancia(tokenDe('claro', 'fg-0'))).toBeLessThan(0.05);
     });
 
-    it.each(['cat-1', 'cat-2', 'cat-3', 'cat-4', 'cat-neutral'])('--%s tem ≥ 4.5:1 sobre branco', (cat) => {
-        expect(contraste(token(cat), token('bg-1'))).toBeGreaterThanOrEqual(4.5);
-    });
-});
-
-describe('marcas não textuais', () => {
-    it('anel de foco tem ≥ 3:1 sobre branco e sobre o fundo da página', () => {
-        expect(contraste(token('focus-ring'), token('bg-1'))).toBeGreaterThanOrEqual(3);
-        expect(contraste(token('focus-ring'), token('bg-0'))).toBeGreaterThanOrEqual(3);
-    });
-
-    it('acento de alerta (barras e ícones) tem ≥ 3:1 sobre branco', () => {
-        expect(contraste(token('warn-accent'), token('bg-1'))).toBeGreaterThanOrEqual(3);
-    });
-
-    it('bordas são distinguíveis da superfície (≥ 1.2:1) sem gritar (≤ 3:1)', () => {
-        const r = contraste(token('line'), token('bg-1'));
-        expect(r).toBeGreaterThanOrEqual(1.2);
-        expect(r).toBeLessThanOrEqual(3);
-    });
-});
-
-describe('tema claro', () => {
-    it('as superfícies são claras (luminância alta) e o texto principal é escuro', () => {
-        for (const bg of superficies) expect(luminancia(token(bg))).toBeGreaterThan(0.8);
-        expect(luminancia(token('fg-0'))).toBeLessThan(0.05);
+    it('escuro: superfícies escuras e texto principal claro', () => {
+        for (const bg of superficies) expect(luminancia(tokenDe('escuro', bg))).toBeLessThan(0.05);
+        expect(luminancia(tokenDe('escuro', 'fg-0'))).toBeGreaterThan(0.7);
     });
 });

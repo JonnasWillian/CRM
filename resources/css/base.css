@@ -80,3 +80,11 @@ time {
         scroll-behavior: auto !important;
     }
 }
+
+/* Caixas de seleção do plugin de formulários: o plugin pinta o fundo de
+   branco fixo. Pelos tokens, ficam certas nos dois temas. */
+.form-checkbox:not(:checked):not(:indeterminate),
+.form-radio:not(:checked) {
+    background-color: var(--bg-1);
+    border-color: var(--line-2);
+}

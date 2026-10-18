@@ -12,6 +12,7 @@ import FormField from '@/Components/ui/FormField.vue';
 import PageContainer from '@/Components/ui/PageContainer.vue';
 import PageHeader from '@/Components/ui/PageHeader.vue';
 import SectionHeader from '@/Components/ui/SectionHeader.vue';
+import SeletorDeTema from '@/Components/ui/SeletorDeTema.vue';
 import { useToast } from '@/Composables/useToast';
 import { ref } from 'vue';
 
@@ -59,6 +60,11 @@ const excluir = () => formExcluir.delete(route('profile.destroy'), { preserveScr
                         <AppButton type="submit" variante="secondary" :carregando="formEmpresa.processing" :disabled="!formEmpresa.isDirty">Salvar</AppButton>
                     </form>
                     <p v-else class="mt-3 text-md text-fg-0">{{ empresa.nome }}</p>
+                </AppCard>
+
+                <AppCard>
+                    <SectionHeader titulo="Aparência" descricao="Escolha o tema deste navegador. “Sistema” acompanha o claro/escuro do seu computador." />
+                    <div class="mt-4 max-w-sm"><SeletorDeTema /></div>
                 </AppCard>
 
                 <AppCard>
