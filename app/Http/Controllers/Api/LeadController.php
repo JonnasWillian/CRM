@@ -18,6 +18,7 @@ use App\Services\Leads\AcoesEmMassa;
 use App\Services\Leads\CadastrarLead;
 use App\Services\Leads\TransferirLeads;
 use App\Services\Perdas\AplicarTransicao;
+use App\Support\Csv\CelulaSegura;
 use App\Support\Equipe\RegrasDeAdmin;
 use App\Support\Listagem\Paginacao;
 use App\Support\Perdas\RegrasDePerda;
@@ -66,11 +67,11 @@ class LeadController extends Controller
             fwrite($saida, "\xEF\xBB\xBF");
             fputcsv($saida, ['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'responsavel', 'criado_em', 'ultimo_contato'], ';', '"', '');
             foreach ($q->lazyById(500, 'usuarios.id', 'id') as $l) {
-                fputcsv($saida, [
+                fputcsv($saida, CelulaSegura::linha([
                     $l->nome, $l->email, $l->telefone, $l->descricao, $l->funil?->nome, $l->estagio?->descricao,
                     $decimal($l->valor_estimado), $l->probabilidade, $l->previsao_fechamento?->toDateString(), $l->responsavel?->name,
                     $l->created_at?->format('Y-m-d H:i'), $l->ultimo_contato_em?->format('Y-m-d H:i'),
-                ], ';', '"', '');
+                ]), ';', '"', '');
             }
             fclose($saida);
         }, 'leads-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

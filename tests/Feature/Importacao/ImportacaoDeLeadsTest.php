@@ -144,4 +144,20 @@ class ImportacaoDeLeadsTest extends TestCase
         $alheio = $this->agente($outro, 'gestor');
         $this->actingAs($alheio)->getJson("/api/importacoes/{$id}")->assertNotFound();
     }
+
+    /** Ida e volta: o apóstrofo que a exportação põe antes de = + - @ sai na importação. */
+    public function test_apostrofo_de_protecao_sai_na_importacao(): void
+    {
+        $tenant = $this->novoTenant();
+        $gestor = $this->agente($tenant, 'gestor');
+        Funil::factory()->padrao()->create(['tenant_id' => $tenant->id]);
+        $id = $this->actingAs($gestor)->postJson('/api/importacoes', ['arquivo' => $this->csv("nome;email;telefone\n'-Hífen Inicial;h@ex.test;'+5511977776666\n")])->json('data.id');
+        Queue::fake();
+        $this->actingAs($gestor)->postJson("/api/importacoes/{$id}/iniciar", ['mapeamento' => ['nome' => 0, 'email' => 1, 'telefone' => 2], 'opcoes' => ['duplicados' => 'ignorar']]);
+        (new ImportarLeads($id))->handle();
+
+        $lead = Usuario::firstWhere('email', 'h@ex.test');
+        $this->assertSame('-Hífen Inicial', $lead->nome);
+        $this->assertSame('+5511977776666', $lead->telefone);
+    }
 }

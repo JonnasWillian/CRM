@@ -53,4 +53,17 @@ class ExportacaoCsvTest extends TestCase
         $this->assertCount(2, $linhas);
         $this->assertSame('Um', $linhas[1][0]);
     }
+
+    /** Célula que começa com = + - @ vira texto: abrir o CSV no Excel não executa fórmula vinda de um lead. */
+    public function test_celulas_com_formula_sao_desarmadas(): void
+    {
+        $tenant = $this->novoTenant();
+        $gestor = $this->agente($tenant, 'gestor');
+        $this->lead($tenant, $gestor, ['nome' => '=HYPERLINK("http://mal.example","x")', 'descricao' => '@SUM(1+1)', 'telefone' => '+5511988887777']);
+
+        $linhas = $this->linhas($this->actingAs($gestor)->get('/api/leads/exportar')->streamedContent());
+        $this->assertSame("'=HYPERLINK(\"http://mal.example\",\"x\")", $linhas[1][0]);
+        $this->assertSame("'@SUM(1+1)", $linhas[1][3]);
+        $this->assertSame("'+5511988887777", $linhas[1][2]);
+    }
 }

@@ -7,6 +7,7 @@ use App\Jobs\ImportarLeads;
 use App\Models\Importacao;
 use App\Services\Importacao\CamposDeImportacao;
 use App\Services\Importacao\PreviaDeImportacao;
+use App\Support\Csv\CelulaSegura;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,9 +72,9 @@ class ImportacaoController extends Controller
         return response()->streamDownload(function () use ($importacao) {
             $saida = fopen('php://output', 'w');
             fwrite($saida, "\xEF\xBB\xBF");
-            fputcsv($saida, ['linha', 'tipo', 'erro', ...($importacao->cabecalhos ?? [])], ';', '"', '');
+            fputcsv($saida, CelulaSegura::linha(['linha', 'tipo', 'erro', ...($importacao->cabecalhos ?? [])]), ';', '"', '');
             foreach ($importacao->erros ?? [] as $e) {
-                fputcsv($saida, [$e['linha'], $e['aviso'] ? 'aviso' : 'erro', $e['erro'], ...($e['original'] ?? [])], ';', '"', '');
+                fputcsv($saida, CelulaSegura::linha([$e['linha'], $e['aviso'] ? 'aviso' : 'erro', $e['erro'], ...($e['original'] ?? [])]), ';', '"', '');
             }
             fclose($saida);
         }, $nome, ['Content-Type' => 'text/csv; charset=UTF-8']);

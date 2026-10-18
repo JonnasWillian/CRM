@@ -11,6 +11,7 @@ use App\Models\Usuario;
 use App\Rules\TelefoneE164;
 use App\Services\Importacao\PreviaDeImportacao;
 use App\Services\Leads\CadastrarLead;
+use App\Support\Csv\CelulaSegura;
 use App\Support\LimitesDeTexto;
 use App\Support\Telefone;
 use App\Support\Tenancy\CurrentTenant;
@@ -89,7 +90,7 @@ class ImportarLeads implements ShouldQueue
 
         foreach ($linhas as $i => $linha) {
             $n = $i + 2; // linha 1 = cabeçalho
-            $valor = fn (string $campo) => isset($mapa[$campo]) ? trim((string) ($linha[$mapa[$campo]] ?? '')) : '';
+            $valor = fn (string $campo) => isset($mapa[$campo]) ? CelulaSegura::desarmar(trim((string) ($linha[$mapa[$campo]] ?? ''))) : '';
 
             $email = Str::lower($valor('email'));
             if ($email !== '' && isset($vistos[$email])) {
