@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Arquivos;
 
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
@@ -39,7 +39,7 @@ class CicloDeVidaDoArquivoTest extends TestCase
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertSuccessful();
 
-        return arquivo::latest('id')->firstOrFail();
+        return Arquivo::latest('id')->firstOrFail();
     }
 
     public function test_lixeira_mantem_o_arquivo_para_poder_restaurar(): void
@@ -65,7 +65,7 @@ class CicloDeVidaDoArquivoTest extends TestCase
             Storage::disk('public')->put($local, 'conteudo-legado');
         }
 
-        return arquivo::create(['nome' => basename($local), 'local' => $local, 'usuario_id' => $this->lead->id]);
+        return Arquivo::create(['nome' => basename($local), 'local' => $local, 'usuario_id' => $this->lead->id]);
     }
 
     public function test_dry_run_so_relata(): void

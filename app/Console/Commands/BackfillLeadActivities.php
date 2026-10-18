@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Activity;
 use App\Models\Anotacao;
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\EstagioHistorico;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
@@ -177,7 +177,7 @@ class BackfillLeadActivities extends Command
 
         $comSoftDelete = [
             [Anotacao::withTrashed()->get(), 'anotacao', 'anotacao_removida', 'Anotação adicionada', 'Anotação removida', fn ($m) => $m->usuario_id],
-            [arquivo::withTrashed()->get(), 'arquivo', 'arquivo_removido', 'Arquivo anexado', 'Arquivo removido', fn ($m) => $m->usuario_id],
+            [Arquivo::withTrashed()->get(), 'arquivo', 'arquivo_removido', 'Arquivo anexado', 'Arquivo removido', fn ($m) => $m->usuario_id],
         ];
 
         $projetos = Projeto::all()->keyBy('id');

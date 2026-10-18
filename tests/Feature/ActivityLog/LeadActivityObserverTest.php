@@ -8,7 +8,7 @@ use App\Models\Estagio;
 use App\Models\EstagioHistorico;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
@@ -93,7 +93,7 @@ class LeadActivityObserverTest extends TestCase
 
     public function test_anexo_de_projeto_resolve_lead_a_dois_saltos(): void
     {
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
         $projeto = Projeto::create([
             'nome' => 'Site institucional',
             'usuario_id' => $this->lead->id,

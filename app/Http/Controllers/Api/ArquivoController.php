@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ArquivoRequest;
-use App\Models\arquivo as ArquivoModel;
+use App\Models\Arquivo as ArquivoModel;
 use App\Models\Usuario;
 use App\Services\Arquivos\ArquivoService;
 use App\Support\Listagem\Paginacao;

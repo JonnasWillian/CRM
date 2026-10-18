@@ -4,7 +4,7 @@ namespace Tests\Feature\Autorizacao;
 
 use App\Models\Funil;
 use App\Models\Projeto;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
@@ -16,7 +16,7 @@ use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
- * `ArquivoRequest` servia dois endpoints incompatíveis: em `arquivo::store` o
+ * `ArquivoRequest` servia dois endpoints incompatíveis: em `Arquivo::store` o
  * campo `usuario_id` é id de LEAD; em `ProjetoController::createAnexo` o mesmo
  * campo carrega um id de PROJETO. Só funcionava porque a regra era `required` e
  * nada mais — adicionar `exists:usuarios` quebraria o anexo de projeto.
@@ -136,7 +136,7 @@ class FormRequestsTest extends TestCase
         $leadProprio = Usuario::factory()->create([
             'tenant_id' => $tenant->id, 'user_id' => $semPapel->id, 'funil_id' => $funil->id,
         ]);
-        $status = Statu::factory()->create(['tenant_id' => $tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $tenant->id]);
 
         $projetoProprio = new Projeto;
         $projetoProprio->fill(['nome' => 'Proposta propria', 'usuario_id' => $leadProprio->id, 'status_id' => $status->id]);
@@ -270,7 +270,7 @@ class FormRequestsTest extends TestCase
 
         $funil = Funil::factory()->padrao()->create(['tenant_id' => $tenant->id]);
         $lead = Usuario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $staff->id, 'funil_id' => $funil->id]);
-        $status = Statu::factory()->create(['tenant_id' => $tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $tenant->id]);
 
         $projeto = new Projeto;
         $projeto->fill(['nome' => 'Proposta', 'usuario_id' => $lead->id, 'status_id' => $status->id]);

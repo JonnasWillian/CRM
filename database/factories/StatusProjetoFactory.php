@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Statu>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StatusProjeto>
  */
-class StatuFactory extends Factory
+class StatusProjetoFactory extends Factory
 {
     /**
      * Define the model's default state.

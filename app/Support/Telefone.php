@@ -46,17 +46,4 @@ final class Telefone
 
         return $digitos;
     }
-
-    public static function formatar(?string $e164): string
-    {
-        if ($e164 === null || $e164 === '') {
-            return '';
-        }
-
-        if (! preg_match('/^\+55(\d{2})(\d{4,5})(\d{4})$/', $e164, $partes)) {
-            return $e164;
-        }
-
-        return "({$partes[1]}) {$partes[2]}-{$partes[3]}";
-    }
 }

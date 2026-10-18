@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Services\Arquivos\ArquivoService;
 use App\Support\ActivityLog\LeadActivity;
 

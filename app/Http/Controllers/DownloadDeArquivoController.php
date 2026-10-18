@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\arquivo as ArquivoModel;
+use App\Models\Arquivo as ArquivoModel;
 use App\Models\ProjetoAnexo;
 use App\Services\Arquivos\ArquivoService;
 

@@ -4,7 +4,7 @@ namespace Tests\Feature\Autorizacao;
 
 use App\Models\Funil;
 use App\Models\Projeto;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\TarefaPadrao;
 use App\Models\Tenant;
 use App\Models\User;
@@ -54,7 +54,7 @@ class DonoNoCorpoTest extends TestCase
             'tenant_id' => $this->tenant->id, 'user_id' => $this->dono->id, 'funil_id' => $funil->id,
         ]);
 
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
         $this->projeto = new Projeto;
         $this->projeto->fill(['nome' => 'Proposta', 'usuario_id' => $this->lead->id, 'status_id' => $status->id]);
         $this->projeto->tenant_id = $this->tenant->id;
@@ -172,7 +172,7 @@ class DonoNoCorpoTest extends TestCase
      */
     public function test_criar_projeto_em_lead_de_colega_e_recusado(): void
     {
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($this->colega)
             ->postJson("/api/leads/{$this->lead->id}/projetos", [
@@ -187,7 +187,7 @@ class DonoNoCorpoTest extends TestCase
     /** O dono vem da ROTA; um `usuario_id` no corpo (até em array) é ignorado. */
     public function test_id_no_corpo_nao_burla_a_checagem_da_rota(): void
     {
-        $status = \App\Models\Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = \App\Models\StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($this->colega)
             ->postJson("/api/leads/{$this->lead->id}/projetos", [
@@ -212,7 +212,7 @@ class DonoNoCorpoTest extends TestCase
      */
     public function test_criar_projeto_com_lead_inexistente_responde_igual_a_lead_alheio(): void
     {
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $alheio = $this->actingAs($this->colega)->postJson("/api/leads/{$this->lead->id}/projetos", [
             'nome' => 'A',  'status_id' => $status->id,
@@ -292,7 +292,7 @@ class DonoNoCorpoTest extends TestCase
     {
         $outro = Tenant::factory()->create();
         app(CurrentTenant::class)->set($outro);
-        $statusAlheioPerdido = Statu::factory()->create(['tenant_id' => $outro->id, 'is_lost' => true]);
+        $statusAlheioPerdido = StatusProjeto::factory()->create(['tenant_id' => $outro->id, 'is_lost' => true]);
         app(CurrentTenant::class)->set($this->tenant);
 
         $this->actingAs($this->dono)
@@ -327,7 +327,7 @@ class DonoNoCorpoTest extends TestCase
     /** E o status arquivado continua aceito: `Projeto::status()` usa withTrashed(). */
     public function test_status_arquivado_do_proprio_tenant_continua_aceito(): void
     {
-        $arquivado = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $arquivado = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
         $arquivado->delete();
 
         $this->actingAs($this->dono)
@@ -339,7 +339,7 @@ class DonoNoCorpoTest extends TestCase
 
     public function test_dono_cria_projeto_no_proprio_lead(): void
     {
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $this->actingAs($this->dono)
             ->postJson("/api/leads/{$this->lead->id}/projetos", [

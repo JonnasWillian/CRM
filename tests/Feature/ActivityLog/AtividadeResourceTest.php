@@ -3,12 +3,12 @@
 namespace Tests\Feature\ActivityLog;
 
 use App\Models\Anotacao;
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\Estagio;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tarefa;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CenarioDeTenant;
@@ -33,8 +33,8 @@ class AtividadeResourceTest extends TestCase
         $lead->update(['estagio_id' => $origem->id]);
 
         Anotacao::create(['descricao' => 'Primeiro contato', 'usuario_id' => $lead->id]);
-        arquivo::create(['nome' => 'rg.pdf', 'local' => 'arquivos/rg.pdf', 'usuario_id' => $lead->id]);
-        $projeto = Projeto::create(['nome' => 'Landing page', 'usuario_id' => $lead->id, 'status_id' => Statu::factory()->create(['tenant_id' => $tenant->id])->id]);
+        Arquivo::create(['nome' => 'rg.pdf', 'local' => 'arquivos/rg.pdf', 'usuario_id' => $lead->id]);
+        $projeto = Projeto::create(['nome' => 'Landing page', 'usuario_id' => $lead->id, 'status_id' => StatusProjeto::factory()->create(['tenant_id' => $tenant->id])->id]);
         ProjetoAnotacao::create(['descricao' => 'Escopo fechado', 'projeto_id' => $projeto->id]);
         ProjetoAnexo::create(['nome' => 'contrato.pdf', 'local' => 'arquivos/c.pdf', 'projeto_id' => $projeto->id]);
         $lead->update(['estagio_id' => $destino->id]);

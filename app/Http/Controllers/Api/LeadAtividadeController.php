@@ -15,9 +15,8 @@ use Illuminate\Http\Request;
 /**
  * Histórico de um lead, servido do activity log, no formato do TimelinePanel.
  *
- * Substitui Userarios::timeline() (deprecado). Ver o teste de paridade em
- * tests/Feature/ActivityLog/TimelineParityTest.php, que compara o conteúdo
- * exibido, não só os tipos.
+ * O contrato (as nove fontes e os campos de cada tipo) está coberto por
+ * tests/Feature/ActivityLog/AtividadeResourceTest.php.
  */
 class LeadAtividadeController extends Controller
 {

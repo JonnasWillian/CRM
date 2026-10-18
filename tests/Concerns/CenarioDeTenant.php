@@ -4,7 +4,7 @@ namespace Tests\Concerns;
 
 use App\Models\Funil;
 use App\Models\Projeto;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
@@ -60,7 +60,7 @@ trait CenarioDeTenant
 
     protected function projeto(Usuario $lead, array $attrs = []): Projeto
     {
-        $status = Statu::factory()->create(['tenant_id' => $lead->tenant_id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $lead->tenant_id]);
 
         $projeto = new Projeto;
         $projeto->fill(array_merge([

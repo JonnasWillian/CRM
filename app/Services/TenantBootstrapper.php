@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Estagio;
 use App\Models\Funil;
 use App\Models\MotivoPerda;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 
 /**
@@ -58,7 +58,7 @@ class TenantBootstrapper
         }
 
         foreach (static::defaultStatus() as $attributes) {
-            $status = new Statu;
+            $status = new StatusProjeto;
             $status->descricao = $attributes['descricao'];
             $status->ordem = $attributes['ordem'];
             $status->is_won = $attributes['is_won'];

@@ -7,7 +7,7 @@ use App\Models\Funil;
 use App\Models\MotivoPerda;
 use App\Models\Perda;
 use App\Models\Projeto;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
@@ -46,9 +46,9 @@ class MotivoDePerdaObrigatorioTest extends TestCase
 
     private Estagio $perdidoNoOutroFunil;
 
-    private Statu $statusAberto;
+    private StatusProjeto $statusAberto;
 
-    private Statu $statusPerdido;
+    private StatusProjeto $statusPerdido;
 
     private MotivoPerda $motivo;
 
@@ -77,8 +77,8 @@ class MotivoDePerdaObrigatorioTest extends TestCase
             'tenant_id' => $this->tenant->id, 'funil_id' => $this->outroFunil->id, 'ordem' => 1,
         ]);
 
-        $this->statusAberto = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
-        $this->statusPerdido = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->statusAberto = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->statusPerdido = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
         $this->statusPerdido->is_lost = true;
         $this->statusPerdido->save();
 

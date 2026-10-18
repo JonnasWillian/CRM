@@ -3,12 +3,12 @@
 namespace Tests\Feature\Autorizacao;
 
 use App\Models\Anotacao;
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\Funil;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
@@ -79,7 +79,7 @@ class GestorAlcancaEquipeTest extends TestCase
             'tenant_id' => $this->tenant->id, 'user_id' => $membroDaEquipe->id, 'funil_id' => $funil->id,
         ]);
 
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
         $this->projetoDaEquipe = new Projeto;
         $this->projetoDaEquipe->fill([
             'nome' => 'Proposta da equipe', 'usuario_id' => $this->leadDaEquipe->id, 'status_id' => $status->id,
@@ -99,9 +99,9 @@ class GestorAlcancaEquipeTest extends TestCase
                     ->putJson("/api/anotacoes/{$anotacao->id}", ['descricao' => 'Editada pelo gestor']);
             },
 
-            // Wireado em arquivo::destroy -> $this->authorize('delete', $arquivo).
+            // Wireado em Arquivo::destroy -> $this->authorize('delete', $arquivo).
             'ArquivoPolicy::delete' => function (): TestResponse {
-                $arquivoDaEquipe = arquivo::create([
+                $arquivoDaEquipe = Arquivo::create([
                     'nome' => 'contrato.pdf', 'local' => 'arquivos/contrato.pdf', 'usuario_id' => $this->leadDaEquipe->id,
                 ]);
 

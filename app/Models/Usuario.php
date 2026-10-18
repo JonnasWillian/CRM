@@ -73,7 +73,7 @@ class Usuario extends Model implements Perdivel
 
     public function arquivos(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(arquivo::class, 'usuario_id');
+        return $this->hasMany(Arquivo::class, 'usuario_id');
     }
 
     public function tarefas(): \Illuminate\Database\Eloquent\Relations\HasMany

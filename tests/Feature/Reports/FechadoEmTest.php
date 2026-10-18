@@ -5,7 +5,7 @@ namespace Tests\Feature\Reports;
 use App\Models\Estagio;
 use App\Models\Funil;
 use App\Models\MotivoPerda;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CenarioDeTenant;
 use Tests\TestCase;
@@ -71,7 +71,7 @@ class FechadoEmTest extends TestCase
         ['tenant' => $tenant, 'lead' => $lead] = $this->cenario();
         $projeto = $this->projeto($lead);
         $aberto = $projeto->status_id;
-        $ganho = Statu::factory()->create(['tenant_id' => $tenant->id, 'is_won' => true]);
+        $ganho = StatusProjeto::factory()->create(['tenant_id' => $tenant->id, 'is_won' => true]);
 
         $this->assertNull($projeto->fresh()->fechado_em);
 

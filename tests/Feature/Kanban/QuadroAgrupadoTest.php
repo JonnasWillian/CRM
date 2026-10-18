@@ -4,7 +4,7 @@ namespace Tests\Feature\Kanban;
 
 use App\Models\Estagio;
 use App\Models\Funil;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CenarioDeTenant;
@@ -39,7 +39,7 @@ class QuadroAgrupadoTest extends TestCase
         $this->lead($tenant, $dono, ['estagio_id' => $a->id, 'valor_estimado' => 500, 'probabilidade' => null]);
         $this->lead($tenant, $dono, ['estagio_id' => $a->id, 'valor_estimado' => null, 'probabilidade' => 80]);
         $comProjeto = $this->lead($tenant, $dono, ['estagio_id' => $b->id, 'valor_estimado' => 2000, 'probabilidade' => 25]);
-        $this->projeto($comProjeto, ['preco' => 300, 'status_id' => Statu::factory()->create(['tenant_id' => $tenant->id])->id]);
+        $this->projeto($comProjeto, ['preco' => 300, 'status_id' => StatusProjeto::factory()->create(['tenant_id' => $tenant->id])->id]);
         $this->lead($tenant, $dono, ['estagio_id' => $ganho->id, 'valor_estimado' => 9000, 'valor_fechado' => 8000]);
 
         $dados = $this->actingAs($dono)->getJson('/api/kanban')->assertOk()->json();

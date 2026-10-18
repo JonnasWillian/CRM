@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\ProjetoAnexo;
 use App\Services\Arquivos\ArquivoService;
 use Illuminate\Console\Command;
@@ -36,7 +36,7 @@ class MigrarArquivosParaPrivado extends Command
         $referenciados = [];
 
         $fontes = [
-            [arquivo::class, fn ($l) => ArquivoService::pastaDoLead($l->tenant_id, $l->usuario_id)],
+            [Arquivo::class, fn ($l) => ArquivoService::pastaDoLead($l->tenant_id, $l->usuario_id)],
             [ProjetoAnexo::class, fn ($l) => ArquivoService::pastaDoProjeto($l->tenant_id, $l->projeto_id)],
         ];
 

@@ -16,7 +16,7 @@ use Tests\TestCase;
 /**
  * As colunas polimórficas (activity_log.subject_type, perdas.perdivel_type)
  * guardam aliases ('lead', 'projeto'…), não o nome da classe. É o que deixa
- * renomear classes (arquivo → Arquivo, Statu → StatusProjeto) sem migrar
+ * renomear classes (arquivo → Arquivo, StatusProjeto → StatusProjeto) sem migrar
  * dados de log.
  */
 class MorphMapTest extends TestCase

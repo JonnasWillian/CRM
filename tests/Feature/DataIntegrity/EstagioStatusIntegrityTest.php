@@ -4,7 +4,7 @@ namespace Tests\Feature\DataIntegrity;
 
 use App\Models\Estagio;
 use App\Models\Projeto;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\Usuario;
 use App\Support\Tenancy\CurrentTenant;
@@ -40,7 +40,7 @@ class EstagioStatusIntegrityTest extends TestCase
 
     public function test_physically_deleting_a_status_in_use_throws(): void
     {
-        $status = Statu::factory()->create();
+        $status = StatusProjeto::factory()->create();
         Projeto::factory()->create(['status_id' => $status->id]);
 
         $this->expectException(\Illuminate\Database\QueryException::class);

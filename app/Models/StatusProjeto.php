@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Statu extends Model
+class StatusProjeto extends Model
 {
+    /** A tabela mantém o nome original. */
+    protected $table = 'status';
+
     use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Colunas polimórficas guardam aliases ('lead', 'projeto'…) em vez do nome da
  * classe. Com Relation::enforceMorphMap (AppServiceProvider), renomear
- * `arquivo` para `Arquivo` ou `Statu` para `StatusProjeto` deixa de exigir
+ * `arquivo` para `Arquivo` ou `StatusProjeto` para `StatusProjeto` deixa de exigir
  * migração de dados de log.
  *
  * Precisa rodar no MESMO deploy em que o morph map entra: sem o map, 'lead'

@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\User;
 use App\Policies\Concerns\DonoDoLead;
 use Illuminate\Auth\Access\Response;

@@ -117,13 +117,13 @@ class ProjetoRequest extends FormRequest
      *   status de OUTRO tenant -> 201, e o projeto fica gravado apontando para
      *                             uma linha de outra empresa;
      *   id inexistente         -> 500 (violação de FK), não 422;
-     *   e a pior: `Projeto::estadoSeriaPerda()` consulta `Statu` pelo Eloquent,
+     *   e a pior: `Projeto::estadoSeriaPerda()` consulta `StatusProjeto` pelo Eloquent,
      *             o TenantScope não resolve o status de fora, o método devolve
      *             `false` e a exigência de motivo de perda é CONTORNADA. Dava
      *             para criar um projeto já perdido, sem motivo, mandando o id
      *             de um status `is_lost` de qualquer outra empresa.
      *
-     * A tabela é `status` (singular no plural do model `Statu`), conferido em
+     * A tabela é `status` (singular no plural do model `StatusProjeto`), conferido em
      * 2026_04_23_011055_status.php.
      *
      * Sem `whereNull('deleted_at')`, ao contrário das outras regras deste

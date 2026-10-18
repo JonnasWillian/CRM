@@ -6,7 +6,7 @@ use App\Models\Funil;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Usuario;
@@ -54,7 +54,7 @@ class DoisSaltosPolicyTest extends TestCase
         $lead = Usuario::factory()->create([
             'tenant_id' => $tenant->id, 'user_id' => $this->dono->id, 'funil_id' => $funil->id,
         ]);
-        $status = Statu::factory()->create(['tenant_id' => $tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $tenant->id]);
 
         $this->projeto = new Projeto;
         $this->projeto->fill(['nome' => 'Proposta', 'usuario_id' => $lead->id, 'status_id' => $status->id]);

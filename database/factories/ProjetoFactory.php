@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,7 +32,7 @@ class ProjetoFactory extends Factory
             // fazendo o erro apontar para o lugar errado.
             'descricao' => fake()->optional()->text(200),
             'usuario_id' => Usuario::factory()->create(['tenant_id' => $tenant->id])->id,
-            'status_id' => Statu::factory()->create(['tenant_id' => $tenant->id])->id,
+            'status_id' => StatusProjeto::factory()->create(['tenant_id' => $tenant->id])->id,
             'tenant_id' => $tenant->id,
         ];
     }

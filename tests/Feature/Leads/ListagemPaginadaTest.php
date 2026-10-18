@@ -4,7 +4,7 @@ namespace Tests\Feature\Leads;
 
 use App\Models\Estagio;
 use App\Models\Funil;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -132,7 +132,7 @@ class ListagemPaginadaTest extends TestCase
         $emAberto = $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $aberto->id]);
         $fechado = $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $ganho->id]);
         $comProjetoAberto = $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $aberto->id]);
-        $this->projeto($comProjetoAberto, ['status_id' => Statu::factory()->create(['tenant_id' => $this->tenant->id])->id]);
+        $this->projeto($comProjetoAberto, ['status_id' => StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id])->id]);
 
         $this->assertSame(
             collect([$emAberto->id, $comProjetoAberto->id])->sort()->values()->all(),

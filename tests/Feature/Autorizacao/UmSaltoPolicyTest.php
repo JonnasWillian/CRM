@@ -3,10 +3,10 @@
 namespace Tests\Feature\Autorizacao;
 
 use App\Models\Anotacao;
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\Funil;
 use App\Models\Projeto;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
@@ -59,7 +59,7 @@ class UmSaltoPolicyTest extends TestCase
             'tenant_id' => $this->tenant->id, 'user_id' => $this->dono->id, 'funil_id' => $funil->id,
         ]);
 
-        $status = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $status = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
         $this->projeto = new Projeto;
         $this->projeto->fill(['nome' => 'Proposta inicial', 'usuario_id' => $this->lead->id, 'status_id' => $status->id]);
         $this->projeto->tenant_id = $this->tenant->id;
@@ -67,7 +67,7 @@ class UmSaltoPolicyTest extends TestCase
 
         $this->tarefa = Tarefa::create(['usuario_id' => $this->lead->id, 'titulo' => 'Ligar', 'data_limite' => now()->addDay()]);
         $this->anotacao = Anotacao::create(['descricao' => 'Primeiro contato', 'usuario_id' => $this->lead->id]);
-        $this->arquivo = arquivo::create(['nome' => 'rg.pdf', 'local' => 'arquivos/rg.pdf', 'usuario_id' => $this->lead->id]);
+        $this->arquivo = Arquivo::create(['nome' => 'rg.pdf', 'local' => 'arquivos/rg.pdf', 'usuario_id' => $this->lead->id]);
     }
 
     public function test_intruso_nao_alcanca_projeto_de_lead_alheio(): void
@@ -93,8 +93,8 @@ class UmSaltoPolicyTest extends TestCase
     }
 
     /**
-     * Item 2 da rodada B: `Route::apiResource('arquivos', arquivo::class)`
-     * registrava GET /api/arquivos/{arquivo} apontando para `arquivo::show()`,
+     * Item 2 da rodada B: `Route::apiResource('arquivos', Arquivo::class)`
+     * registrava GET /api/arquivos/{arquivo} apontando para `Arquivo::show()`,
      * que não existe e nunca existiu no controller — toda chamada estourava
      * "Call to undefined method" e virava 500.
      *

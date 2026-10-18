@@ -46,12 +46,4 @@ class TelefoneTest extends TestCase
         $this->assertFalse(TelefoneE164::valido('+0011999998888'));
         $this->assertFalse(TelefoneE164::valido(null));
     }
-
-    public function test_formatar(): void
-    {
-        $this->assertSame('(11) 99999-8888', Telefone::formatar('+5511999998888'));
-        $this->assertSame('(11) 3333-4444', Telefone::formatar('+551133334444'));
-        $this->assertSame('+14155552671', Telefone::formatar('+14155552671'));
-        $this->assertSame('', Telefone::formatar(null));
-    }
 }

@@ -8,7 +8,7 @@ use App\Http\Requests\ListagemDeLeadsRequest;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Estagio;
 use App\Models\Funil;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\User;
 use App\Models\Usuario;
 use App\Queries\Leads\ListagemDeLeads;
@@ -74,7 +74,7 @@ class LeadController extends Controller
         return Inertia::render('Usuario/Perfil', [
             'lead' => LeadApi::comResumo($usuario),
             'funis' => Funil::ordenados()->with(['estagios' => fn ($q) => $q->orderBy('ordem')->orderBy('id')])->get(['id', 'nome', 'is_default']),
-            'status' => Statu::orderBy('ordem')->orderBy('id')->get(['id', 'descricao', 'is_won', 'is_lost']),
+            'status' => StatusProjeto::orderBy('ordem')->orderBy('id')->get(['id', 'descricao', 'is_won', 'is_lost']),
             'agentes' => self::agentes($request->user()),
             // Lead na lixeira abre em modo leitura (faixa + Restaurar).
             'naLixeira' => $usuario->trashed(),

@@ -39,7 +39,7 @@ class Projeto extends Model implements Perdivel
 
     public function status()
     {
-        return $this->belongsTo(Statu::class, 'status_id')->withTrashed();
+        return $this->belongsTo(StatusProjeto::class, 'status_id')->withTrashed();
     }
 
     public function usuario()
@@ -81,7 +81,7 @@ class Projeto extends Model implements Perdivel
             return false;
         }
 
-        return (bool) Statu::withTrashed()->whereKey($statusId)->value('is_lost');
+        return (bool) StatusProjeto::withTrashed()->whereKey($statusId)->value('is_lost');
     }
 
     public function valorDaPerda(): ?float

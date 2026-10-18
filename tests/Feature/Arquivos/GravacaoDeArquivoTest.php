@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Arquivos;
 
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\Tenant;
@@ -50,7 +50,7 @@ class GravacaoDeArquivoTest extends TestCase
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 30, 'application/pdf'),
         ])->assertSuccessful();
 
-        $linha = arquivo::firstOrFail();
+        $linha = Arquivo::firstOrFail();
 
         $this->assertStringStartsWith("tenants/{$this->tenant->id}/leads/{$this->lead->id}/", $linha->local);
         $this->assertStringEndsWith('.pdf', $linha->local);
@@ -78,12 +78,12 @@ class GravacaoDeArquivoTest extends TestCase
             'arquivo' => UploadedFile::fake()->create('foto.pdf', 10, 'image/png'),
         ])->assertSuccessful();
 
-        $this->assertStringEndsWith('.png', arquivo::firstOrFail()->local);
+        $this->assertStringEndsWith('.png', Arquivo::firstOrFail()->local);
     }
 
     public function test_falha_ao_gravar_a_linha_nao_deixa_arquivo_no_disco(): void
     {
-        arquivo::creating(fn () => throw new \RuntimeException('falha simulada'));
+        Arquivo::creating(fn () => throw new \RuntimeException('falha simulada'));
 
         $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
@@ -109,13 +109,13 @@ class GravacaoDeArquivoTest extends TestCase
      */
     public function test_falha_depois_do_insert_desfaz_a_linha_e_o_arquivo(): void
     {
-        arquivo::created(fn () => throw new \RuntimeException('falha simulada no observer'));
+        Arquivo::created(fn () => throw new \RuntimeException('falha simulada no observer'));
 
         $this->actingAs($this->dono)->postJson("/api/leads/{$this->lead->id}/arquivos", [
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertServerError();
 
-        $this->assertSame(0, arquivo::withTrashed()->count());
+        $this->assertSame(0, Arquivo::withTrashed()->count());
         $this->assertSame([], Storage::disk('local')->allFiles());
     }
 

@@ -5,7 +5,7 @@ namespace Tests\Feature\Reports;
 use App\Models\Estagio;
 use App\Models\Funil;
 use App\Models\MotivoPerda;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\Concerns\CenarioDeTenant;
@@ -47,7 +47,7 @@ class ForecastTest extends TestCase
         $p1 = $this->lead($tenant, $dono, ['estagio_id' => $aberto->id, 'valor_estimado' => 2000]);
         $this->actingAs($dono)->patchJson("/api/leads/{$p1->id}/estagio", ['estagio_id' => $perdido->id, 'perda' => ['motivo_perda_id' => $motivo->id]])->assertOk();
 
-        $statusAberto = Statu::factory()->create(['tenant_id' => $tenant->id]);
+        $statusAberto = StatusProjeto::factory()->create(['tenant_id' => $tenant->id]);
         $this->projeto($g1, ['preco' => 900, 'status_id' => $statusAberto->id]);
 
         $r = $this->actingAs($dono)->getJson('/api/metricas?periodo=30d')->assertOk()->json();

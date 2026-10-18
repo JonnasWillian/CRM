@@ -18,9 +18,4 @@ use Spatie\Activitylog\Models\Activity as SpatieActivity;
 class Activity extends SpatieActivity
 {
     use BelongsToTenant;
-
-    public function lead()
-    {
-        return $this->belongsTo(Usuario::class, 'lead_id');
-    }
 }

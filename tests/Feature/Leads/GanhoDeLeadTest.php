@@ -4,7 +4,7 @@ namespace Tests\Feature\Leads;
 
 use App\Models\Estagio;
 use App\Models\Funil;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CenarioDeTenant;
 use Tests\TestCase;
@@ -41,7 +41,7 @@ class GanhoDeLeadTest extends TestCase
         $dono = $this->agente($tenant);
         $lead = $this->lead($tenant, $dono);
         $this->projeto($lead);
-        $this->projeto($lead, ['status_id' => Statu::factory()->create(['tenant_id' => $tenant->id, 'is_won' => true])->id]);
+        $this->projeto($lead, ['status_id' => StatusProjeto::factory()->create(['tenant_id' => $tenant->id, 'is_won' => true])->id]);
 
         $this->actingAs($dono)->getJson("/api/leads/{$lead->id}")->assertOk()
             ->assertJsonPath('projetos_count', 2)

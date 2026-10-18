@@ -4,7 +4,7 @@ namespace Tests\Feature\Leads;
 
 use App\Models\Estagio;
 use App\Models\Funil;
-use App\Models\Statu;
+use App\Models\StatusProjeto;
 use App\Models\Tarefa;
 use App\Models\Tenant;
 use App\Models\User;
@@ -30,7 +30,7 @@ class MetricasSemListaDeIdsTest extends TestCase
         $funil = Funil::where('is_default', true)->first() ?? Funil::factory()->padrao()->create(['tenant_id' => $this->tenant->id]);
         $aberto = Estagio::factory()->create(['tenant_id' => $this->tenant->id, 'funil_id' => $funil->id]);
         $ganho = Estagio::factory()->ganho()->create(['tenant_id' => $this->tenant->id, 'funil_id' => $funil->id]);
-        $statusAberto = Statu::factory()->create(['tenant_id' => $this->tenant->id]);
+        $statusAberto = StatusProjeto::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $a = $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $aberto->id]);
         $this->lead($this->tenant, $this->vendedor, ['estagio_id' => $aberto->id]);

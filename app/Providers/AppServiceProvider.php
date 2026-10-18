@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Anotacao;
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
@@ -59,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
             'lead' => Usuario::class,
             'projeto' => Projeto::class,
             'anotacao' => Anotacao::class,
-            'arquivo' => arquivo::class,
+            'arquivo' => Arquivo::class,
             'projeto_anotacao' => ProjetoAnotacao::class,
             'projeto_anexo' => ProjetoAnexo::class,
             'tarefa' => Tarefa::class,
@@ -75,7 +75,7 @@ class AppServiceProvider extends ServiceProvider
         // tests/Feature/DataIntegrity/SemCascataDestrutivaTest.php.
         Usuario::observe(UsuarioObserver::class);
         Anotacao::observe(AnotacaoObserver::class);
-        arquivo::observe(ArquivoObserver::class);
+        Arquivo::observe(ArquivoObserver::class);
         Projeto::observe(ProjetoObserver::class);
         ProjetoAnotacao::observe(ProjetoAnotacaoObserver::class);
         ProjetoAnexo::observe(ProjetoAnexoObserver::class);
@@ -91,7 +91,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ProjetoAnexo::class, ProjetoAnexoPolicy::class);
         Gate::policy(Tarefa::class, TarefaPolicy::class);
         Gate::policy(Anotacao::class, AnotacaoPolicy::class);
-        Gate::policy(arquivo::class, ArquivoPolicy::class);
+        Gate::policy(Arquivo::class, ArquivoPolicy::class);
         Gate::policy(TarefaPadrao::class, TarefaPadraoPolicy::class);
 
         // Três limites, cada um contra um abuso diferente:

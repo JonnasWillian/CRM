@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Arquivos;
 
-use App\Models\arquivo;
+use App\Models\Arquivo;
 use App\Models\ProjetoAnexo;
 use App\Models\Tenant;
 use App\Models\User;
@@ -51,7 +51,7 @@ class DownloadProtegidoTest extends TestCase
             'nome' => 'rg.pdf',
             'arquivo' => UploadedFile::fake()->create('rg.pdf', 10),
         ])->assertSuccessful();
-        $this->arquivo = arquivo::firstOrFail();
+        $this->arquivo = Arquivo::firstOrFail();
 
         $this->actingAs($this->dono)->postJson("/api/projetos/{$projeto->id}/anexos", [
             'nome' => 'contrato.pdf',
