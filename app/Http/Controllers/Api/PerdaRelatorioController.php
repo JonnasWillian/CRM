@@ -29,6 +29,38 @@ class PerdaRelatorioController extends Controller
         return response()->json($this->relatorio->resumo(self::periodoDe($dados), $dados['tipo'] ?? null));
     }
 
+    /** Perdas uma a uma (paginado): o que, por quê, quanto, quem e quando. */
+    public function detalhe(Request $request): JsonResponse
+    {
+        $dados = self::validar($request);
+        $extra = $request->validate(['user_id' => ['nullable', 'integer'], 'per_page' => ['nullable', 'integer', 'min:1']]);
+        $periodo = self::periodoDe($dados);
+
+        $pagina = \App\Models\Perda::query()
+            ->noPeriodo($periodo->inicio(), $periodo->fim())
+            ->when(($dados['tipo'] ?? null) === 'lead', fn ($q) => $q->deLeads())
+            ->when(($dados['tipo'] ?? null) === 'projeto', fn ($q) => $q->deProjetos())
+            ->when($extra['user_id'] ?? null, fn ($q, $id) => $q->where('perdas.user_id', $id))
+            ->with(['motivo' => fn ($q) => $q->withTrashed(), 'perdivel' => fn ($q) => $q->withTrashed(), 'registradoPor:id,name'])
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->paginate(\App\Support\Listagem\Paginacao::clamp($extra['per_page'] ?? null, 25))
+            ->withQueryString();
+
+        $pagina->setCollection($pagina->getCollection()->map(fn (\App\Models\Perda $p) => [
+            'id' => $p->id,
+            'tipo' => $p->perdivel_type === 'lead' ? 'lead' : 'projeto',
+            'nome' => $p->perdivel?->nome,
+            'lead_id' => $p->perdivel_type === 'lead' ? $p->perdivel_id : $p->perdivel?->usuario_id,
+            'motivo' => $p->motivo?->descricao,
+            'valor' => $p->valor === null ? null : (float) $p->valor,
+            'vendedor' => $p->registradoPor?->name,
+            'observacao' => $p->observacao,
+            'data' => $p->created_at?->toIso8601String(),
+        ]));
+
+        return response()->json(\App\Support\Listagem\Paginacao::resposta($pagina, null, [...$dados, ...$extra]));
+    }
+
     /** Os parâmetros do relatório (API e página), validados. */
     public static function validar(Request $request): array
     {

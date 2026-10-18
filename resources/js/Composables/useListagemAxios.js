@@ -36,7 +36,7 @@ export function useListagemAxios(url, { padrao = {}, filtros = [], params = {}, 
 
         try {
             const resposta = await axios.get(typeof url === 'function' ? url() : url, {
-                params: { ...params, ...montarQuery(estado, opcoes) },
+                params: { ...(typeof params === 'function' ? params() : params), ...montarQuery(estado, opcoes) },
                 signal,
                 silencioso: true,
             });

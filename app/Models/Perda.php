@@ -55,16 +55,16 @@ class Perda extends Model
 
     public function scopeNoPeriodo($query, $inicio, $fim)
     {
-        return $query->whereBetween('created_at', [$inicio, $fim]);
+        return $query->whereBetween('perdas.created_at', [$inicio, $fim]);
     }
 
     public function scopeDeLeads($query)
     {
-        return $query->where('perdivel_type', (new Usuario)->getMorphClass());
+        return $query->where('perdas.perdivel_type', (new Usuario)->getMorphClass());
     }
 
     public function scopeDeProjetos($query)
     {
-        return $query->where('perdivel_type', (new Projeto)->getMorphClass());
+        return $query->where('perdas.perdivel_type', (new Projeto)->getMorphClass());
     }
 }

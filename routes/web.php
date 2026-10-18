@@ -78,8 +78,10 @@ Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configurac
     Route::get('/modelos-tarefa', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'modelosTarefa'])->name('modelosTarefa');
 });
 
-Route::get('/relatorios/perdas', [\App\Http\Controllers\Web\RelatorioController::class, 'perdas'])
-    ->middleware(['auth', 'tenant', 'can:leads.view-all'])->name('relatorios.perdas');
+Route::middleware(['auth', 'tenant', 'can:leads.view-all'])->group(function () {
+    Route::get('/relatorios', [\App\Http\Controllers\Web\RelatorioController::class, 'index'])->name('relatorios.index');
+    Route::get('/relatorios/perdas', [\App\Http\Controllers\Web\RelatorioController::class, 'perdas'])->name('relatorios.perdas');
+});
 
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

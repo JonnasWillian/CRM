@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { CircleDollarSign, CircleX, Tag } from 'lucide-vue-next';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import AppBadge from '@/Components/ui/AppBadge.vue';
@@ -13,7 +13,10 @@ import PageHeader from '@/Components/ui/PageHeader.vue';
 import PeriodoSelector from '@/Components/ui/PeriodoSelector.vue';
 import SectionHeader from '@/Components/ui/SectionHeader.vue';
 import StatBar from '@/Components/ui/StatBar.vue';
-import { formatBRL } from '@/utils/formatadores';
+import AbasDeRelatorio from '@/Components/relatorios/AbasDeRelatorio.vue';
+import DataTable from '@/Components/ui/DataTable.vue';
+import { useListagemAxios } from '@/Composables/useListagemAxios';
+import { formatBRL, formatarData } from '@/utils/formatadores';
 
 /** "Por que perdemos": perdas por motivo no período, com o valor que estava em jogo. Filtros na URL. */
 const props = defineProps({
@@ -34,7 +37,7 @@ function aplicar(parcial) {
     router.get(route('relatorios.perdas'), query, {
         only: ['relatorio', 'periodo'], preserveState: true, preserveScroll: true, replace: true,
         onStart: () => { carregando.value = true; },
-        onFinish: () => { carregando.value = false; },
+        onFinish: () => { carregando.value = false; detalhe.recarregar(); },
     });
 }
 const periodoModel = computed({ get: () => ({ periodo: filtros.value.periodo === 'custom' || ['7d', '30d', 'mes_atual', 'mes_anterior'].includes(filtros.value.periodo) ? filtros.value.periodo : 'custom', de: filtros.value.de ?? props.relatorio.periodo.de, ate: filtros.value.ate ?? props.relatorio.periodo.ate }), set: (v) => aplicar(v) });
@@ -42,6 +45,20 @@ const TIPOS = [{ valor: null, rotulo: 'Leads e projetos' }, { valor: 'lead', rot
 
 const r = computed(() => props.relatorio);
 const principal = computed(() => r.value.por_motivo[0] ?? null);
+// Detalhe: as perdas uma a uma, com os mesmos filtros do resumo.
+const detalhe = useListagemAxios(() => route('api.relatorios.perdas.detalhe'), { params: () => ({ ...filtrosDaUrl() }), padrao: { per_page: 25 } });
+function filtrosDaUrl() {
+    const f = filtros.value;
+    return { periodo: f.periodo, ...(f.periodo === 'custom' ? { de: f.de, ate: f.ate } : {}), ...(f.tipo ? { tipo: f.tipo } : {}) };
+}
+const colunasDetalhe = [
+    { key: 'nome', rotulo: 'Lead / projeto', primaria: true },
+    { key: 'motivo', rotulo: 'Motivo' },
+    { key: 'valor', rotulo: 'Valor', alinhar: 'direita', ocultarAbaixo: 'sm', formatar: (v) => (v === null ? '—' : formatBRL(v)) },
+    { key: 'vendedor', rotulo: 'Registrado por', ocultarAbaixo: 'md', formatar: (v) => v ?? '—' },
+    { key: 'data', rotulo: 'Data', ocultarAbaixo: 'sm', formatar: (v) => formatarData(v) },
+];
+
 const barras = computed(() => r.value.por_motivo.map((m) => ({ rotulo: m.arquivado ? `${m.descricao} (arquivado)` : m.descricao, valor: m.total })));
 </script>
 
@@ -58,6 +75,7 @@ const barras = computed(() => r.value.por_motivo.map((m) => ({ rotulo: m.arquiva
                 </template>
             </PageHeader>
 
+            <AbasDeRelatorio atual="relatorios.perdas" />
             <div :class="carregando ? 'opacity-60' : ''" :aria-busy="carregando ? 'true' : undefined">
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <KpiCard rotulo="Perdas no período" :valor="r.total" :sub="`${r.por_tipo.lead} lead${r.por_tipo.lead === 1 ? '' : 's'} · ${r.por_tipo.projeto} projeto${r.por_tipo.projeto === 1 ? '' : 's'}`" :icone="CircleX" tom="danger" contar />
@@ -87,6 +105,18 @@ const barras = computed(() => r.value.por_motivo.map((m) => ({ rotulo: m.arquiva
                         </div>
                     </template>
                 </AppCard>
+
+                <section v-if="r.total > 0" class="mt-4">
+                    <SectionHeader titulo="Perdas uma a uma" descricao="Mais recentes primeiro." class="mb-3" />
+                    <DataTable id="perdas-detalhe" :colunas="colunasDetalhe" :linhas="detalhe.linhas.value" :meta="detalhe.meta.value" :carregando="detalhe.carregando.value" :erro="detalhe.erro.value" :linhas-clicaveis="false" :cabecalho-fixo="false" @update:pagina="detalhe.irParaPagina" @update:por-pagina="detalhe.porPagina" @tentar-novamente="detalhe.recarregar">
+                        <template #celula-nome="{ linha }">
+                            <Link v-if="linha.lead_id" :href="route('leads.show', linha.lead_id)" class="font-medium text-fg-0 hover:text-primary">{{ linha.nome ?? '—' }}</Link>
+                            <span v-else>{{ linha.nome ?? '—' }}</span>
+                            <AppBadge class="ml-2">{{ linha.tipo === 'lead' ? 'Lead' : 'Projeto' }}</AppBadge>
+                            <p v-if="linha.observacao" class="truncate text-sm text-fg-2">{{ linha.observacao }}</p>
+                        </template>
+                    </DataTable>
+                </section>
             </div>
         </PageContainer>
     </AuthenticatedLayout>

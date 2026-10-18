@@ -40,9 +40,11 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::get('/motivos-perda', [MotivoPerdaController::class, 'index'])->name('motivos-perda.index');
 
     // ── Relatórios ──
-    Route::get('/relatorios/perdas', [PerdaRelatorioController::class, 'resumo'])
-        ->middleware('can:leads.view-all')
-        ->name('relatorios.perdas');
+    Route::middleware('can:leads.view-all')->group(function () {
+        Route::get('/relatorios/perdas', [PerdaRelatorioController::class, 'resumo'])->name('relatorios.perdas');
+        Route::get('/relatorios/perdas/detalhe', [PerdaRelatorioController::class, 'detalhe'])->name('relatorios.perdas.detalhe');
+        Route::get('/relatorios/visao-geral', [\App\Http\Controllers\Api\RelatorioController::class, 'visaoGeral'])->name('relatorios.visao-geral');
+    });
     Route::get('/metricas', [DashboardController::class, 'metricas'])->name('metricas');
 
     // ── Configuração (escrita exige configuracoes.manage) ──

@@ -56,6 +56,17 @@ describe('useListagemAxios', () => {
         expect(sinais.at(-1).aborted).toBe(false);
     });
 
+    it('params como função é relido a cada carga (filtros que mudam fora da listagem)', async () => {
+        get.mockResolvedValue(paginado([]));
+        let tipo = 'lead';
+        const lista = useListagemAxios('/api/x', { params: () => ({ tipo }) });
+        await vi.runAllTimersAsync();
+        expect(get.mock.calls.at(-1)[1].params.tipo).toBe('lead');
+        tipo = 'projeto';
+        await lista.recarregar();
+        expect(get.mock.calls.at(-1)[1].params.tipo).toBe('projeto');
+    });
+
     it('erro de rede vira `erro` e recarregar() tenta de novo', async () => {
         get.mockRejectedValueOnce(new Error('Network Error')).mockResolvedValueOnce(paginado([{ id: 7 }]));
         const lista = useListagemAxios('/api/x');
