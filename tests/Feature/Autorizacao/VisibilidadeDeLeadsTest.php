@@ -86,7 +86,7 @@ class VisibilidadeDeLeadsTest extends TestCase
         $vendedor = $this->actingAs($this->vendedor)->getJson('/api/metricas')->assertOk()->json();
         $gestor = $this->actingAs($this->gestor)->getJson('/api/metricas')->assertOk()->json();
 
-        $this->assertSame(1, $vendedor['total_leads']);
-        $this->assertSame(2, $gestor['total_leads']);
+        $this->assertSame(1, $vendedor['estado']['total_leads']);
+        $this->assertSame(2, $gestor['estado']['total_leads']);
     }
 }

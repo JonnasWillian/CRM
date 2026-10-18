@@ -57,7 +57,6 @@ class LeadMetricsService
         $leadsAtivos = $leads()->whereHas('estagio', fn ($q) => $q->aberto())->count();
         $leadsFechados = $leads()->whereHas('estagio', fn ($q) => $q->fechado())->count();
         $totalLeads = $leads()->count();
-        $leadsComProjeto = Projeto::whereIn('usuario_id', $ids())->distinct('usuario_id')->count('usuario_id');
         $valorProjetosAbertos = (float) Projeto::whereIn('usuario_id', $ids())->whereHas('status', fn ($q) => $q->open())->sum('preco');
         $semContato = $leads()->whereHas('estagio', fn ($q) => $q->aberto())
             ->where('usuarios.ultimo_contato_em', '<', now()->subDays((int) config('leads.dias_estagnado', 14)))
@@ -136,20 +135,7 @@ class LeadMetricsService
             ];
         }
 
-        $taxaConversao = $totalLeads > 0 ? round($leadsComProjeto / $totalLeads * 100, 1) : 0.0;
-
         return [
-            // Chaves que o Dashboard atual lê (mantidas até a migração da tela).
-            'leads_ativos' => $leadsAtivos,
-            'leads_arquivados' => $leadsFechados,
-            'leads_30_dias' => $leadsCriados,
-            'valor_projetos_abertos' => $valorProjetosAbertos,
-            'valor_fechado_mes' => $valorFechadoProjetos,
-            'leads_por_estagio' => $leadsPorEstagio,
-            'taxa_conversao' => $taxaConversao,
-            'total_com_projeto' => $leadsComProjeto,
-            'total_leads' => $totalLeads,
-
             'periodo' => $periodo->toArray(),
             'estado' => [
                 'leads_ativos' => $leadsAtivos,

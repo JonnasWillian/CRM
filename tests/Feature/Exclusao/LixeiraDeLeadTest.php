@@ -51,11 +51,11 @@ class LixeiraDeLeadTest extends TestCase
 
     public function test_lead_na_lixeira_some_das_listagens_e_das_metricas(): void
     {
-        $antes = $this->actingAs($this->dono)->getJson('/api/metricas')->json('total_leads');
+        $antes = $this->actingAs($this->dono)->getJson('/api/metricas')->json('estado.total_leads');
 
         $this->actingAs($this->dono)->deleteJson("/api/leads/{$this->lead->id}")->assertOk();
 
-        $this->assertSame($antes - 1, $this->actingAs($this->dono)->getJson('/api/metricas')->json('total_leads'));
+        $this->assertSame($antes - 1, $this->actingAs($this->dono)->getJson('/api/metricas')->json('estado.total_leads'));
         $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/leads')->json('data'))->pluck('id'));
         $this->assertNotContains($this->lead->id, collect($this->actingAs($this->dono)->getJson('/api/kanban')->json('estagios'))->flatMap(fn ($e) => $e['leads'])->pluck('id'));
     }

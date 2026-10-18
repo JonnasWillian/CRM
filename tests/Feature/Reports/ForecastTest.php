@@ -82,12 +82,12 @@ class ForecastTest extends TestCase
         $this->lead($tenant, $vendedor);
         $this->lead($tenant, $gestor);
 
-        $this->actingAs($gestor)->getJson('/api/metricas?user_id='.$vendedor->id)->assertOk()->assertJsonPath('total_leads', 1);
-        $this->actingAs($gestor)->getJson('/api/metricas')->assertOk()->assertJsonPath('total_leads', 2);
-        $this->actingAs($vendedor)->getJson('/api/metricas?user_id='.$gestor->id)->assertOk()->assertJsonPath('total_leads', 1);
+        $this->actingAs($gestor)->getJson('/api/metricas?user_id='.$vendedor->id)->assertOk()->assertJsonPath('estado.total_leads', 1);
+        $this->actingAs($gestor)->getJson('/api/metricas')->assertOk()->assertJsonPath('estado.total_leads', 2);
+        $this->actingAs($vendedor)->getJson('/api/metricas?user_id='.$gestor->id)->assertOk()->assertJsonPath('estado.total_leads', 1);
 
         $this->actingAs($gestor)->getJson('/api/metricas?periodo=custom&de=2026-01-01&ate=2026-01-31')->assertOk()
-            ->assertJsonPath('periodo.preset', 'custom')->assertJsonPath('leads_30_dias', 0);
+            ->assertJsonPath('periodo.preset', 'custom')->assertJsonPath('fluxo.leads_criados', 0);
         $this->actingAs($gestor)->getJson('/api/metricas?periodo=custom&de=2026-02-01&ate=2026-01-31')->assertUnprocessable();
         $this->actingAs($gestor)->getJson('/api/metricas?periodo=ontem')->assertUnprocessable();
     }

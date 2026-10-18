@@ -69,7 +69,7 @@ class PaginasComPropsTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('component', 'Dashboard')
             ->assertJsonPath('props.metricas.periodo.preset', '7d')
-            ->assertJsonPath('props.metricas.total_leads', 1)
+            ->assertJsonPath('props.metricas.estado.total_leads', 1)
             ->assertJsonStructure(['props' => ['metricas' => ['forecast'], 'tarefas' => ['hoje' => ['total'], 'atrasadas' => ['itens']]]]);
     }
 

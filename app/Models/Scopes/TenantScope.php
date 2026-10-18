@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Scope;
  * Restringe toda query do model ao tenant ativo (CurrentTenant).
  *
  * A coluna tenant_id é qualificada pelo nome da tabela propositalmente:
- * alguns controllers (ex.: Userarios::view()/kanban()) usam whereColumn()
+ * algumas consultas (ex.: QuadroDoKanban) usam whereColumn()
  * e addSelect() com subqueries correlacionadas. Sem a qualificação, um
  * `where('tenant_id', ...)` não qualificado poderia ficar ambíguo entre
  * a query principal e a subquery, ou se referir à tabela errada.

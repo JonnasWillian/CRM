@@ -19,7 +19,6 @@ use App\Http\Controllers\Api\ProjetoController;
 use App\Http\Controllers\Api\StatusProjetoController;
 use App\Http\Controllers\Api\TarefaController;
 use App\Http\Controllers\Api\TarefaPadraoController;
-use App\Http\Controllers\Userarios;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -161,7 +160,4 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // withTrashed: uma coluna arquivada ainda em uso continua no quadro e pode "carregar mais".
     Route::get('/kanban/colunas/{estagio}', [KanbanController::class, 'coluna'])->withTrashed()->name('kanban.coluna');
     Route::patch('/kanban/settings', [KanbanController::class, 'settings'])->name('kanban.settings');
-
-    // Deprecado: sem consumidor no front. Só o TimelineParityTest usa (sai na Fase 5).
-    Route::get('/timeline/{usuario}', [Userarios::class, 'timeline'])->name('timeline.show');
 });

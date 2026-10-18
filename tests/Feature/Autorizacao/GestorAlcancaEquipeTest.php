@@ -91,7 +91,7 @@ class GestorAlcancaEquipeTest extends TestCase
     public function test_gestor_alcanca_a_equipe_em_cada_policy_que_reconhece_leads_view_all(): void
     {
         $casos = [
-            // Wireado em Userarios::updateAnotacao -> $this->authorize('update', $anotacao).
+            // Wireado em Api\\AnotacaoController::update -> $this->authorize('update', $anotacao).
             'AnotacaoPolicy::update' => function (): TestResponse {
                 $anotacao = Anotacao::create(['descricao' => 'Nota da equipe', 'usuario_id' => $this->leadDaEquipe->id]);
 

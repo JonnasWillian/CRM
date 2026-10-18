@@ -44,8 +44,8 @@ class LeadMetricsCacheTest extends TestCase
         $this->lead($a, $colegaA);
         $this->ativar($a);
 
-        $this->assertSame(2, $this->resumo($a, $donoA)['total_leads']);
-        $this->assertSame(3, $this->resumo($a, null)['total_leads'], 'agente nulo = tenant inteiro, não o cache do vendedor');
+        $this->assertSame(2, $this->resumo($a, $donoA)['estado']['total_leads']);
+        $this->assertSame(3, $this->resumo($a, null)['estado']['total_leads'], 'agente nulo = tenant inteiro, não o cache do vendedor');
 
         // Um lead de 10 dias atrás: dentro de 30d, fora de 7d. Se o período não
         // entrasse na chave, a segunda chamada devolveria o número da primeira.
@@ -53,13 +53,13 @@ class LeadMetricsCacheTest extends TestCase
         $this->lead($a, $donoA);
         $this->travelBack();
         $this->ativar($a);
-        $this->assertSame(3, $this->resumo($a, $donoA, Periodo::preset('30d'))['leads_30_dias']);
-        $this->assertSame(2, $this->resumo($a, $donoA, Periodo::preset('7d'))['leads_30_dias']);
+        $this->assertSame(3, $this->resumo($a, $donoA, Periodo::preset('30d'))['fluxo']['leads_criados']);
+        $this->assertSame(2, $this->resumo($a, $donoA, Periodo::preset('7d'))['fluxo']['leads_criados']);
 
         $b = $this->novoTenant();
         $donoB = $this->agente($b);
         $this->lead($b, $donoB);
-        $this->assertSame(1, $this->resumo($b, $donoB)['total_leads']);
+        $this->assertSame(1, $this->resumo($b, $donoB)['estado']['total_leads']);
     }
 
     public function test_guarda_de_tenant_lanca_quando_o_tenant_ativo_e_outro(): void
@@ -78,8 +78,8 @@ class LeadMetricsCacheTest extends TestCase
         $dono = $this->agente($tenant);
         $this->lead($tenant, $dono);
 
-        $this->assertSame(1, $this->resumo($tenant, $dono)['total_leads']);
+        $this->assertSame(1, $this->resumo($tenant, $dono)['estado']['total_leads']);
         $this->lead($tenant, $dono);
-        $this->assertSame(2, $this->resumo($tenant, $dono)['total_leads']);
+        $this->assertSame(2, $this->resumo($tenant, $dono)['estado']['total_leads']);
     }
 }

@@ -49,15 +49,13 @@ class MetricasSemListaDeIdsTest extends TestCase
     public function test_numeros_das_metricas(): void
     {
         $this->actingAs($this->vendedor)->getJson('/api/metricas')->assertOk()
-            ->assertJsonPath('total_leads', 3)
-            ->assertJsonPath('leads_ativos', 2)
-            ->assertJsonPath('leads_arquivados', 1)
-            ->assertJsonPath('total_com_projeto', 1)
+            ->assertJsonPath('estado.total_leads', 3)
+            ->assertJsonPath('estado.leads_ativos', 2)
+            ->assertJsonPath('estado.leads_fechados', 1)
             // json_encode(1000.0) nesta versão do PHP (8.2, serialize_precision=-1)
             // vira o literal "1000" (sem ".0"), que json_decode volta como int.
             // assertJsonPath usa assertSame (estrito) — por isso 1000, não 1000.0.
-            ->assertJsonPath('valor_projetos_abertos', 1000)
-            ->assertJsonPath('taxa_conversao', 33.3);
+            ->assertJsonPath('forecast.valor_projetos_abertos', 1000);
     }
 
     public function test_tarefas_pendentes(): void

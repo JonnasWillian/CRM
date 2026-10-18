@@ -18,7 +18,7 @@ class Statu extends Model
 
     /**
      * Status "em aberto" (nem ganho, nem perdido). Reutilizado nos 3 pontos de
-     * Userarios.php (view(), kanban(), metricas()) que precisam filtrar
+     * os controllers de leads, kanban e métricas que precisam filtrar
      * projetos por status ainda ativo.
      */
     public function scopeOpen($query)

@@ -131,7 +131,7 @@ async function concluir(tarefa) {
                 </template>
 
                 <!-- Empresa sem leads -->
-                <AppCard v-if="m && m.total_leads === 0 && !filtros.user_id && !filtros.funil_id">
+                <AppCard v-if="m && m.estado.total_leads === 0 && !filtros.user_id && !filtros.funil_id">
                     <EmptyState :icone="Users" titulo="Sua empresa ainda não tem leads" descricao="Cadastre o primeiro ou traga sua planilha.">
                         <template #acao>
                             <AppButton v-if="pode('leads.manage')" as="Link" :href="route('leads.index', { novo: 1 })"><template #icone><Plus /></template>Novo lead</AppButton>
