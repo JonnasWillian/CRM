@@ -45,7 +45,9 @@ class VisaoGeralTest extends TestCase
         ['gestor' => $gestor, 'ana' => $ana, 'bia' => $bia] = $this->cenario();
 
         $consultas = 0;
-        DB::listen(function () use (&$consultas) { $consultas++; });
+        DB::listen(function () use (&$consultas) {
+            $consultas++;
+        });
         $dados = $this->actingAs($gestor)->getJson('/api/relatorios/visao-geral?periodo=30d')->assertOk()->json();
         $this->assertLessThan(30, $consultas);
 
