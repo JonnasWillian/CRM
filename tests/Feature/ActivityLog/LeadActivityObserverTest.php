@@ -5,7 +5,6 @@ namespace Tests\Feature\ActivityLog;
 use App\Models\Activity;
 use App\Models\Anotacao;
 use App\Models\Estagio;
-use App\Models\EstagioHistorico;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\StatusProjeto;
@@ -124,12 +123,9 @@ class LeadActivityObserverTest extends TestCase
         $this->assertNotNull($atividade);
         $this->assertSame($this->lead->id, $atividade->lead_id);
 
-        // A tabela antiga continua sendo alimentada durante a transição, agora
-        // a partir do observer em vez de duplicada nos controllers.
-        $historico = EstagioHistorico::where('usuario_id', $this->lead->id)->first();
-        $this->assertNotNull($historico, 'EstagioHistorico precisa continuar sendo gravado');
-        $this->assertSame($estagioAnterior, $historico->estagio_anterior_id);
-        $this->assertSame($estagioNovo->id, $historico->estagio_novo_id);
+        // O histórico de estágio vive só no activity log (estagio_historicos saiu na Fase 5).
+        $this->assertSame($estagioAnterior, $atividade->properties['estagio_anterior_id']);
+        $this->assertSame($estagioNovo->id, $atividade->properties['estagio_novo_id']);
     }
 
     public function test_concluir_tarefa_registra_evento_separado_da_criacao(): void

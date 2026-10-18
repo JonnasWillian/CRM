@@ -76,7 +76,7 @@ class DoisSaltosPolicyTest extends TestCase
     public function test_delete_de_anotacao_autoriza_a_anotacao(): void
     {
         $this->actingAs($this->intruso)->deleteJson("/api/projeto-anotacoes/{$this->anotacao->id}")->assertNotFound();
-        $this->assertDatabaseHas('projetoAnotacaos', ['id' => $this->anotacao->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('projeto_anotacoes', ['id' => $this->anotacao->id, 'deleted_at' => null]);
     }
 
     public function test_delete_de_anexo_autoriza_o_anexo(): void
@@ -86,7 +86,7 @@ class DoisSaltosPolicyTest extends TestCase
         // O teste irmão de anotação já verifica isto; faltava aqui —
         // assertNotFound() sozinho prova a negativa, não que o anexo
         // sobreviveu a ela.
-        $this->assertDatabaseHas('projetoAnexos', ['id' => $this->anexo->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('projeto_anexos', ['id' => $this->anexo->id, 'deleted_at' => null]);
     }
 
     /** Review Focus 4: linha soft-deleted some pelo binding, e isso é o desejado. */

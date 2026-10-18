@@ -37,7 +37,7 @@ class GuardaDeArrayNoUsuarioIdTest extends TestCase
 
         $this->actingAs($dono)->postJson("/api/leads/{$meu->id}/anotacoes", ['descricao' => 'Minha', 'usuario_id' => [$doColega->id]])->assertCreated();
 
-        $this->assertDatabaseHas('anotacaos', ['usuario_id' => $meu->id, 'descricao' => 'Minha']);
-        $this->assertDatabaseMissing('anotacaos', ['usuario_id' => $doColega->id]);
+        $this->assertDatabaseHas('anotacoes', ['usuario_id' => $meu->id, 'descricao' => 'Minha']);
+        $this->assertDatabaseMissing('anotacoes', ['usuario_id' => $doColega->id]);
     }
 }

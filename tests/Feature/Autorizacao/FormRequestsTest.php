@@ -243,7 +243,7 @@ class FormRequestsTest extends TestCase
         $resposta = app(\App\Http\Controllers\Api\ProjetoAnexoController::class)->store($request, $projeto);
 
         $this->assertSame(201, $resposta->getStatusCode());
-        $this->assertDatabaseHas('projetoAnexos', ['projeto_id' => $projeto->id]);
+        $this->assertDatabaseHas('projeto_anexos', ['projeto_id' => $projeto->id]);
     }
 
     /** Projeto inexistente na rota: 404 do binding, nunca 500. */

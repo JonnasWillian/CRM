@@ -92,7 +92,7 @@ class BackfillIdempotencyTest extends TestCase
         $anotacao = Anotacao::create(['descricao' => 'Antiga', 'usuario_id' => $lead->id]);
 
         $dataAntiga = now()->subMonths(6)->startOfSecond();
-        DB::table('anotacaos')->where('id', $anotacao->id)->update(['created_at' => $dataAntiga]);
+        DB::table('anotacoes')->where('id', $anotacao->id)->update(['created_at' => $dataAntiga]);
         DB::table('activity_log')->delete();
 
         $this->artisan('activities:backfill-leads')->assertSuccessful();

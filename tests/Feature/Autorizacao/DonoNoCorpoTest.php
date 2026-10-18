@@ -82,7 +82,7 @@ class DonoNoCorpoTest extends TestCase
             ->postJson("/api/leads/{$this->lead->id}/anotacoes", ['descricao' => 'Intrusa'])
             ->assertNotFound();
 
-        $this->assertDatabaseMissing('anotacaos', ['descricao' => 'Intrusa']);
+        $this->assertDatabaseMissing('anotacoes', ['descricao' => 'Intrusa']);
     }
 
     public function test_anotar_em_projeto_de_colega_e_recusado(): void
@@ -91,7 +91,7 @@ class DonoNoCorpoTest extends TestCase
             ->postJson("/api/projetos/{$this->projeto->id}/anotacoes", ['descricao' => 'Intrusa'])
             ->assertNotFound();
 
-        $this->assertDatabaseMissing('projetoAnotacaos', ['descricao' => 'Intrusa']);
+        $this->assertDatabaseMissing('projeto_anotacoes', ['descricao' => 'Intrusa']);
     }
 
     /**

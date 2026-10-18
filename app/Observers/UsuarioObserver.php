@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\Estagio;
-use App\Models\EstagioHistorico;
 use App\Models\Usuario;
 use App\Support\ActivityLog\LeadActivity;
 use App\Support\Reports\MetricasCache;
@@ -23,8 +22,6 @@ use Illuminate\Support\Facades\DB;
  * As consultas de estágio usam DB::table de propósito: `saving` roda antes
  * do BelongsToTenant preencher tenant_id num lead novo, e o TenantScope é
  * fail-closed. O estagio_id já foi validado contra o tenant pelo request.
- *
- * Este observer é também o único lugar que grava EstagioHistorico.
  */
 class UsuarioObserver
 {
@@ -94,16 +91,9 @@ class UsuarioObserver
         $funilAnterior = $usuario->getOriginal('funil_id');
 
         // Uma troca de funil é sempre também uma troca de estágio (o lead cai
-        // num estágio do funil de destino), então as duas cabem numa linha só
-        // de histórico. O que muda é como o evento é rotulado.
-        EstagioHistorico::create([
-            'usuario_id' => $usuario->id,
-            'estagio_anterior_id' => $estagioAnterior,
-            'estagio_novo_id' => $usuario->estagio_id,
-            'funil_anterior_id' => $funilAnterior,
-            'funil_novo_id' => $usuario->funil_id,
-        ]);
-
+        // num estágio do funil de destino): uma linha só no histórico, com o
+        // evento rotulado conforme o caso.
+        //
         // Nome gravado junto com o id: o histórico mostra o estágio como ele se
         // chamava no momento, mesmo que seja renomeado ou arquivado depois.
         // Uma consulta para os dois ids, não uma por id.

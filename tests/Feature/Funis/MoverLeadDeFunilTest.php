@@ -4,7 +4,6 @@ namespace Tests\Feature\Funis;
 
 use App\Models\Activity;
 use App\Models\Estagio;
-use App\Models\EstagioHistorico;
 use App\Models\Funil;
 use App\Models\Tenant;
 use App\Models\User;
@@ -105,13 +104,13 @@ class MoverLeadDeFunilTest extends TestCase
             ])
             ->assertOk();
 
-        $historico = EstagioHistorico::where('usuario_id', $this->lead->id)->latest('id')->first();
+        $evento = \App\Models\Activity::where('lead_id', $this->lead->id)->where('event', 'funil_alterado')->latest('id')->first();
 
-        $this->assertNotNull($historico);
-        $this->assertSame($this->vendas->id, $historico->funil_anterior_id);
-        $this->assertSame($this->posVenda->id, $historico->funil_novo_id);
-        $this->assertSame($this->estagioVendas->id, $historico->estagio_anterior_id);
-        $this->assertSame($this->estagioPosVenda->id, $historico->estagio_novo_id);
+        $this->assertNotNull($evento);
+        $this->assertSame($this->vendas->id, $evento->properties['funil_anterior_id']);
+        $this->assertSame($this->posVenda->id, $evento->properties['funil_novo_id']);
+        $this->assertSame($this->estagioVendas->id, $evento->properties['estagio_anterior_id']);
+        $this->assertSame($this->estagioPosVenda->id, $evento->properties['estagio_novo_id']);
     }
 
     public function test_mover_registra_evento_funil_alterado_e_nao_status_alterado(): void

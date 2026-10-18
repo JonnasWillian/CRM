@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\EstagioHistorico;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
 use App\Models\Tarefa;
@@ -97,10 +96,9 @@ class AtividadeResource extends JsonResource
     }
 
     /**
-     * Três gerações de linha: com o nome gravado (observer a partir desta
-     * tarefa), com o id em `estagio_{lado}_id` (observer anterior) ou
-     * `tag_id_{lado}` (antes do rename tags -> estagios), e do backfill, em
-     * que o id está no próprio EstagioHistorico do subject.
+     * Duas gerações de linha: com o nome gravado e o id em
+     * `estagio_{lado}_id` (observer e a migração 2026_10_18_110001) ou com
+     * `tag_id_{lado}` (antes do rename tags -> estagios).
      */
     public static function idsDeEstagio($atividade): array
     {
@@ -108,8 +106,8 @@ class AtividadeResource extends JsonResource
         $s = $atividade->subject;
 
         return array_filter([
-            $p->get('estagio_anterior_id') ?? $p->get('tag_id_anterior') ?? ($s instanceof EstagioHistorico ? $s->estagio_anterior_id : null),
-            $p->get('estagio_novo_id') ?? $p->get('tag_id_novo') ?? ($s instanceof EstagioHistorico ? $s->estagio_novo_id : null),
+            $p->get('estagio_anterior_id') ?? $p->get('tag_id_anterior'),
+            $p->get('estagio_novo_id') ?? $p->get('tag_id_novo'),
         ]);
     }
 
@@ -120,8 +118,7 @@ class AtividadeResource extends JsonResource
         }
 
         $id = $propriedades->get("estagio_{$lado}_id")
-            ?? $propriedades->get("tag_id_{$lado}")
-            ?? ($subject instanceof EstagioHistorico ? $subject->{"estagio_{$lado}_id"} : null);
+            ?? $propriedades->get("tag_id_{$lado}");
 
         return $this->nomesDeEstagio[$id] ?? '—';
     }

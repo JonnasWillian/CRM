@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Anotacao extends Model
 {
+    protected $table = 'anotacoes';
+
     use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [

@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Activity;
 use App\Models\Anotacao;
 use App\Models\Arquivo;
-use App\Models\EstagioHistorico;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
@@ -157,23 +156,8 @@ class BackfillLeadActivities extends Command
             $adicionar(Usuario::class, $lead->id, 'lead_criado', $lead->id, 'Lead cadastrado no sistema', $lead->created_at);
         }
 
-        foreach (EstagioHistorico::all() as $historico) {
-            // O rótulo tem de ser derivado igual ao do UsuarioObserver, ou o
-            // backfill e os observers produziriam eventos diferentes para a
-            // mesma linha e o teste de paridade quebraria. Linhas anteriores às
-            // colunas de funil têm os dois lados nulos e caem em
-            // 'status_alterado', como sempre foram.
-            $mudouFunil = $historico->funil_anterior_id !== $historico->funil_novo_id;
-
-            $adicionar(
-                EstagioHistorico::class,
-                $historico->id,
-                $mudouFunil ? 'funil_alterado' : 'status_alterado',
-                $historico->usuario_id,
-                $mudouFunil ? 'Lead movido de funil' : 'Estágio do lead alterado',
-                $historico->created_at,
-            );
-        }
+        // Estágio: o histórico vive no activity log desde a Fase 5 (a migração
+        // 2026_10_18_110001 copiou o que estava em estagio_historicos).
 
         $comSoftDelete = [
             [Anotacao::withTrashed()->get(), 'anotacao', 'anotacao_removida', 'Anotação adicionada', 'Anotação removida', fn ($m) => $m->usuario_id],

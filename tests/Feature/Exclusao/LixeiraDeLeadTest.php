@@ -45,7 +45,7 @@ class LixeiraDeLeadTest extends TestCase
         $this->actingAs($this->dono)->deleteJson("/api/leads/{$this->lead->id}")->assertOk();
 
         $this->assertSoftDeleted('usuarios', ['id' => $this->lead->id]);
-        $this->assertDatabaseHas('anotacaos', ['id' => $this->anotacao->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('anotacoes', ['id' => $this->anotacao->id, 'deleted_at' => null]);
         $this->assertDatabaseHas('activity_log', ['lead_id' => $this->lead->id, 'event' => 'lead_removido']);
     }
 

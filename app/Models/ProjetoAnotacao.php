@@ -11,7 +11,7 @@ class ProjetoAnotacao extends Model
 {
     use BelongsToTenant, HasFactory, SoftDeletes;
 
-    protected $table = 'projetoAnotacaos';
+    protected $table = 'projeto_anotacoes';
 
     protected $fillable = [
         'descricao',

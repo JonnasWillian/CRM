@@ -77,7 +77,7 @@ class PoliticaDeUploadTest extends TestCase
             'arquivo' => UploadedFile::fake()->create($nome, $kb, $mime),
         ])->assertUnprocessable()->assertJsonValidationErrors('arquivo');
 
-        $this->assertDatabaseCount('projetoAnexos', 0);
+        $this->assertDatabaseCount('projeto_anexos', 0);
     }
 
     #[DataProvider('aceitos')]
@@ -97,7 +97,7 @@ class PoliticaDeUploadTest extends TestCase
             'arquivo' => UploadedFile::fake()->create($nome, 20, $mime),
         ])->assertSuccessful();
 
-        $this->assertDatabaseCount('projetoAnexos', 1);
+        $this->assertDatabaseCount('projeto_anexos', 1);
     }
 
     public function test_nome_com_mais_de_255_caracteres_e_recusado(): void

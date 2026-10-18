@@ -64,7 +64,6 @@ class AppServiceProvider extends ServiceProvider
             'projeto_anexo' => ProjetoAnexo::class,
             'tarefa' => Tarefa::class,
             'tarefa_padrao' => TarefaPadrao::class,
-            'estagio_historico' => \App\Models\EstagioHistorico::class,
             'user' => \App\Models\User::class,
         ]);
 

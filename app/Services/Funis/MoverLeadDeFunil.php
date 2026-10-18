@@ -12,7 +12,7 @@ use App\Services\Perdas\AplicarTransicao;
  * Move um lead de um funil para outro, no estágio de destino escolhido.
  *
  * O lead vive em um funil por vez, então mover é uma escrita só: funil e
- * estágio mudam juntos. O histórico (EstagioHistorico) e o evento
+ * estágio mudam juntos. O evento
  * `funil_alterado` no activity log saem do UsuarioObserver, que observa
  * exatamente essas duas colunas — nada é registrado aqui.
  *
