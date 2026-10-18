@@ -65,7 +65,7 @@ const titulo = (e) => ({
     projeto_anexo: `Arquivo em “${e.projeto_nome ?? 'projeto'}”`,
     status_alterado: `${e.estagio_anterior ?? '—'} → ${e.estagio_novo ?? '—'}`,
     funil_alterado: `Funil: ${e.estagio_anterior ?? '—'} → ${e.estagio_novo ?? '—'}`,
-    responsavel_alterado: `${e.de_nome ?? '—'} → ${e.para_nome ?? '—'}`,
+    responsavel_alterado: `${e.responsavel_anterior ?? '—'} → ${e.responsavel_novo ?? '—'}`,
     tarefa_criada: `Tarefa criada: “${e.titulo ?? ''}”`,
     tarefa_concluida: `Tarefa concluída: “${e.titulo ?? ''}”`,
     anotacao_removida: 'Anotação removida',

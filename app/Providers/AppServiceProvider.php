@@ -85,6 +85,7 @@ class AppServiceProvider extends ServiceProvider
         // Laravel deriva o nome da classe, e o model `arquivo` é minúsculo —
         // ela procuraria `arquivoPolicy`. Explícito evita depender disso.
         Gate::policy(Usuario::class, UsuarioPolicy::class);
+        Gate::policy(\App\Models\User::class, \App\Policies\AgentePolicy::class);
         Gate::policy(Projeto::class, ProjetoPolicy::class);
         Gate::policy(ProjetoAnotacao::class, ProjetoAnotacaoPolicy::class);
         Gate::policy(ProjetoAnexo::class, ProjetoAnexoPolicy::class);

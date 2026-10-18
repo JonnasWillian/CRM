@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AnotacaoController;
 use App\Http\Controllers\Api\ArquivoController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EquipeController;
 use App\Http\Controllers\Api\EstagioController;
 use App\Http\Controllers\Api\FunilController;
 use App\Http\Controllers\Api\KanbanController;
@@ -70,6 +71,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // Ações em massa: ids[] (até 200) ou todos=true + filtros da grade.
     Route::post('/leads/mover-estagio', [LeadController::class, 'moverEstagio'])->name('leads.mover-estagio');
     Route::post('/leads/lixeira', [LeadController::class, 'lixeira'])->name('leads.lixeira');
+    Route::post('/leads/transferir', [LeadController::class, 'transferir'])->name('leads.transferir');
     Route::get('/leads/{usuario}', [LeadController::class, 'show'])->name('leads.show');
     Route::put('/leads/{usuario}', [LeadController::class, 'update'])->name('leads.update');
     Route::delete('/leads/{usuario}', [LeadController::class, 'destroy'])->name('leads.destroy');
@@ -78,6 +80,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::patch('/leads/{usuario}/restaurar', [LeadController::class, 'restaurar'])->withTrashed()->name('leads.restaurar');
     Route::patch('/leads/{usuario}/estagio', [LeadController::class, 'estagio'])->name('leads.estagio');
     Route::patch('/leads/{usuario}/funil', [LeadController::class, 'funil'])->name('leads.funil');
+    Route::patch('/leads/{usuario}/responsavel', [LeadController::class, 'responsavel'])->name('leads.responsavel');
     Route::get('/leads/{usuario}/atividades', [LeadAtividadeController::class, 'index'])->name('leads.atividades.index');
 
     // Filhos do lead: o pai na URL, rota rasa para editar/apagar.
@@ -122,6 +125,18 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::post('/tarefa-padroes', [TarefaPadraoController::class, 'store'])->name('tarefa-padroes.store');
     Route::put('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'update'])->name('tarefa-padroes.update');
     Route::delete('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'destroy'])->name('tarefa-padroes.destroy');
+
+    // ── Equipe ──
+    Route::get('/equipe/opcoes', [EquipeController::class, 'opcoes'])->middleware('can:leads.view-all')->name('equipe.opcoes');
+    Route::middleware('can:agentes.manage')->group(function () {
+        Route::get('/equipe', [EquipeController::class, 'index'])->name('equipe.index');
+        Route::post('/equipe/convites', [EquipeController::class, 'convidar'])->name('equipe.convites.store');
+        Route::post('/equipe/convites/{convite}/reenviar', [EquipeController::class, 'reenviar'])->name('equipe.convites.reenviar');
+        Route::delete('/equipe/convites/{convite}', [EquipeController::class, 'cancelar'])->name('equipe.convites.destroy');
+        Route::patch('/equipe/{agente}/papel', [EquipeController::class, 'papel'])->name('equipe.papel');
+        Route::patch('/equipe/{agente}/desativar', [EquipeController::class, 'desativar'])->name('equipe.desativar');
+        Route::patch('/equipe/{agente}/reativar', [EquipeController::class, 'reativar'])->name('equipe.reativar');
+    });
 
     // ── Kanban: quadro agrupado, página de uma coluna e coluna padrão ──
     Route::get('/kanban', [KanbanController::class, 'index'])->name('kanban.index');

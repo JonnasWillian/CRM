@@ -57,12 +57,13 @@ class LeadController extends Controller
      * Perfil do lead. A autorização está no middleware da rota
      * (`->can('view', 'usuario')`), que roda depois do binding.
      */
-    public function show(Usuario $usuario): Response
+    public function show(\Illuminate\Http\Request $request, Usuario $usuario): Response
     {
         return Inertia::render('Usuario/Perfil', [
             'lead' => LeadApi::comResumo($usuario),
             'funis' => Funil::ordenados()->with(['estagios' => fn ($q) => $q->orderBy('ordem')->orderBy('id')])->get(['id', 'nome', 'is_default']),
             'status' => Statu::orderBy('ordem')->orderBy('id')->get(['id', 'descricao', 'is_won', 'is_lost']),
+            'agentes' => self::agentes($request->user()),
         ]);
     }
 

@@ -78,6 +78,17 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         'PATCH api/motivos-perda/{motivo}/restaurar',
         'PATCH api/motivos-perda/reordenar',
 
+        // Convites da equipe: barrados por can:agentes.manage no grupo; o
+        // convite é do tenant (TenantScope faz o de outra empresa ser 404) e
+        // não há "convite meu" e "convite do colega" entre admins.
+        'POST api/equipe/convites',
+        'POST api/equipe/convites/{convite}/reenviar',
+        'DELETE api/equipe/convites/{convite}',
+
+        // Aceitar convite (guest): o alvo é resolvido pelo hash do token
+        // enviado por e-mail, não por id escolhido pelo requisitante.
+        'POST convites/{token}', // ConviteController::store
+
         // Escrevem apenas no próprio usuário autenticado; não há recurso de
         // terceiro a proteger.
         'PATCH api/kanban/settings',

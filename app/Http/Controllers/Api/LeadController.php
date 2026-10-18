@@ -5,16 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Leads\MoverEstagioEmMassaRequest;
 use App\Http\Requests\Leads\SelecaoDeLeadsRequest;
+use App\Http\Requests\Leads\TransferirEmMassaRequest;
 use App\Http\Requests\ListagemDeLeadsRequest;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Estagio;
 use App\Models\Funil;
+use App\Models\User;
 use App\Models\Usuario;
 use App\Queries\Leads\ListagemDeLeads;
 use App\Services\Funis\MoverLeadDeFunil;
 use App\Services\Leads\AcoesEmMassa;
 use App\Services\Leads\CadastrarLead;
+use App\Services\Leads\TransferirLeads;
 use App\Services\Perdas\AplicarTransicao;
+use App\Support\Equipe\RegrasDeAdmin;
 use App\Support\Listagem\Paginacao;
 use App\Support\Perdas\RegrasDePerda;
 use App\Support\Tenancy\CurrentTenant;
@@ -62,6 +66,33 @@ class LeadController extends Controller
         $resultado = $acoes->moverEstagio($request->selecao(), $request->tamanhoPedido(), $destino, RegrasDePerda::extrair($request));
 
         return response()->json(['message' => self::frase($resultado['afetados'], "movido para “{$destino->descricao}”", "movidos para “{$destino->descricao}”"), ...$resultado]);
+    }
+
+    /** Transferir um lead (perfil, grade, card). */
+    public function responsavel(Request $request, TransferirLeads $transferir, Usuario $usuario): JsonResponse
+    {
+        $this->authorize('transferir', $usuario);
+
+        $validated = $request->validate(
+            ['user_id' => ['required', 'integer', RegrasDeAdmin::regraDeMembroAtivo(app(CurrentTenant::class)->id())]],
+            ['user_id.exists' => 'Escolha um membro ativo da empresa.', 'user_id.required' => 'Escolha para quem transferir.'],
+        );
+        $destino = User::findOrFail($validated['user_id']);
+
+        $mudou = $transferir->umLead($usuario, $destino);
+
+        return response()->json([
+            'message' => $mudou ? "“{$usuario->nome}” transferido para “{$destino->name}”." : "{$destino->name} já é o responsável.",
+            'data' => self::comResumo($usuario->fresh()),
+        ]);
+    }
+
+    public function transferir(TransferirEmMassaRequest $request, TransferirLeads $transferir): JsonResponse
+    {
+        $destino = $request->destino();
+        $resultado = $transferir->varios($request->selecao(), $request->tamanhoPedido(), $destino);
+
+        return response()->json(['message' => self::frase($resultado['afetados'], "transferido para “{$destino->name}”", "transferidos para “{$destino->name}”"), ...$resultado]);
     }
 
     public function lixeira(SelecaoDeLeadsRequest $request, AcoesEmMassa $acoes): JsonResponse

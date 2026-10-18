@@ -4,6 +4,7 @@ namespace App\Services\Contas;
 
 use App\Models\User;
 use App\Models\Usuario;
+use App\Support\Equipe\RegrasDeAdmin;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -32,7 +33,7 @@ class ExclusaoDeConta
                 : "Você é dono de {$leads} leads (contando a lixeira). Peça a um admin para transferi-los antes de excluir a conta.";
         }
 
-        if ($this->ehUltimoAdmin($user)) {
+        if (RegrasDeAdmin::ehUltimoAdmin($user)) {
             $impedimentos[] = 'Você é o único admin da empresa. Outra pessoa precisa ser admin antes de você excluir a conta.';
         }
 
@@ -54,15 +55,4 @@ class ExclusaoDeConta
      * Papéis são por tenant (spatie em modo teams). O team corrente é o do
      * usuário — IdentifyTenant o define em toda requisição autenticada.
      */
-    private function ehUltimoAdmin(User $user): bool
-    {
-        if (! $user->hasRole('admin')) {
-            return false;
-        }
-
-        return ! User::role('admin')
-            ->where('tenant_id', $user->tenant_id)
-            ->whereKeyNot($user->id)
-            ->exists();
-    }
 }

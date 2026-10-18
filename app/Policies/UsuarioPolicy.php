@@ -41,6 +41,20 @@ class UsuarioPolicy
         return $this->doDono($user, $usuario);
     }
 
+    /**
+     * Transferir exige ver a empresa inteira. Quem nem enxerga o lead recebe
+     * 404 (como em toda policy daqui); o dono sem leads.view-all, 403.
+     */
+    public function transferir(User $user, Usuario $usuario): Response
+    {
+        $ver = $this->doDono($user, $usuario);
+        if ($ver->denied()) {
+            return $ver;
+        }
+
+        return $user->can('leads.view-all') ? Response::allow() : Response::deny('Só gestores e admins transferem leads.');
+    }
+
     private function doDono(User $user, Usuario $usuario): Response
     {
         return $this->doDonoDoLead($user, $usuario);

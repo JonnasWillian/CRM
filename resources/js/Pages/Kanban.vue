@@ -25,6 +25,7 @@ import PageHeader from '@/Components/ui/PageHeader.vue';
 import ConfirmarGanhoDialog from '@/Components/leads/ConfirmarGanhoDialog.vue';
 import LeadFormModal from '@/Components/leads/LeadFormModal.vue';
 import MoverFunilDialog from '@/Components/leads/MoverFunilDialog.vue';
+import TransferirDialog from '@/Components/leads/TransferirDialog.vue';
 import { useConfirm } from '@/Composables/useConfirm';
 import { usePerda } from '@/Composables/usePerda';
 import { useToast } from '@/Composables/useToast';
@@ -249,6 +250,25 @@ async function confirmarFunil({ funil_id, estagio_id }) {
     }
 }
 
+// ── Transferir (leads.view-all) ──
+const transferencia = ref({ aberto: false, lead: null, salvando: false, erro: '' });
+async function transferir({ user_id }) {
+    const lead = transferencia.value.lead;
+    const anterior = lead.responsavel?.id ?? null;
+    transferencia.value.salvando = true;
+    transferencia.value.erro = '';
+    try {
+        const { data } = await axios.patch(route('api.leads.responsavel', lead.id), { user_id }, { silencioso: true });
+        transferencia.value.aberto = false;
+        toast.sucesso(data.message, anterior ? { acao: { rotulo: 'Desfazer', onClick: () => axios.patch(route('api.leads.responsavel', lead.id), { user_id: anterior }).then(carregar) } } : undefined);
+        carregar();
+    } catch (e) {
+        transferencia.value.erro = mensagemDeErro(e, 'Não foi possível transferir o lead.');
+    } finally {
+        transferencia.value.salvando = false;
+    }
+}
+
 // ── Lixeira ──
 async function excluir(lead) {
     const ok = await confirmar({
@@ -444,6 +464,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
                                                 <p class="px-2.5 pb-1 pt-1.5 text-xs font-medium uppercase tracking-wider text-fg-2">Mover para</p>
                                                 <AppDropdownItem v-for="c in colunas.filter((x) => !x.arquivada && x.id !== coluna.id)" :key="c.id" :rotulo="c.descricao" :tom="c.tipo === 'perdido' ? 'danger' : 'default'" @click="moverPeloMenu(lead, coluna, c)" />
                                                 <AppDropdownItem v-if="funis.length > 1" rotulo="Mover para outro funil…" :icone="ArrowRightLeft" @click="funilDialogo = { aberto: true, lead, salvando: false, erro: '' }" />
+                                                <AppDropdownItem v-if="agentes.length" rotulo="Transferir…" :icone="ArrowRightLeft" @click="transferencia = { aberto: true, lead, salvando: false, erro: '' }" />
                                                 <AppDropdownSeparador />
                                                 <AppDropdownItem rotulo="Mover para a lixeira" :icone="Trash2" tom="danger" @click="excluir(lead)" />
                                             </template>
@@ -493,6 +514,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
 
         <ConfirmarGanhoDialog :aberto="ganho.aberto" :nome="ganho.lead?.nome ?? ''" :valor-estimado="ganho.lead?.valor_estimado ?? null" :projetos-abertos="ganho.lead?.projetos_abertos_count ?? 0" :salvando="ganho.salvando" :erro="ganho.erro" @confirmar="confirmarGanho" @cancelar="cancelarGanho" />
         <MoverFunilDialog :aberto="funilDialogo.aberto" :nome="funilDialogo.lead?.nome ?? ''" :funis="funisComEstagios" :funil-atual-id="funil?.id ?? null" :salvando="funilDialogo.salvando" :erro="funilDialogo.erro" @confirmar="confirmarFunil" @cancelar="funilDialogo.aberto = false" />
+        <TransferirDialog :aberto="transferencia.aberto" :titulo="`Transferir “${transferencia.lead?.nome ?? ''}”`" :agentes="agentes" :atual-id="transferencia.lead?.responsavel?.id ?? null" :salvando="transferencia.salvando" :erro="transferencia.erro" @confirmar="transferir" @cancelar="transferencia.aberto = false" />
         <LeadFormModal :aberto="modal" :funis="funis" :estagios="estagios" :agentes="agentes" @fechar="modal = false" @salvo="carregar" />
 
         <AppModal :aberto="configuracao.aberto" titulo="Coluna padrão para novos leads" descricao="Leads cadastrados sem estágio escolhido entram nesta coluna." tamanho="sm" @fechar="configuracao.aberto = false">

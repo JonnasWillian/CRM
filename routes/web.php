@@ -70,6 +70,7 @@ Route::get('/kanban', [\App\Http\Controllers\Web\KanbanController::class, 'index
 Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configuracoes.')->group(function () {
     Route::get('/funis', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'funis'])->middleware('can:configuracoes.manage')->name('funis');
     Route::get('/motivos-perda', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'motivosPerda'])->middleware('can:configuracoes.manage')->name('motivosPerda');
+    Route::get('/equipe', [\App\Http\Controllers\Web\EquipeController::class, 'index'])->middleware('can:agentes.manage')->name('equipe');
     // Do próprio agente, sem permissão extra.
     Route::get('/modelos-tarefa', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'modelosTarefa'])->name('modelosTarefa');
 });
@@ -81,6 +82,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Aceitar convite: visitante; o token (hash no banco) é a credencial.
+Route::middleware('guest')->group(function () {
+    Route::get('/convites/{token}', [\App\Http\Controllers\Web\ConviteController::class, 'show'])->where('token', '[A-Za-z0-9]{20,100}')->name('convites.show');
+    Route::post('/convites/{token}', [\App\Http\Controllers\Web\ConviteController::class, 'store'])->where('token', '[A-Za-z0-9]{20,100}')->middleware('throttle:6,1')->name('convites.store');
 });
 
 require __DIR__.'/auth.php';

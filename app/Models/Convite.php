@@ -28,6 +28,11 @@ class Convite extends Model
         ];
     }
 
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function convidadoPor()
     {
         return $this->belongsTo(User::class, 'convidado_por');

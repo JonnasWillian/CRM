@@ -79,6 +79,10 @@ class UsuarioObserver
     {
         MetricasCache::invalidar($usuario->tenant_id);
 
+        if ($usuario->wasChanged('user_id')) {
+            $this->registrarTransferencia($usuario);
+        }
+
         $mudouEstagio = $usuario->wasChanged('estagio_id');
         $mudouFunil = $usuario->wasChanged('funil_id');
 
@@ -121,6 +125,20 @@ class UsuarioObserver
                 'estagio_novo' => $usuario->estagio_id ? $nomes[$usuario->estagio_id] ?? null : null,
             ],
         );
+    }
+
+    /** Nomes gravados junto: o histórico mostra quem era quem no momento. */
+    private function registrarTransferencia(Usuario $usuario): void
+    {
+        $anterior = $usuario->getOriginal('user_id');
+        $nomes = DB::table('users')->whereIn('id', array_filter([$anterior, $usuario->user_id]))->pluck('name', 'id');
+
+        LeadActivity::registrar($usuario, $usuario->id, 'responsavel_alterado', 'Responsável alterado', [
+            'responsavel_anterior_id' => $anterior,
+            'responsavel_novo_id' => $usuario->user_id,
+            'responsavel_anterior' => $anterior ? $nomes[$anterior] ?? null : null,
+            'responsavel_novo' => $nomes[$usuario->user_id] ?? null,
+        ]);
     }
 
     public function deleted(Usuario $usuario): void

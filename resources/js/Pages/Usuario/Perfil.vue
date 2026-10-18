@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Calendar, ChevronRight, CircleDollarSign, Clock, FileText, FolderOpen, Mail, MessageCircle, Paperclip, Percent, Phone, Plus, SquareCheck, Trash2, UserRound } from 'lucide-vue-next';
+import { ArrowRightLeft, Calendar, ChevronRight, CircleDollarSign, Clock, FileText, FolderOpen, Mail, MessageCircle, Paperclip, Percent, Phone, Plus, SquareCheck, Trash2, UserRound } from 'lucide-vue-next';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import AppAvatar from '@/Components/ui/AppAvatar.vue';
 import AppBadge from '@/Components/ui/AppBadge.vue';
@@ -20,6 +20,8 @@ import MoverEstagioMenu from '@/Components/leads/MoverEstagioMenu.vue';
 import ProjetoPanel from '@/Components/leads/ProjetoPanel.vue';
 import TarefaPanel from '@/Components/leads/TarefaPanel.vue';
 import TimelinePanel from '@/Components/leads/TimelinePanel.vue';
+import TransferirDialog from '@/Components/leads/TransferirDialog.vue';
+import { mensagemDeErro } from '@/utils/erros';
 import { useConfirm } from '@/Composables/useConfirm';
 import { useToast } from '@/Composables/useToast';
 import { formatBRL, formatarData } from '@/utils/formatadores';
@@ -33,6 +35,7 @@ const props = defineProps({
     lead: { type: Object, required: true },
     funis: { type: Array, required: true },
     status: { type: Array, required: true },
+    agentes: { type: Array, default: () => [] },
 });
 
 const lead = ref(props.lead);
@@ -77,6 +80,26 @@ function novaTarefa() {
     abrirNovaTarefa.value++;
 }
 
+// ── Transferir (leads.view-all) ──
+const transferencia = ref({ aberto: false, salvando: false, erro: '' });
+async function transferir({ user_id }) {
+    const anterior = lead.value.user_id;
+    transferencia.value.salvando = true;
+    transferencia.value.erro = '';
+    try {
+        const { data } = await axios.patch(route('api.leads.responsavel', lead.value.id), { user_id }, { silencioso: true });
+        atualizar(data.data);
+        transferencia.value.aberto = false;
+        toast.sucesso(data.message, {
+            acao: { rotulo: 'Desfazer', onClick: () => axios.patch(route('api.leads.responsavel', lead.value.id), { user_id: anterior }).then(({ data: d }) => atualizar(d.data)) },
+        });
+    } catch (e) {
+        transferencia.value.erro = mensagemDeErro(e, 'Não foi possível transferir o lead.');
+    } finally {
+        transferencia.value.salvando = false;
+    }
+}
+
 async function excluir() {
     const ok = await confirmar({
         titulo: `Mover “${lead.value.nome}” para a lixeira?`,
@@ -111,7 +134,10 @@ async function excluir() {
                     <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-fg-1">
                         <MoverEstagioMenu :lead="lead" :funis="funis" @atualizado="atualizar" />
                         <span v-if="lead.funil" class="text-fg-2">Funil <b class="font-medium text-fg-1">{{ lead.funil.nome }}</b></span>
-                        <span v-if="lead.responsavel" class="inline-flex items-center gap-1.5 text-fg-2"><UserRound :size="14" aria-hidden="true" /> {{ lead.responsavel.name }}</span>
+                        <span v-if="lead.responsavel" class="inline-flex items-center gap-1.5 text-fg-2">
+                            <UserRound :size="14" aria-hidden="true" /> {{ lead.responsavel.name }}
+                            <button v-if="agentes.length" type="button" class="ml-1 text-sm font-medium text-primary hover:underline" @click="transferencia = { aberto: true, salvando: false, erro: '' }">Transferir</button>
+                        </span>
                         <a :href="`mailto:${lead.email}`" class="inline-flex items-center gap-1.5 hover:text-primary"><Mail :size="14" aria-hidden="true" /> {{ lead.email }}</a>
                         <span v-if="lead.telefone" class="inline-flex items-center gap-1.5">
                             <a :href="`tel:${lead.telefone}`" class="inline-flex items-center gap-1.5 hover:text-primary"><Phone :size="14" aria-hidden="true" /> {{ formatarTelefone(lead.telefone) }}</a>
@@ -127,6 +153,7 @@ async function excluir() {
                 <template #acoes>
                     <AppButton variante="secondary" @click="novaTarefa"><template #icone><Plus /></template>Nova tarefa</AppButton>
                     <AppDropdown rotulo="Mais ações" alinhar="end">
+                        <AppDropdownItem v-if="agentes.length" rotulo="Transferir…" :icone="ArrowRightLeft" @click="transferencia = { aberto: true, salvando: false, erro: '' }" />
                         <AppDropdownItem rotulo="Mover para a lixeira" :icone="Trash2" tom="danger" @click="excluir" />
                     </AppDropdown>
                 </template>
@@ -153,5 +180,6 @@ async function excluir() {
                 </div>
             </div>
         </PageContainer>
+        <TransferirDialog :aberto="transferencia.aberto" :titulo="`Transferir “${lead.nome}”`" :agentes="agentes" :atual-id="lead.user_id" :salvando="transferencia.salvando" :erro="transferencia.erro" @confirmar="transferir" @cancelar="transferencia.aberto = false" />
     </AuthenticatedLayout>
 </template>

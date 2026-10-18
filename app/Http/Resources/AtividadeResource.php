@@ -65,6 +65,11 @@ class AtividadeResource extends JsonResource
             $campos['estagio_novo'] = $this->nomeDoEstagio($propriedades, $subject, 'novo');
         }
 
+        if ($tipo === 'responsavel_alterado') {
+            $campos['responsavel_anterior'] = $propriedades->get('responsavel_anterior') ?? '—';
+            $campos['responsavel_novo'] = $propriedades->get('responsavel_novo') ?? '—';
+        }
+
         return array_filter($campos, fn ($valor) => $valor !== null);
     }
 

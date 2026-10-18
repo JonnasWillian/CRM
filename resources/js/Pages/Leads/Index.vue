@@ -19,6 +19,8 @@ import IconButton from '@/Components/ui/IconButton.vue';
 import PageContainer from '@/Components/ui/PageContainer.vue';
 import PageHeader from '@/Components/ui/PageHeader.vue';
 import LeadFormModal from '@/Components/leads/LeadFormModal.vue';
+import TransferirDialog from '@/Components/leads/TransferirDialog.vue';
+import { mensagemDeErro } from '@/utils/erros';
 import { useConfirm } from '@/Composables/useConfirm';
 import { useListagem } from '@/Composables/useListagem';
 import { usePerda } from '@/Composables/usePerda';
@@ -164,6 +166,34 @@ async function excluir(l) {
     } catch { /* interceptor */ }
 }
 
+// ── Transferir (1 lead pela linha ou a seleção) ──
+const transferencia = ref({ aberto: false, lead: null, salvando: false, erro: '' });
+const abrirTransferencia = (lead = null) => { transferencia.value = { aberto: true, lead, salvando: false, erro: '' }; };
+const tituloTransferencia = computed(() => (transferencia.value.lead ? `Transferir “${transferencia.value.lead.nome}”` : `Transferir ${totalSelecionado.value} lead${totalSelecionado.value === 1 ? '' : 's'}`));
+async function transferir({ user_id }) {
+    const um = transferencia.value.lead;
+    transferencia.value.salvando = true;
+    transferencia.value.erro = '';
+    try {
+        const { data } = um
+            ? await axios.patch(route('api.leads.responsavel', um.id), { user_id }, { silencioso: true })
+            : await axios.post(route('api.leads.transferir'), { ...corpoDaSelecao(), user_id }, { silencioso: true });
+        transferencia.value.aberto = false;
+        if (um) {
+            const anterior = um.user_id;
+            toast.sucesso(data.message, { acao: { rotulo: 'Desfazer', onClick: () => axios.patch(route('api.leads.responsavel', um.id), { user_id: anterior }).then(recarregar) } });
+        } else {
+            toast.sucesso(resumo(data));
+            limparSelecao();
+        }
+        recarregar();
+    } catch (e) {
+        transferencia.value.erro = mensagemDeErro(e, 'Não foi possível transferir.');
+    } finally {
+        transferencia.value.salvando = false;
+    }
+}
+
 // ── Atalhos: N novo lead, / busca ──
 function atalho(e) {
     const alvo = e.target;
@@ -226,6 +256,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
                             <AppDropdownItem v-for="e in estagios.filter((x) => x.funil_id === f.id)" :key="e.id" :rotulo="e.descricao" :tom="e.tipo === 'perdido' ? 'danger' : 'default'" @click="moverEmMassa(e)" />
                         </template>
                     </AppDropdown>
+                    <AppButton v-if="veTodos" variante="secondary" tamanho="sm" @click="abrirTransferencia()"><template #icone><Users /></template>Transferir</AppButton>
                     <AppButton variante="danger" tamanho="sm" @click="excluirEmMassa"><template #icone><Trash2 /></template>Mover para a lixeira</AppButton>
                 </template>
 
@@ -268,6 +299,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
                 <template #acoes="{ linha }">
                     <IconButton :icone="ExternalLink" rotulo="Abrir" tamanho="sm" as="Link" :href="hrefDoLead(linha)" @click.stop />
                     <IconButton v-if="whatsapp(linha)" :icone="MessageCircle" rotulo="Abrir no WhatsApp" tamanho="sm" as="a" :href="whatsapp(linha)" target="_blank" rel="noopener" class="sm:hidden" @click.stop />
+                    <IconButton v-if="veTodos" :icone="ArrowRightLeft" rotulo="Transferir" tamanho="sm" @click.stop="abrirTransferencia(linha)" />
                     <IconButton v-if="pode('leads.manage')" :icone="Trash2" rotulo="Mover para a lixeira" tamanho="sm" variante="danger" @click.stop="excluir(linha)" />
                 </template>
                 <template #vazio>
@@ -277,6 +309,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
             </DataTable>
         </PageContainer>
 
+        <TransferirDialog :aberto="transferencia.aberto" :titulo="tituloTransferencia" :descricao="transferencia.lead ? null : 'Os leads saem das carteiras atuais; o histórico e as tarefas seguem com eles.'" :agentes="agentes" :atual-id="transferencia.lead?.user_id ?? null" :rotulo-confirmar="transferencia.lead ? 'Transferir' : `Transferir ${totalSelecionado} lead${totalSelecionado === 1 ? '' : 's'}`" :salvando="transferencia.salvando" :erro="transferencia.erro" @confirmar="transferir" @cancelar="transferencia.aberto = false" />
         <LeadFormModal :aberto="modal" :funis="funis" :estagios="estagios" :agentes="agentes" @fechar="modal = false" @salvo="limparSelecao" />
     </AuthenticatedLayout>
 </template>
