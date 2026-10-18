@@ -46,6 +46,36 @@ class LeadController extends Controller
         ));
     }
 
+    /**
+     * CSV da grade atual (filtros e ordem da URL) ou dos `ids[]` escolhidos.
+     * Streaming em lotes por id: memória constante para qualquer tamanho.
+     * BOM + `;` + vírgula decimal: abre direto no Excel em português; os
+     * cabeçalhos são os mesmos que a importação reconhece (ida e volta).
+     */
+    public function exportar(ListagemDeLeadsRequest $request, ListagemDeLeads $listagem): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $ids = array_filter(array_map('intval', (array) $request->input('ids', [])));
+        $q = $ids !== []
+            ? Usuario::visibleTo($request->user())->whereIn('usuarios.id', array_slice($ids, 0, 1000))->with(['estagio', 'responsavel:id,name'])
+            : $listagem->query($request->user(), $request->filtrosValidados())->reorder();
+        $q->with('funil:id,nome');
+        $decimal = fn ($v) => $v === null ? '' : number_format((float) $v, 2, ',', '');
+
+        return response()->streamDownload(function () use ($q, $decimal) {
+            $saida = fopen('php://output', 'w');
+            fwrite($saida, "\xEF\xBB\xBF");
+            fputcsv($saida, ['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'responsavel', 'criado_em', 'ultimo_contato'], ';', '"', '');
+            foreach ($q->lazyById(500, 'usuarios.id', 'id') as $l) {
+                fputcsv($saida, [
+                    $l->nome, $l->email, $l->telefone, $l->descricao, $l->funil?->nome, $l->estagio?->descricao,
+                    $decimal($l->valor_estimado), $l->probabilidade, $l->previsao_fechamento?->toDateString(), $l->responsavel?->name,
+                    $l->created_at?->format('Y-m-d H:i'), $l->ultimo_contato_em?->format('Y-m-d H:i'),
+                ], ';', '"', '');
+            }
+            fclose($saida);
+        }, 'leads-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     /** Quick-add do Pipeline e outros clientes JSON. O modal da grade usa a rota web (`leads.store`). */
     public function store(UsuarioRequest $request, CadastrarLead $cadastrar): JsonResponse
     {

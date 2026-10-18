@@ -19,6 +19,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Web\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/leads', [\App\Http\Controllers\Web\LeadController::class, 'index'])->name('leads.index');
     Route::post('/leads', [\App\Http\Controllers\Web\LeadController::class, 'store'])->name('leads.store');
+    Route::get('/leads/importar', [\App\Http\Controllers\Web\LeadController::class, 'importar'])->middleware('can:leads.view-all')->name('leads.importar');
     Route::get('/tarefas', [\App\Http\Controllers\Web\TarefaController::class, 'index'])->name('tarefas.index');
 });
 

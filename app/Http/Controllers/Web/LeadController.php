@@ -41,6 +41,18 @@ class LeadController extends Controller
         ]);
     }
 
+    /** Importar planilha (wizard): catálogos, membros e as importações recentes. */
+    public function importar(\Illuminate\Http\Request $request): Response
+    {
+        return Inertia::render('Leads/Importar', [
+            'importacoes' => \App\Models\Importacao::query()->latest()->limit(10)->get()->map(fn ($i) => \App\Http\Controllers\Api\ImportacaoController::serializar($i)),
+            'funis' => Funil::ordenados()->get(['id', 'nome', 'is_default']),
+            'estagios' => Estagio::query()->orderBy('funil_id')->orderBy('ordem')->orderBy('id')->get(['id', 'funil_id', 'descricao', 'tipo']),
+            'agentes' => self::agentes($request->user()),
+            'campos' => array_keys(\App\Services\Importacao\CamposDeImportacao::CAMPOS),
+        ]);
+    }
+
     /** Cadastro pelo modal da grade (useForm): erros voltam na sessão, sucesso vira flash. */
     public function store(UsuarioRequest $request, CadastrarLead $cadastrar): RedirectResponse
     {

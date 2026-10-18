@@ -139,4 +139,18 @@ class PaginasComPropsTest extends TestCase
 
         $this->actingAs($this->agente($tenant))->get('/relatorios/perdas')->assertForbidden();
     }
+
+    public function test_pagina_de_importar_so_para_quem_ve_todos(): void
+    {
+        $tenant = $this->novoTenant();
+        $gestor = $this->agente($tenant, 'gestor');
+
+        $this->actingAs($gestor)->get('/leads/importar')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Leads/Importar')
+            ->has('importacoes', 0)
+            ->has('campos', 10)
+            ->has('agentes', 1));
+
+        $this->actingAs($this->agente($tenant))->get('/leads/importar')->assertForbidden();
+    }
 }

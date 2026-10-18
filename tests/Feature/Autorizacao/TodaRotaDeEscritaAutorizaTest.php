@@ -85,6 +85,12 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         'POST api/equipe/convites/{convite}/reenviar',
         'DELETE api/equipe/convites/{convite}',
 
+        // Importação: barrada por can:leads.view-all no grupo. A importação é
+        // do tenant (TenantScope: a de outra empresa é 404) e quem tem
+        // view-all já vê todos os leads que ela cria ou atualiza.
+        'POST api/importacoes',
+        'POST api/importacoes/{importacao}/iniciar',
+
         // Aceitar convite (guest): o alvo é resolvido pelo hash do token
         // enviado por e-mail, não por id escolhido pelo requisitante.
         'POST convites/{token}', // ConviteController::store
@@ -142,6 +148,9 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         // tenant como 404); não há "meu estágio" e "estágio do colega". Os
         // leads da coluna passam por Usuario::visibleTo, como no quadro.
         'GET api/kanban/colunas/{estagio}', // KanbanController::coluna
+        // Importação (can:leads.view-all; TenantScope faz a de outra empresa ser 404).
+        'GET api/importacoes/{importacao}',
+        'GET api/importacoes/{importacao}/erros',
     ];
 
     /**

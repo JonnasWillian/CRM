@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EquipeController;
 use App\Http\Controllers\Api\EstagioController;
 use App\Http\Controllers\Api\FunilController;
+use App\Http\Controllers\Api\ImportacaoController;
 use App\Http\Controllers\Api\KanbanController;
 use App\Http\Controllers\Api\LeadAtividadeController;
 use App\Http\Controllers\Api\LeadController;
@@ -69,6 +70,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Leads ──
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+    Route::get('/leads/exportar', [LeadController::class, 'exportar'])->name('leads.exportar');
     // Ações em massa: ids[] (até 200) ou todos=true + filtros da grade.
     Route::post('/leads/mover-estagio', [LeadController::class, 'moverEstagio'])->name('leads.mover-estagio');
     Route::post('/leads/lixeira', [LeadController::class, 'lixeira'])->name('leads.lixeira');
@@ -126,6 +128,15 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::post('/tarefa-padroes', [TarefaPadraoController::class, 'store'])->name('tarefa-padroes.store');
     Route::put('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'update'])->name('tarefa-padroes.update');
     Route::delete('/tarefa-padroes/{tarefaPadrao}', [TarefaPadraoController::class, 'destroy'])->name('tarefa-padroes.destroy');
+
+    // ── Importação de leads (quem vê a empresa inteira) ──
+    Route::middleware('can:leads.view-all')->group(function () {
+        Route::get('/importacoes', [ImportacaoController::class, 'index'])->name('importacoes.index');
+        Route::post('/importacoes', [ImportacaoController::class, 'store'])->name('importacoes.store');
+        Route::get('/importacoes/{importacao}', [ImportacaoController::class, 'show'])->name('importacoes.show');
+        Route::post('/importacoes/{importacao}/iniciar', [ImportacaoController::class, 'iniciar'])->name('importacoes.iniciar');
+        Route::get('/importacoes/{importacao}/erros', [ImportacaoController::class, 'erros'])->name('importacoes.erros');
+    });
 
     // ── Lixeira (o que o agente enxerga) ──
     Route::get('/lixeira', [LixeiraController::class, 'index'])->name('lixeira.index');

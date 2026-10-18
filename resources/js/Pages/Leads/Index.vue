@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { ArrowRightLeft, ChevronDown, ExternalLink, MessageCircle, Plus, Trash2, Users } from 'lucide-vue-next';
+import { ArrowRightLeft, ChevronDown, Download, ExternalLink, FileUp, MessageCircle, Plus, Trash2, Users } from 'lucide-vue-next';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import AppAvatar from '@/Components/ui/AppAvatar.vue';
 import AppBadge from '@/Components/ui/AppBadge.vue';
@@ -194,6 +194,13 @@ async function transferir({ user_id }) {
     }
 }
 
+// ── Exportar CSV (os filtros da tela, ou a seleção) ──
+function exportar(ids = null) {
+    const params = ids ? { ids } : lista.query.value;
+    window.location.href = route('api.leads.exportar', params);
+    toast.info('Gerando o CSV… o download começa em instantes.');
+}
+
 // ── Atalhos: N novo lead, / busca ──
 function atalho(e) {
     const alvo = e.target;
@@ -212,6 +219,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
         <PageContainer>
             <PageHeader titulo="Leads" :subtitulo="`${Number(leads.meta.total).toLocaleString('pt-BR')} ${leads.meta.total === 1 ? 'lead' : 'leads'}`">
                 <template #acoes>
+                    <AppButton v-if="veTodos" variante="secondary" as="Link" :href="route('leads.importar')"><template #icone><FileUp /></template>Importar</AppButton>
+                    <AppButton variante="secondary" :disabled="!leads.meta.total" @click="exportar()"><template #icone><Download /></template>Exportar CSV</AppButton>
                     <AppButton v-if="pode('leads.manage')" @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
                 </template>
             </PageHeader>
@@ -256,6 +265,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
                             <AppDropdownItem v-for="e in estagios.filter((x) => x.funil_id === f.id)" :key="e.id" :rotulo="e.descricao" :tom="e.tipo === 'perdido' ? 'danger' : 'default'" @click="moverEmMassa(e)" />
                         </template>
                     </AppDropdown>
+                    <AppButton v-if="!todos" variante="secondary" tamanho="sm" @click="exportar(selecionadas)"><template #icone><Download /></template>Exportar</AppButton>
                     <AppButton v-if="veTodos" variante="secondary" tamanho="sm" @click="abrirTransferencia()"><template #icone><Users /></template>Transferir</AppButton>
                     <AppButton variante="danger" tamanho="sm" @click="excluirEmMassa"><template #icone><Trash2 /></template>Mover para a lixeira</AppButton>
                 </template>
@@ -304,7 +314,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
                 </template>
                 <template #vazio>
                     <AppButton v-if="lista.filtrosAtivos.value > 0 || lista.busca.value" variante="secondary" @click="lista.limpar">Limpar filtros</AppButton>
-                    <AppButton v-else-if="pode('leads.manage')" @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
+                    <template v-else-if="pode('leads.manage')">
+                        <AppButton @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
+                        <AppButton v-if="veTodos" variante="secondary" as="Link" :href="route('leads.importar')"><template #icone><FileUp /></template>Importar planilha</AppButton>
+                    </template>
                 </template>
             </DataTable>
         </PageContainer>
