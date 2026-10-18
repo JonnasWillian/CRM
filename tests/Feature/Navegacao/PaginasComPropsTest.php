@@ -93,4 +93,50 @@ class PaginasComPropsTest extends TestCase
 
         $this->actingAs($dono)->getJson('/api/tarefasPendentes')->assertNotFound();
     }
+
+    public function test_paginas_de_configuracao_entregam_suas_listas(): void
+    {
+        $tenant = $this->novoTenant();
+        $admin = $this->agente($tenant, 'admin');
+        $funil = \App\Models\Funil::factory()->padrao()->create(['tenant_id' => $tenant->id]);
+        \App\Models\Estagio::factory()->create(['tenant_id' => $tenant->id, 'funil_id' => $funil->id]);
+        \App\Models\MotivoPerda::factory()->create(['tenant_id' => $tenant->id]);
+        $modelo = new \App\Models\TarefaPadrao(['user_id' => $admin->id, 'titulo' => 'Follow-up', 'prazo_dias' => 2]);
+        $modelo->tenant_id = $tenant->id;
+        $modelo->save();
+
+        $this->actingAs($admin)->get('/configuracoes/funis')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Configuracoes/Funis')
+            ->has('funis', 1)
+            ->has('funis.0.estagios', 1)
+            ->where('funis.0.is_default', true));
+
+        $this->actingAs($admin)->get('/configuracoes/motivos-perda')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Configuracoes/MotivosPerda')
+            ->has('motivos', 1)
+            ->where('motivos.0.arquivado', false));
+
+        $this->actingAs($admin)->get('/configuracoes/modelos-tarefa')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Configuracoes/ModelosTarefa')
+            ->has('modelos', 1)
+            ->where('modelos.0.titulo', 'Follow-up'));
+
+        $this->actingAs($admin)->get('/modelos-tarefa')->assertNotFound();
+    }
+
+    public function test_relatorio_de_perdas_entrega_resumo_e_periodo(): void
+    {
+        $tenant = $this->novoTenant();
+        $gestor = $this->agente($tenant, 'gestor');
+
+        $this->actingAs($gestor)->get('/relatorios/perdas?periodo=30d&tipo=lead')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Relatorios/Perdas')
+            ->where('relatorio.periodo.preset', '30d')
+            ->where('relatorio.tipo', 'lead')
+            ->has('relatorio.por_motivo')
+            ->where('periodo.periodo', '30d')
+            ->where('periodo.tipo', 'lead'));
+
+        $this->actingAs($this->agente($tenant))->get('/relatorios/perdas')->assertForbidden();
+    }
 }

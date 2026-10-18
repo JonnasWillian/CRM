@@ -47,7 +47,7 @@ class TodasAsTelasAbremTest extends TestCase
             'leads' => '/leads',
             'tarefas' => '/tarefas',
             'kanban' => '/kanban',
-            'modelos' => '/modelos-tarefa',
+            'modelos' => '/configuracoes/modelos-tarefa',
             'perfil do lead' => "/leads/{$lead->id}",
             'funis' => '/configuracoes/funis',
             'motivos de perda' => '/configuracoes/motivos-perda',

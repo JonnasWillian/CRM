@@ -20,7 +20,7 @@ describe('gruposDeNavegacao', () => {
     });
 
     it('itens cuja rota ainda não existe ficam de fora (páginas que nascem em fases seguintes)', () => {
-        const existe = (r) => ['dashboard', 'kanban', 'modelosTarefa', 'relatorios.perdas'].includes(r);
+        const existe = (r) => ['dashboard', 'kanban', 'configuracoes.modelosTarefa', 'relatorios.perdas'].includes(r);
         const grupos = gruposDeNavegacao({ pode: todas, existe });
         expect(grupos[0].itens.map((i) => i.rotulo)).toEqual(['Dashboard', 'Pipeline']);
         expect(grupos.find((g) => g.titulo === 'Sistema')).toBeUndefined();

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Services\Perdas\RelatorioDePerdas;
 use App\Services\Reports\Periodo;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,15 @@ class PerdaRelatorioController extends Controller
 
     public function resumo(Request $request): JsonResponse
     {
-        $dados = $request->validate([
+        $dados = self::validar($request);
+
+        return response()->json($this->relatorio->resumo(self::periodoDe($dados), $dados['tipo'] ?? null));
+    }
+
+    /** Os parâmetros do relatório (API e página), validados. */
+    public static function validar(Request $request): array
+    {
+        return $request->validate([
             'periodo' => ['nullable', Rule::in([...Periodo::PRESETS, 'custom'])],
             'de' => ['nullable', 'date'],
             'ate' => ['nullable', 'date', 'after_or_equal:de'],
@@ -31,10 +40,15 @@ class PerdaRelatorioController extends Controller
         ], [
             'ate.after_or_equal' => 'A data final não pode ser anterior à inicial.',
         ]);
+    }
 
-        // `de`/`ate` soltos (sem `periodo`) continuam valendo: é o que a tela
-        // atual manda. Sem nada, os 90 dias padrão deste relatório.
-        $periodo = match (true) {
+    /**
+     * `de`/`ate` soltos (sem `periodo`) continuam valendo. Sem nada, os 90
+     * dias padrão deste relatório.
+     */
+    public static function periodoDe(array $dados): Periodo
+    {
+        return match (true) {
             isset($dados['periodo']) => Periodo::de($dados['periodo'], $dados['de'] ?? null, $dados['ate'] ?? null),
             isset($dados['de']) || isset($dados['ate']) => Periodo::customizado(
                 isset($dados['de']) ? Carbon::parse($dados['de']) : Carbon::now()->subDays(RelatorioDePerdas::DIAS_PADRAO),
@@ -42,7 +56,5 @@ class PerdaRelatorioController extends Controller
             ),
             default => RelatorioDePerdas::periodoPadrao(),
         };
-
-        return response()->json($this->relatorio->resumo($periodo, $dados['tipo'] ?? null));
     }
 }

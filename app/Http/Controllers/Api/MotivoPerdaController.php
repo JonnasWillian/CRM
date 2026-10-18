@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\MotivoPerdaRequest;
 use App\Models\MotivoPerda;
 use App\Services\Perdas\MotivoPerdaService;
@@ -30,29 +31,34 @@ class MotivoPerdaController extends Controller
         $incluirArquivados = $request->boolean('incluir_arquivados')
             && ($request->user()?->can('configuracoes.manage') ?? false);
 
-        $motivos = MotivoPerda::query()
+        return response()->json(self::todos($incluirArquivados));
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function todos(bool $incluirArquivados): array
+    {
+        return MotivoPerda::query()
             // Contagem de perdas por motivo numa consulta só, não uma por motivo.
             ->withCount('perdas')
             ->when($incluirArquivados, fn ($q) => $q->withTrashed())
             ->ordenados()
             ->get()
-            ->map(fn (MotivoPerda $m) => $this->serializar($m));
-
-        return response()->json($motivos);
+            ->map(fn (MotivoPerda $m) => self::serializar($m))
+            ->all();
     }
 
     public function store(MotivoPerdaRequest $request): JsonResponse
     {
         $motivo = $this->motivos->criar($request->validated());
 
-        return response()->json($this->serializar($motivo), 201);
+        return response()->json(self::serializar($motivo), 201);
     }
 
     public function update(MotivoPerdaRequest $request, MotivoPerda $motivo): JsonResponse
     {
         $this->motivos->atualizar($motivo, $request->validated());
 
-        return response()->json($this->serializar($motivo));
+        return response()->json(self::serializar($motivo));
     }
 
     public function destroy(MotivoPerda $motivo): JsonResponse
@@ -81,7 +87,7 @@ class MotivoPerdaController extends Controller
         return response()->json(['message' => 'Ordem dos motivos salva.']);
     }
 
-    private function serializar(MotivoPerda $motivo): array
+    public static function serializar(MotivoPerda $motivo): array
     {
         return [
             'id' => $motivo->id,

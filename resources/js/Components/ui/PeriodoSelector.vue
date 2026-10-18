@@ -39,9 +39,9 @@ const data = (campo, valor) => emit('update:modelValue', { ...props.modelValue, 
             </button>
         </div>
         <template v-if="modelValue.periodo === 'custom'">
-            <AppDateInput :model-value="modelValue.de" tamanho="sm" aria-label="De" @update:model-value="data('de', $event)" />
+            <span class="w-36"><AppDateInput :model-value="modelValue.de" tamanho="sm" aria-label="De" @update:model-value="data('de', $event)" /></span>
             <span class="text-sm text-fg-2">a</span>
-            <AppDateInput :model-value="modelValue.ate" tamanho="sm" :min="modelValue.de ?? undefined" aria-label="Até" @update:model-value="data('ate', $event)" />
+            <span class="w-36"><AppDateInput :model-value="modelValue.ate" tamanho="sm" :min="modelValue.de ?? undefined" aria-label="Até" @update:model-value="data('ate', $event)" /></span>
         </template>
     </div>
 </template>

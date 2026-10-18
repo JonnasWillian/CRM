@@ -3,18 +3,19 @@
 use App\Http\Controllers\Api\AnotacaoController;
 use App\Http\Controllers\Api\ArquivoController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EstagioController;
+use App\Http\Controllers\Api\FunilController;
 use App\Http\Controllers\Api\KanbanController;
 use App\Http\Controllers\Api\LeadAtividadeController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\MotivoPerdaController;
+use App\Http\Controllers\Api\PerdaRelatorioController;
 use App\Http\Controllers\Api\ProjetoAnexoController;
 use App\Http\Controllers\Api\ProjetoAnotacaoController;
 use App\Http\Controllers\Api\ProjetoController;
 use App\Http\Controllers\Api\StatusProjetoController;
 use App\Http\Controllers\Api\TarefaController;
 use App\Http\Controllers\Api\TarefaPadraoController;
-use App\Http\Controllers\FunilController;
-use App\Http\Controllers\MotivoPerdaController;
-use App\Http\Controllers\PerdaRelatorioController;
 use App\Http\Controllers\Userarios;
 use Illuminate\Support\Facades\Route;
 
@@ -30,7 +31,7 @@ use Illuminate\Support\Facades\Route;
  */
 Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Catálogos ──
-    Route::get('/estagios', [Userarios::class, 'estagios'])->name('estagios.index');
+    Route::get('/estagios', [EstagioController::class, 'index'])->name('estagios.index');
     Route::get('/status', [StatusProjetoController::class, 'index'])->name('status.index');
     Route::get('/funis', [FunilController::class, 'index'])->name('funis.index');
     Route::get('/motivos-perda', [MotivoPerdaController::class, 'index'])->name('motivos-perda.index');

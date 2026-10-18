@@ -65,23 +65,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         ->name('projetoAnexos.download');
 });
 
-Route::get('/modelos-tarefa', function () {
-    return Inertia::render('ModelosTarefa');
-})->middleware(['auth', 'tenant'])->name('modelosTarefa');
-
 Route::get('/kanban', [\App\Http\Controllers\Web\KanbanController::class, 'index'])->middleware(['auth', 'tenant'])->name('kanban');
 
-Route::get('/configuracoes/funis', function () {
-    return Inertia::render('Configuracoes/Funis');
-})->middleware(['auth', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.funis');
+Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configuracoes.')->group(function () {
+    Route::get('/funis', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'funis'])->middleware('can:configuracoes.manage')->name('funis');
+    Route::get('/motivos-perda', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'motivosPerda'])->middleware('can:configuracoes.manage')->name('motivosPerda');
+    // Do próprio agente, sem permissão extra.
+    Route::get('/modelos-tarefa', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'modelosTarefa'])->name('modelosTarefa');
+});
 
-Route::get('/configuracoes/motivos-perda', function () {
-    return Inertia::render('Configuracoes/MotivosPerda');
-})->middleware(['auth', 'tenant', 'can:configuracoes.manage'])->name('configuracoes.motivosPerda');
-
-Route::get('/relatorios/perdas', function () {
-    return Inertia::render('Relatorios/Perdas');
-})->middleware(['auth', 'tenant', 'can:leads.view-all'])->name('relatorios.perdas');
+Route::get('/relatorios/perdas', [\App\Http\Controllers\Web\RelatorioController::class, 'perdas'])
+    ->middleware(['auth', 'tenant', 'can:leads.view-all'])->name('relatorios.perdas');
 
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

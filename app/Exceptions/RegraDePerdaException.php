@@ -19,7 +19,7 @@ class RegraDePerdaException extends RuntimeException
     public function render(Request $request): JsonResponse
     {
         return response()->json([
-            'error' => $this->getMessage(),
+            'message' => $this->getMessage(),
             'erros' => ['motivo_perda' => [$this->getMessage()]],
         ], 422);
     }

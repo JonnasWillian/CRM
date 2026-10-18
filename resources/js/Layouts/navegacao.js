@@ -44,7 +44,7 @@ export function gruposDeNavegacao({ pode, existe }) {
             itens: [
                 { rota: 'configuracoes.funis', rotulo: 'Funis', icone: GitBranch, permissao: 'configuracoes.manage' },
                 { rota: 'configuracoes.motivosPerda', rotulo: 'Motivos de perda', icone: CircleX, permissao: 'configuracoes.manage' },
-                { rota: existe('configuracoes.modelosTarefa') ? 'configuracoes.modelosTarefa' : 'modelosTarefa', rotulo: 'Modelos de tarefa', icone: LayoutTemplate },
+                { rota: 'configuracoes.modelosTarefa', rotulo: 'Modelos de tarefa', icone: LayoutTemplate },
                 { rota: 'configuracoes.equipe', rotulo: 'Equipe', icone: UserCog, permissao: 'agentes.manage' },
             ],
         },

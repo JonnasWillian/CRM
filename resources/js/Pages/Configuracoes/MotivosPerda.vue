@@ -1,253 +1,138 @@
 <script setup>
-    import { ref, onMounted } from 'vue';
-    import { Head } from '@inertiajs/vue3';
-    import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import axios from 'axios';
-    import { Plus, Pencil, Archive, ArchiveRestore, ChevronUp, ChevronDown, X, Save, Loader2 } from 'lucide-vue-next';
+import { computed, reactive, ref, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
+import draggable from 'vuedraggable';
+import { Archive, ArchiveRestore, ArrowDown, ArrowUp, CircleX, GripVertical, Pencil, Plus } from 'lucide-vue-next';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppBadge from '@/Components/ui/AppBadge.vue';
+import AppButton from '@/Components/ui/AppButton.vue';
+import AppCard from '@/Components/ui/AppCard.vue';
+import AppInput from '@/Components/ui/AppInput.vue';
+import AppModal from '@/Components/ui/AppModal.vue';
+import EmptyState from '@/Components/ui/EmptyState.vue';
+import FormField from '@/Components/ui/FormField.vue';
+import IconButton from '@/Components/ui/IconButton.vue';
+import PageContainer from '@/Components/ui/PageContainer.vue';
+import PageHeader from '@/Components/ui/PageHeader.vue';
+import { useConfirm } from '@/Composables/useConfirm';
+import { useToast } from '@/Composables/useToast';
+import { errosDeValidacao, mensagemDeErro } from '@/utils/erros';
 
-    const motivos    = ref([]);
-    const isLoading  = ref(false);
-    const erro       = ref('');
-    const salvando   = ref(false);
-    const form       = ref(null);   // { id|null, descricao }
+/** Motivos de perda: a lista que o modal de perda oferece. Ordem por arraste ou setas. */
+const props = defineProps({ motivos: { type: Array, required: true } });
 
-    const buscar = async () => {
-        isLoading.value = true;
-        erro.value = '';
-        try {
-            // incluir_arquivados: esta tela precisa mostrar os aposentados para
-            // poder restaurá-los; o seletor de quem registra uma perda, não.
-            const res = await axios.get('/api/motivos-perda', { params: { incluir_arquivados: 1 } });
-            motivos.value = res.data;
-        } catch {
-            erro.value = 'Não foi possível carregar os motivos.';
-        } finally {
-            isLoading.value = false;
-        }
-    };
+const toast = useToast();
+const { confirmar } = useConfirm();
+const pode = (p) => usePage().props.auth.permissions?.[p] === true;
 
-    // O backend recusa o que quebraria a invariante (arquivar o último motivo)
-    // com 422 e a mensagem pronta. Mostrá-la crua evita duas versões do mesmo
-    // texto divergindo.
-    const tratarErro = (e, padrao) => {
-        erro.value = e?.response?.data?.error
-            ?? Object.values(e?.response?.data?.erros ?? {}).flat()[0]
-            ?? padrao;
-    };
+const lista = ref([...props.motivos]);
+watch(() => props.motivos, (v) => { lista.value = [...v]; });
+const ativos = computed(() => lista.value.filter((m) => !m.arquivado));
+const arquivados = computed(() => lista.value.filter((m) => m.arquivado));
+const recarregar = () => router.reload({ only: ['motivos'] });
 
-    const abrirNovo   = ()  => { form.value = { id: null, descricao: '' }; erro.value = ''; };
-    const abrirEditar = (m) => { form.value = { id: m.id, descricao: m.descricao }; erro.value = ''; };
-    const fechar      = ()  => { form.value = null; };
+const modal = reactive({ aberto: false, motivo: null, descricao: '', erros: {}, salvando: false });
+function abrir(m = null) { Object.assign(modal, { aberto: true, motivo: m, descricao: m?.descricao ?? '', erros: {}, salvando: false }); }
+async function salvar() {
+    modal.salvando = true;
+    modal.erros = {};
+    try {
+        if (modal.motivo) await axios.put(route('api.motivos-perda.update', modal.motivo.id), { descricao: modal.descricao }, { silencioso: true });
+        else await axios.post(route('api.motivos-perda.store'), { descricao: modal.descricao }, { silencioso: true });
+        toast.sucesso(modal.motivo ? 'Motivo salvo.' : 'Motivo criado.');
+        modal.aberto = false;
+        recarregar();
+    } catch (e) {
+        modal.erros = errosDeValidacao(e);
+        if (!Object.keys(modal.erros).length) toast.erro(mensagemDeErro(e, 'Não foi possível salvar o motivo.'));
+    } finally {
+        modal.salvando = false;
+    }
+}
 
-    const salvar = async () => {
-        salvando.value = true;
-        erro.value = '';
-        try {
-            const payload = { descricao: form.value.descricao };
-            if (form.value.id) await axios.put(`/api/motivos-perda/${form.value.id}`, payload);
-            else                await axios.post('/api/motivos-perda', payload);
-            fechar();
-            await buscar();
-        } catch (e) {
-            tratarErro(e, 'Não foi possível salvar o motivo.');
-        } finally {
-            salvando.value = false;
-        }
-    };
-
-    const arquivar = async (m) => {
-        if (m.total_perdas > 0
-            && !confirm(`"${m.descricao}" já foi usado em ${m.total_perdas} perda(s). Arquivar mantém o histórico intacto e só tira o motivo do seletor. Continuar?`)) return;
-        erro.value = '';
-        try {
-            await axios.delete(`/api/motivos-perda/${m.id}`);
-            await buscar();
-        } catch (e) {
-            tratarErro(e, 'Não foi possível arquivar o motivo.');
-        }
-    };
-
-    const restaurar = async (m) => {
-        erro.value = '';
-        try {
-            await axios.patch(`/api/motivos-perda/${m.id}/restaurar`);
-            await buscar();
-        } catch (e) {
-            tratarErro(e, 'Não foi possível restaurar o motivo.');
-        }
-    };
-
-    const mover = async (indice, direcao) => {
-        const destino = indice + direcao;
-        if (destino < 0 || destino >= motivos.value.length) return;
-
-        const ids = motivos.value.map(m => m.id);
-        [ids[indice], ids[destino]] = [ids[destino], ids[indice]];
-
-        erro.value = '';
-        try {
-            await axios.patch('/api/motivos-perda/reordenar', { ids });
-            await buscar();
-        } catch (e) {
-            tratarErro(e, 'Não foi possível reordenar.');
-        }
-    };
-
-    onMounted(buscar);
+async function arquivar(m) {
+    const ok = await confirmar({
+        titulo: `Arquivar “${m.descricao}”?`,
+        mensagem: m.total_perdas > 0 ? `Já usado em ${m.total_perdas} perda(s); o histórico e o relatório não mudam. Ele só deixa de aparecer para novas perdas.` : 'Ele deixa de aparecer para novas perdas. Você pode restaurá-lo depois.',
+        rotuloConfirmar: 'Arquivar',
+        tom: 'danger',
+    });
+    if (!ok) return;
+    try { await axios.delete(route('api.motivos-perda.destroy', m.id)); toast.sucesso('Motivo arquivado.'); recarregar(); } catch { /* interceptor */ }
+}
+async function restaurar(m) {
+    try { await axios.patch(route('api.motivos-perda.restaurar', m.id)); toast.sucesso(`“${m.descricao}” restaurado.`); recarregar(); } catch { /* interceptor */ }
+}
+async function salvarOrdem() {
+    try { await axios.patch(route('api.motivos-perda.reordenar'), { ids: ativos.value.map((m) => m.id) }); toast.sucesso('Ordem salva.'); recarregar(); } catch { recarregar(); }
+}
+function mover(m, passo) {
+    const i = ativos.value.indexOf(m); const j = i + passo;
+    if (j < 0 || j >= ativos.value.length) return;
+    const a = lista.value.indexOf(ativos.value[i]); const b = lista.value.indexOf(ativos.value[j]);
+    [lista.value[a], lista.value[b]] = [lista.value[b], lista.value[a]];
+    salvarOrdem();
+}
 </script>
 
 <template>
     <Head title="Motivos de perda" />
     <AuthenticatedLayout>
-        <div class="mt-page">
+        <PageContainer>
+            <PageHeader titulo="Motivos de perda" subtitulo="O que o vendedor escolhe ao perder um lead ou projeto. Sem motivos, ninguém registra uma perda.">
+                <template #acoes>
+                    <AppButton @click="abrir()"><template #icone><Plus /></template>Novo motivo</AppButton>
+                </template>
+            </PageHeader>
 
-            <div class="mt-topbar">
-                <div>
-                    <h1 class="mt-title">Motivos <span class="mt-accent">de perda</span></h1>
-                    <p class="mt-sub">
-                        Esta lista é o que o time escolhe ao perder um lead ou projeto, e é o que o
-                        relatório "por que perdemos" agrupa.
-                    </p>
-                </div>
-                <button class="mt-btn-primary" @click="abrirNovo"><Plus :size="14" /> Novo motivo</button>
-            </div>
+            <AppCard padding="none">
+                <EmptyState v-if="ativos.length === 0" :icone="CircleX" titulo="Nenhum motivo disponível" descricao="Sem motivos, ninguém consegue registrar uma perda.">
+                    <template #acao><AppButton @click="abrir()"><template #icone><Plus /></template>Novo motivo</AppButton></template>
+                </EmptyState>
+                <draggable v-else :list="lista" item-key="id" handle=".alca" :animation="150" ghost-class="opacity-40" class="divide-y divide-line" @end="salvarOrdem">
+                    <template #item="{ element: m }">
+                        <div v-if="!m.arquivado" class="flex items-center gap-2 px-3 py-2 hover:bg-bg-2/60">
+                            <button type="button" class="alca inline-flex h-9 w-7 cursor-grab items-center justify-center rounded text-fg-disabled hover:text-fg-1 active:cursor-grabbing" aria-label="Arrastar para reordenar"><GripVertical :size="16" aria-hidden="true" /></button>
+                            <span class="min-w-0 flex-1 truncate text-md font-medium text-fg-0">{{ m.descricao }}</span>
+                            <AppBadge tom="ok">Ativo</AppBadge>
+                            <component :is="m.total_perdas > 0 && pode('leads.view-all') ? Link : 'span'" :href="m.total_perdas > 0 && pode('leads.view-all') ? route('relatorios.perdas') : undefined" class="num hidden whitespace-nowrap text-xs text-fg-2 sm:inline" :class="m.total_perdas > 0 && pode('leads.view-all') ? 'hover:text-primary hover:underline' : ''">
+                                {{ m.total_perdas === 0 ? 'Nunca usado' : `Usado em ${m.total_perdas} perda${m.total_perdas === 1 ? '' : 's'}` }}
+                            </component>
+                            <div class="flex items-center">
+                                <IconButton :icone="ArrowUp" rotulo="Mover para cima" tamanho="sm" :disabled="ativos.indexOf(m) === 0" @click="mover(m, -1)" />
+                                <IconButton :icone="ArrowDown" rotulo="Mover para baixo" tamanho="sm" :disabled="ativos.indexOf(m) === ativos.length - 1" @click="mover(m, 1)" />
+                                <IconButton :icone="Pencil" rotulo="Editar motivo" tamanho="sm" @click="abrir(m)" />
+                                <IconButton :icone="Archive" rotulo="Arquivar motivo" tamanho="sm" variante="danger" @click="arquivar(m)" />
+                            </div>
+                        </div>
+                    </template>
+                </draggable>
+            </AppCard>
 
-            <Transition name="mt-fade">
-                <div v-if="erro" class="mt-erro">
-                    <span>{{ erro }}</span>
-                    <button class="mt-erro-close" @click="erro = ''"><X :size="13" /></button>
-                </div>
-            </Transition>
+            <details v-if="arquivados.length" class="mt-6">
+                <summary class="cursor-pointer text-sm font-medium text-fg-1">Arquivados ({{ arquivados.length }})</summary>
+                <ul class="mt-2 divide-y divide-line rounded-lg border border-line bg-bg-1">
+                    <li v-for="m in arquivados" :key="m.id" class="flex items-center gap-3 px-4 py-2.5">
+                        <span class="min-w-0 flex-1 truncate text-md text-fg-1">{{ m.descricao }}</span>
+                        <AppBadge tom="warn">Arquivado</AppBadge>
+                        <span class="num hidden text-xs text-fg-2 sm:inline">{{ m.total_perdas }} perda(s)</span>
+                        <AppButton variante="secondary" tamanho="sm" @click="restaurar(m)"><template #icone><ArchiveRestore /></template>Restaurar</AppButton>
+                    </li>
+                </ul>
+            </details>
+        </PageContainer>
 
-            <Transition name="mt-fade">
-                <div v-if="form" class="mt-form">
-                    <div class="mt-form-title">{{ form.id ? 'Editar motivo' : 'Novo motivo' }}</div>
-                    <input
-                        v-model="form.descricao"
-                        class="mt-input"
-                        placeholder="Ex: Escolheu concorrente"
-                        @keydown.enter="salvar"
-                    />
-                    <p v-if="form.id" class="mt-hint">
-                        Renomear vale também para as perdas que já citam este motivo — o relatório passa a
-                        exibir o nome novo no histórico inteiro.
-                    </p>
-                    <div class="mt-form-actions">
-                        <button class="mt-btn-ghost" @click="fechar"><X :size="12" /> Cancelar</button>
-                        <button class="mt-btn-primary" :disabled="salvando || !form.descricao" @click="salvar">
-                            <Save :size="12" /> {{ salvando ? 'Salvando…' : 'Salvar' }}
-                        </button>
-                    </div>
-                </div>
-            </Transition>
-
-            <div v-if="isLoading" class="mt-loading"><Loader2 :size="18" class="mt-spin" /> Carregando…</div>
-
-            <ul v-else class="mt-lista">
-                <li
-                    v-for="(m, i) in motivos"
-                    :key="m.id"
-                    class="mt-item"
-                    :class="{ 'mt-item--arquivado': m.arquivado }"
-                >
-                    <span class="mt-nome">{{ m.descricao }}</span>
-
-                    <span v-if="m.arquivado" class="mt-badge" title="Fora do seletor; continua nomeando as perdas antigas">arquivado</span>
-                    <span v-if="m.total_perdas" class="mt-badge mt-badge--uso">
-                        {{ m.total_perdas }} perda{{ m.total_perdas !== 1 ? 's' : '' }}
-                    </span>
-
-                    <div class="mt-acoes">
-                        <template v-if="m.arquivado">
-                            <button class="mt-icon" title="Restaurar" @click="restaurar(m)"><ArchiveRestore :size="13" /></button>
-                        </template>
-                        <template v-else>
-                            <button class="mt-icon" :disabled="i === 0" title="Subir" @click="mover(i, -1)"><ChevronUp :size="13" /></button>
-                            <button class="mt-icon" :disabled="i === motivos.length - 1" title="Descer" @click="mover(i, 1)"><ChevronDown :size="13" /></button>
-                            <button class="mt-icon" title="Editar" @click="abrirEditar(m)"><Pencil :size="13" /></button>
-                            <button class="mt-icon mt-icon--perigo" title="Arquivar" @click="arquivar(m)"><Archive :size="13" /></button>
-                        </template>
-                    </div>
-                </li>
-            </ul>
-        </div>
+        <AppModal :aberto="modal.aberto" :titulo="modal.motivo ? 'Editar motivo' : 'Novo motivo de perda'" tamanho="sm" @fechar="modal.aberto = false">
+            <form id="form-motivo" @submit.prevent="salvar">
+                <FormField rotulo="Descrição" obrigatorio :erro="modal.erros.descricao" dica="Curto e específico: “Preço”, “Escolheu concorrente”, “Sem resposta”.">
+                    <AppInput v-model="modal.descricao" :maxlength="100" autofocus />
+                </FormField>
+            </form>
+            <template #rodape>
+                <AppButton variante="secondary" @click="modal.aberto = false">Cancelar</AppButton>
+                <AppButton type="submit" form="form-motivo" :carregando="modal.salvando" :disabled="!modal.descricao.trim()">{{ modal.motivo ? 'Salvar' : 'Criar motivo' }}</AppButton>
+            </template>
+        </AppModal>
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-    .mt-page {
-        font-family: 'DM Sans', sans-serif;
-        padding: 2rem 2.25rem 4rem; color: var(--t1); min-height: 100vh;
-    }
-
-    .mt-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .mt-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
-    .mt-accent { color: var(--accent); }
-    .mt-sub { font-size: 0.85rem; color: var(--t2); margin-top: 0.25rem; max-width: 62ch; }
-
-    .mt-erro {
-        display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
-        color: var(--danger); border-radius: var(--r-2); padding: 0.7rem 0.9rem;
-        font-size: 0.83rem; margin-bottom: 1.25rem;
-    }
-    .mt-erro-close { background: none; border: none; color: inherit; cursor: pointer; display: flex; }
-
-    .mt-form { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--r-3); padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
-    .mt-form-title { font-size: 0.8rem; font-weight: 500; color: var(--t2); margin-bottom: 0.7rem; }
-    .mt-form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.85rem; }
-    .mt-hint { font-size: 0.74rem; color: var(--t3); margin-top: 0.5rem; }
-
-    .mt-input {
-        width: 100%; background: rgba(13,17,23,0.7); border: 1px solid var(--border);
-        border-radius: var(--r-2); padding: 0.55rem 0.75rem; color: var(--t1);
-        font-size: 0.85rem; font-family: inherit; outline: none;
-    }
-    .mt-input:focus { border-color: var(--accent); }
-
-    .mt-lista { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
-    .mt-item {
-        display: flex; align-items: center; gap: 0.6rem;
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--r-2); padding: 0.65rem 0.8rem;
-    }
-    .mt-item--arquivado { opacity: 0.55; border-style: dashed; }
-    .mt-nome { flex: 1; font-size: 0.87rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .mt-badge {
-        font-size: 0.66rem; padding: 2px 7px; border-radius: var(--r-full);
-        background: rgba(136,146,171,0.12); color: var(--t2); border: 1px solid var(--border); flex-shrink: 0;
-    }
-    .mt-badge--uso { background: rgba(109,93,252,0.12); color: var(--accent); border-color: rgba(109,93,252,0.3); }
-
-    .mt-acoes { display: flex; gap: 0.25rem; flex-shrink: 0; }
-    .mt-icon {
-        width: 26px; height: 26px; border-radius: var(--r-1); border: 1px solid var(--border);
-        background: transparent; color: var(--t2); cursor: pointer;
-        display: flex; align-items: center; justify-content: center; transition: color var(--d-1), border-color .15s;
-    }
-    .mt-icon:hover:not(:disabled) { color: var(--t1); border-color: var(--accent); }
-    .mt-icon:disabled { opacity: 0.3; cursor: not-allowed; }
-    .mt-icon--perigo:hover:not(:disabled) { color: var(--danger); border-color: rgba(240,98,146,0.45); }
-
-    .mt-btn-primary {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: var(--accent); color: #fff; border: none; border-radius: var(--r-2);
-        padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
-    }
-    .mt-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .mt-btn-ghost {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: transparent; color: var(--t2); border: 1px solid var(--border);
-        border-radius: var(--r-2); padding: 0.5rem 0.9rem; font-size: 0.82rem; font-family: inherit; cursor: pointer;
-    }
-
-    .mt-loading { display: flex; align-items: center; gap: 0.5rem; justify-content: center; color: var(--t2); font-size: 0.88rem; padding: 3rem 0; }
-    .mt-spin { animation: mt-rot 1s linear infinite; }
-    @keyframes mt-rot { to { transform: rotate(360deg); } }
-
-    .mt-fade-enter-active, .mt-fade-leave-active { transition: opacity var(--d-1); }
-    .mt-fade-enter-from, .mt-fade-leave-to { opacity: 0; }
-
-    @media (max-width: 768px) { .mt-page { padding: 1.25rem 1rem 3rem; } }
-</style>

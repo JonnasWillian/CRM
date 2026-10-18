@@ -20,7 +20,7 @@ class RegraDeFunilException extends RuntimeException
     public function render(Request $request): JsonResponse
     {
         return response()->json([
-            'error' => $this->getMessage(),
+            'message' => $this->getMessage(),
             'erros' => ['funil' => [$this->getMessage()]],
         ], 422);
     }

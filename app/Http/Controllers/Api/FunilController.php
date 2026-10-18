@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\EstagioRequest;
 use App\Http\Requests\FunilRequest;
 use App\Models\Estagio;
@@ -31,7 +32,20 @@ class FunilController extends Controller
 
     public function index(): JsonResponse
     {
-        $funis = Funil::ordenados()
+        return response()->json(self::todos());
+    }
+
+    /**
+     * Os funis com estágios, para a API e para as props da página de
+     * configuração. `incluirArquivados` traz também os funis na lixeira
+     * (seção "Arquivados" da tela, com Restaurar).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function todos(bool $incluirArquivados = false): array
+    {
+        return Funil::ordenados()
+            ->when($incluirArquivados, fn ($q) => $q->withTrashed())
             // Contagem de leads por funil numa consulta só, não uma por funil.
             ->withCount('leads')
             // withTrashed: um estágio arquivado continua aparecendo no Kanban
@@ -40,23 +54,22 @@ class FunilController extends Controller
             // em lugar nenhum — e sem como restaurá-la.
             ->with(['estagios' => fn ($q) => $q->withTrashed()->orderBy('ordem')->orderBy('id')])
             ->get()
-            ->map(fn (Funil $funil) => $this->serializar($funil));
-
-        return response()->json($funis);
+            ->map(fn (Funil $funil) => self::serializar($funil))
+            ->all();
     }
 
     public function store(FunilRequest $request): JsonResponse
     {
         $funil = $this->funis->criar($request->validated());
 
-        return response()->json($this->serializar($funil->load('estagios')), 201);
+        return response()->json(self::serializar($funil->load('estagios')), 201);
     }
 
     public function update(FunilRequest $request, Funil $funil): JsonResponse
     {
         $this->funis->atualizar($funil, $request->validated());
 
-        return response()->json($this->serializar($funil->load('estagios')));
+        return response()->json(self::serializar($funil->load('estagios')));
     }
 
     public function destroy(Funil $funil): JsonResponse
@@ -70,7 +83,7 @@ class FunilController extends Controller
     {
         $this->funis->restaurar($funil);
 
-        return response()->json($this->serializar(
+        return response()->json(self::serializar(
             $funil->fresh()->load(['estagios' => fn ($q) => $q->withTrashed()->orderBy('ordem')->orderBy('id')])
         ));
     }
@@ -98,14 +111,14 @@ class FunilController extends Controller
     {
         $estagio = $this->estagios->criar($funil, $request->validated());
 
-        return response()->json($this->serializarEstagio($estagio), 201);
+        return response()->json(self::serializarEstagio($estagio), 201);
     }
 
     public function updateEstagio(EstagioRequest $request, Estagio $estagio): JsonResponse
     {
         $this->estagios->atualizar($estagio, $request->validated());
 
-        return response()->json($this->serializarEstagio($estagio));
+        return response()->json(self::serializarEstagio($estagio));
     }
 
     public function restaurarEstagio(Estagio $estagio): JsonResponse
@@ -134,7 +147,7 @@ class FunilController extends Controller
         return response()->json(['message' => 'Ordem dos estágios salva.']);
     }
 
-    private function serializar(Funil $funil): array
+    public static function serializar(Funil $funil): array
     {
         return [
             'id' => $funil->id,
@@ -142,12 +155,13 @@ class FunilController extends Controller
             'descricao' => $funil->descricao,
             'ordem' => $funil->ordem,
             'is_default' => $funil->is_default,
+            'arquivado' => $funil->trashed(),
             'total_leads' => $funil->leads_count ?? $funil->loadCount('leads')->leads_count,
-            'estagios' => $funil->estagios->map(fn (Estagio $e) => $this->serializarEstagio($e))->values(),
+            'estagios' => $funil->estagios->map(fn (Estagio $e) => self::serializarEstagio($e))->values(),
         ];
     }
 
-    private function serializarEstagio(Estagio $estagio): array
+    public static function serializarEstagio(Estagio $estagio): array
     {
         return [
             'id' => $estagio->id,

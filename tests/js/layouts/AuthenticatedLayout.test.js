@@ -17,7 +17,7 @@ vi.mock('@inertiajs/vue3', () => ({
     router: { on: () => () => {}, visit: vi.fn() },
 }));
 
-const rotas = new Set(['dashboard', 'kanban', 'modelosTarefa', 'relatorios.perdas', 'configuracoes.funis', 'configuracoes.motivosPerda', 'profile.edit', 'logout']);
+const rotas = new Set(['dashboard', 'kanban', 'configuracoes.modelosTarefa', 'relatorios.perdas', 'configuracoes.funis', 'configuracoes.motivosPerda', 'profile.edit', 'logout']);
 // Como o Ziggy: route('nome') devolve a URL; route() devolve o roteador com current()/has().
 const roteador = { current: (nome) => nome === 'dashboard', has: (nome) => rotas.has(nome) };
 globalThis.route = (nome) => (nome === undefined ? roteador : `/${nome}`);

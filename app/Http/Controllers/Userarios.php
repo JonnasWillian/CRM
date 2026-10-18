@@ -4,32 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Anotacao;
 use App\Models\arquivo as ArquivoModel;
-use App\Models\Estagio;
 use App\Models\EstagioHistorico;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
 use App\Models\Tarefa;
 use App\Models\Usuario;
-use Illuminate\Http\Request;
 
 /**
- * O que sobrou do controller original de leads: estágios (lookup) e o
- * timeline deprecado (só o teste de paridade da Fase 5).
+ * O que sobrou do controller original de leads: o timeline deprecado
+ * (só o teste de paridade; sai na Fase 5).
  */
 class Userarios extends Controller
 {
-    public function estagios(Request $request)
-    {
-        $estagios = Estagio::query()
-            ->when($request->filled('funil_id'), fn ($q) => $q->where('funil_id', $request->integer('funil_id')))
-            ->orderBy('ordem')
-            ->orderBy('id')
-            ->get();
-
-        return response()->json($estagios);
-    }
-
     /**
      * @deprecated Substituído por LeadAtividadeController::index (activity
      *             log paginado). Mantido só para o teste de paridade; remover
