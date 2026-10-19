@@ -1,0 +1,137 @@
+- generic [ref=f12e3]:
+  - complementary [ref=f12e4]:
+    - generic [ref=f12e5]:
+      - link "UserFlow." [ref=f12e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f12e8] [cursor=pointer]
+    - navigation "Principal" [ref=f12e12]:
+      - link "Dashboard" [ref=f12e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f12e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f12e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f12e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f12e40]: Análise
+      - link "Relatórios" [ref=f12e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f12e46]: Configurações
+      - link "Funis" [ref=f12e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f12e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f12e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f12e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f12e71]: QU
+      - generic [ref=f12e72]:
+        - generic [ref=f12e73]: QA UserFlow
+        - generic [ref=f12e74]: qa-userflow@example.test
+  - main [ref=f12e78]:
+    - generic [ref=f12e79]:
+      - generic [ref=f12e81]:
+        - generic [ref=f12e82]:
+          - heading "Leads" [level=1] [ref=f12e83]
+          - paragraph [ref=f12e84]: 1 lead
+        - button [ref=f12e86] [cursor=pointer]
+      - generic [ref=f12e89]:
+        - generic [ref=f12e91]:
+          - generic [ref=f12e92]: Buscar por nome, e-mail ou telefone
+          - searchbox "Buscar por nome, e-mail ou telefone" [ref=f12e93]
+        - generic [ref=f12e94]:
+          - group "Estágio" [ref=f12e95]:
+            - button "Em captação" [ref=f12e97] [cursor=pointer]
+            - button "Em negociacao" [ref=f12e99] [cursor=pointer]
+            - button "Em desenvolvimento" [ref=f12e101] [cursor=pointer]
+            - button "Concluído" [ref=f12e103] [cursor=pointer]
+            - button "Pausado" [ref=f12e105] [cursor=pointer]
+            - button "Cancelado" [ref=f12e107] [cursor=pointer]
+          - generic "Situação" [ref=f12e109]:
+            - combobox [ref=f12e110]:
+              - option "Qualquer situação"
+              - option "Em aberto"
+              - option "Ganhos"
+              - option "Perdidos"
+              - option "Com projeto em aberto"
+              - option "Sem projeto"
+          - generic "Responsável" [ref=f12e111]:
+            - combobox [ref=f12e112]:
+              - option "Todos os responsáveis"
+              - option "QA UserFlow"
+          - generic [ref=f12e113]:
+            - textbox "De" [ref=f12e114]
+            - generic [ref=f12e115]: a
+            - textbox "Até" [ref=f12e116]
+            - button "7 dias" [ref=f12e117] [cursor=pointer]
+            - button "30 dias" [ref=f12e118] [cursor=pointer]
+          - generic [ref=f12e119] [cursor=pointer]:
+            - switch "Sem contato há +14 dias" [ref=f12e120]
+            - generic [ref=f12e122]: Sem contato há +14 dias
+      - generic [ref=f12e123]:
+        - generic [ref=f12e124]:
+          - paragraph [ref=f12e125]: 1 resultado
+          - generic [ref=f12e126]:
+            - button "Linhas compactas" [ref=f12e127] [cursor=pointer]
+            - button "Colunas" [ref=f12e131] [cursor=pointer]
+        - table [ref=f12e135]:
+          - rowgroup [ref=f12e136]:
+            - row [ref=f12e137]:
+              - columnheader [ref=f12e138]:
+                - checkbox "Selecionar todos desta página" [ref=f12e139]
+              - columnheader [ref=f12e140]:
+                - button "Lead" [ref=f12e141] [cursor=pointer]
+              - columnheader "Telefone" [ref=f12e145]
+              - columnheader [ref=f12e146]:
+                - button "Estágio" [ref=f12e147] [cursor=pointer]
+              - columnheader [ref=f12e151]:
+                - button "Valor estimado" [ref=f12e152] [cursor=pointer]
+              - columnheader [ref=f12e156]:
+                - button "Previsão" [ref=f12e157] [cursor=pointer]
+              - columnheader [ref=f12e161]:
+                - button "Responsável" [ref=f12e162] [cursor=pointer]
+              - columnheader [ref=f12e166]:
+                - button "Último contato" [ref=f12e167] [cursor=pointer]
+              - columnheader [ref=f12e171]:
+                - button "Criado em" [ref=f12e172] [cursor=pointer]
+              - columnheader "Ações" [ref=f12e175]
+          - rowgroup [ref=f12e177]:
+            - row [ref=f12e178] [cursor=pointer]:
+              - cell [ref=f12e179]:
+                - checkbox "Selecionar Ana Souza Lima" [ref=f12e180]
+              - cell [ref=f12e181]:
+                - generic [ref=f12e182]:
+                  - img "Ana Souza Lima" [ref=f12e183]: AS
+                  - generic [ref=f12e184]:
+                    - link "Ana Souza Lima" [ref=f12e185]:
+                      - /url: http://127.0.0.1:8000/leads/38
+                    - paragraph [ref=f12e186]: ana.souza@exemplo.test
+              - cell [ref=f12e187]:
+                - generic [ref=f12e188]:
+                  - text: (11) 98888-7777
+                  - link "Abrir no WhatsApp" [ref=f12e190]:
+                    - /url: https://wa.me/5511988887777
+              - cell "Concluído" [ref=f12e193]
+              - cell "R$ 12.000,0060%" [ref=f12e198]
+              - cell "30/11/2026" [ref=f12e200]
+              - cell "QA UserFlow" [ref=f12e201]
+              - cell "hoje" [ref=f12e202]
+              - cell "17/10/2026" [ref=f12e203]
+              - cell [ref=f12e204]:
+                - generic [ref=f12e205]:
+                  - link "Abrir" [ref=f12e207]:
+                    - /url: http://127.0.0.1:8000/leads/38
+                  - button "Mover para a lixeira" [ref=f12e213]
+        - navigation "Paginação" [ref=f12e218]:
+          - paragraph [ref=f12e219]: 1–1 de 1
+          - generic [ref=f12e220]:
+            - generic [ref=f12e221]:
+              - generic [ref=f12e222]: Por página
+              - combobox "Por página" [ref=f12e223]:
+                - option "25" [selected]
+                - option "50"
+                - option "100"
+            - generic [ref=f12e224]:
+              - button "Página anterior" [disabled] [ref=f12e225]
+              - button "Página 1" [ref=f12e228] [cursor=pointer]: "1"
+              - button "Próxima página" [disabled] [ref=f12e229]

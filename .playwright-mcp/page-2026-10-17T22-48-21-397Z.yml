@@ -1,0 +1,109 @@
+- generic [ref=f35e3]:
+  - complementary [ref=f35e4]:
+    - generic [ref=f35e5]:
+      - link "UserFlow." [ref=f35e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f35e8] [cursor=pointer]
+    - navigation "Principal" [ref=f35e12]:
+      - link "Dashboard" [ref=f35e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f35e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f35e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f35e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f35e40]: Análise
+      - link "Relatórios" [ref=f35e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f35e46]: Configurações
+      - link "Funis" [ref=f35e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f35e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f35e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f35e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f35e71]: QU
+      - generic [ref=f35e72]:
+        - generic [ref=f35e73]: QA UserFlow
+        - generic [ref=f35e74]: qa-userflow@example.test
+  - main [ref=f35e78]:
+    - generic [ref=f35e79]:
+      - generic [ref=f35e81]:
+        - generic [ref=f35e82]:
+          - heading "Motivos de perda" [level=1] [ref=f35e83]
+          - paragraph [ref=f35e84]: O que o vendedor escolhe ao perder um lead ou projeto. Sem motivos, ninguém registra uma perda.
+        - button [ref=f35e86] [cursor=pointer]
+      - generic [ref=f35e91]:
+        - generic [ref=f35e92]:
+          - button "Arrastar para reordenar" [ref=f35e93]
+          - generic [ref=f35e101]: Preço
+          - generic [ref=f35e102]: Ativo
+          - generic [ref=f35e104]: Nunca usado
+          - generic [ref=f35e105]:
+            - button "Mover para cima" [disabled] [ref=f35e107]
+            - button "Mover para baixo" [ref=f35e111] [cursor=pointer]
+            - button "Editar motivo" [ref=f35e115] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e120] [cursor=pointer]
+        - generic [ref=f35e124]:
+          - button "Arrastar para reordenar" [ref=f35e125]
+          - generic [ref=f35e133]: Escolheu concorrente
+          - generic [ref=f35e134]: Ativo
+          - link "Usado em 1 perda" [ref=f35e136] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/relatorios/perdas
+          - generic [ref=f35e137]:
+            - button "Mover para cima" [ref=f35e139] [cursor=pointer]
+            - button "Mover para baixo" [ref=f35e143] [cursor=pointer]
+            - button "Editar motivo" [ref=f35e147] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e152] [cursor=pointer]
+        - generic [ref=f35e156]:
+          - button "Arrastar para reordenar" [ref=f35e157]
+          - generic [ref=f35e165]: Sem orçamento
+          - generic [ref=f35e166]: Ativo
+          - generic [ref=f35e168]: Nunca usado
+          - generic [ref=f35e169]:
+            - button "Mover para cima" [ref=f35e171] [cursor=pointer]
+            - button "Mover para baixo" [ref=f35e175] [cursor=pointer]
+            - button "Editar motivo" [ref=f35e179] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e184] [cursor=pointer]
+        - generic [ref=f35e188]:
+          - button "Arrastar para reordenar" [ref=f35e189]
+          - generic [ref=f35e197]: Sem resposta do contato
+          - generic [ref=f35e198]: Ativo
+          - generic [ref=f35e200]: Nunca usado
+          - generic [ref=f35e201]:
+            - button "Mover para cima" [ref=f35e203] [cursor=pointer]
+            - button "Mover para baixo" [ref=f35e207] [cursor=pointer]
+            - button "Editar motivo" [ref=f35e211] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e216] [cursor=pointer]
+        - generic [ref=f35e220]:
+          - button "Arrastar para reordenar" [ref=f35e221]
+          - generic [ref=f35e229]: Fora do perfil
+          - generic [ref=f35e230]: Ativo
+          - generic [ref=f35e232]: Nunca usado
+          - generic [ref=f35e233]:
+            - button "Mover para cima" [ref=f35e235] [cursor=pointer]
+            - button "Mover para baixo" [ref=f35e239] [cursor=pointer]
+            - button "Editar motivo" [ref=f35e243] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e248] [cursor=pointer]
+        - generic [ref=f35e252]:
+          - button "Arrastar para reordenar" [ref=f35e253]
+          - generic [ref=f35e261]: Timing / adiado
+          - generic [ref=f35e262]: Ativo
+          - generic [ref=f35e264]: Nunca usado
+          - generic [ref=f35e265]:
+            - button "Mover para cima" [ref=f35e267] [cursor=pointer]
+            - button "Mover para baixo" [ref=f35e271] [cursor=pointer]
+            - button "Editar motivo" [ref=f35e275] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e280] [cursor=pointer]
+        - generic [ref=f35e284]:
+          - button "Arrastar para reordenar" [ref=f35e285]
+          - generic [ref=f35e293]: Não informado
+          - generic [ref=f35e294]: Ativo
+          - generic [ref=f35e296]: Nunca usado
+          - generic [ref=f35e297]:
+            - button "Mover para cima" [ref=f35e299] [cursor=pointer]
+            - button "Mover para baixo" [disabled] [ref=f35e303]
+            - button "Editar motivo" [ref=f35e307] [cursor=pointer]
+            - button "Arquivar motivo" [ref=f35e312] [cursor=pointer]

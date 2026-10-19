@@ -1,0 +1,58 @@
+- generic [ref=f15e3]:
+  - complementary [ref=f15e4]:
+    - generic [ref=f15e5]:
+      - link "UserFlow." [ref=f15e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f15e8] [cursor=pointer]
+    - navigation "Principal" [ref=f15e12]:
+      - link "Dashboard" [ref=f15e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f15e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f15e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f15e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f15e40]: Análise
+      - link "Relatórios" [ref=f15e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f15e46]: Configurações
+      - link "Funis" [ref=f15e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f15e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f15e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f15e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f15e71]: QU
+      - generic [ref=f15e72]:
+        - generic [ref=f15e73]: QA UserFlow
+        - generic [ref=f15e74]: qa-userflow@example.test
+  - main [ref=f15e78]:
+    - generic [ref=f15e79]:
+      - generic [ref=f15e82]:
+        - heading "Tarefas" [level=1] [ref=f15e83]
+        - paragraph [ref=f15e84]: 0 tarefas
+      - radiogroup "Escopo" [ref=f15e85]:
+        - button "Atrasadas" [ref=f15e86] [cursor=pointer]
+        - button "Hoje" [ref=f15e87] [cursor=pointer]
+        - button "Próximos 7 dias" [ref=f15e88] [cursor=pointer]
+        - button "Pendentes" [pressed] [ref=f15e89] [cursor=pointer]
+        - button "Concluídas" [ref=f15e90] [cursor=pointer]
+      - generic [ref=f15e91]:
+        - generic [ref=f15e93]:
+          - generic [ref=f15e94]: Buscar por título ou lead
+          - searchbox "Buscar por título ou lead" [ref=f15e95]
+        - generic "Responsável" [ref=f15e97]:
+          - combobox [ref=f15e98]:
+            - option "Todos os responsáveis" [selected]
+            - option "QA UserFlow"
+      - generic [ref=f15e99]:
+        - generic [ref=f15e100]:
+          - paragraph [ref=f15e101]: 0 resultados
+          - generic [ref=f15e102]:
+            - button "Linhas compactas" [ref=f15e103] [cursor=pointer]
+            - button "Colunas" [ref=f15e107] [cursor=pointer]
+        - generic [ref=f15e110]:
+          - paragraph [ref=f15e115]: Nenhuma tarefa pendente
+          - paragraph [ref=f15e116]: Crie follow-ups a partir do perfil de um lead.

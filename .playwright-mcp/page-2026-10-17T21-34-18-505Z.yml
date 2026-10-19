@@ -1,0 +1,28 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e3]:
+    - banner [ref=f4e4]:
+      - link "UserFlow." [ref=f4e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Abrir menu" [ref=f4e7] [cursor=pointer]
+    - main [ref=f4e9]:
+      - generic [ref=f4e11]:
+        - generic [ref=f4e12]:
+          - generic [ref=f4e13]:
+            - paragraph [ref=f4e14]: Olá, QA
+            - heading "Lista de Leads" [level=1] [ref=f4e15]
+          - generic [ref=f4e16]:
+            - button "Lista" [ref=f4e17] [cursor=pointer]
+            - link "Pipeline" [ref=f4e20] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/kanban
+          - button "Novo Lead" [ref=f4e23] [cursor=pointer]
+        - generic [ref=f4e35]:
+          - generic [ref=f4e36]:
+            - generic [ref=f4e37]:
+              - heading "Leads cadastrados" [level=2] [ref=f4e38]
+              - generic [ref=f4e39]: "0"
+            - textbox "Buscar por nome, e-mail ou telefone..." [ref=f4e43]
+          - generic [ref=f4e44]:
+            - generic [ref=f4e45]: Lead
+            - generic [ref=f4e46]: Ação
+          - paragraph [ref=f4e49]: Carregando leads...
+  - tooltip "Abrir menu"

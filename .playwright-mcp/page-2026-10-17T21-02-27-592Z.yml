@@ -1,0 +1,104 @@
+- generic [ref=e55]:
+  - complementary [ref=e56]:
+    - generic [ref=e57]:
+      - link "UserFlow." [ref=e58] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=e60] [cursor=pointer]
+    - navigation "Principal" [ref=e64]:
+      - link "Dashboard" [ref=e66] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Pipeline" [ref=e74] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - paragraph [ref=e78]: Análise
+      - link "Relatórios" [ref=e80] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=e84]: Configurações
+      - link "Funis" [ref=e86] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=e93] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=e100] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=e108] [cursor=pointer]:
+      - img "QA UserFlow" [ref=e109]: QU
+      - generic [ref=e110]:
+        - generic [ref=e111]: QA UserFlow
+        - generic [ref=e112]: qa-userflow@example.test
+  - main [ref=e116]:
+    - generic [ref=e118]:
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - paragraph [ref=e121]: Olá, QA
+          - heading "Lista de Leads" [level=1] [ref=e122]
+        - generic [ref=e123]:
+          - button "Lista" [ref=e124] [cursor=pointer]
+          - link "Pipeline" [ref=e127] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/kanban
+        - button "Novo Lead" [ref=e130] [cursor=pointer]
+      - generic [ref=e133]:
+        - generic [ref=e134]:
+          - generic [ref=e139]:
+            - paragraph [ref=e140]: "0"
+            - paragraph [ref=e141]: Leads Ativos
+            - paragraph [ref=e142]: 0 arquivados
+          - generic [ref=e147]:
+            - paragraph [ref=e148]: "0"
+            - paragraph [ref=e149]: Novos (30 dias)
+            - paragraph [ref=e150]: de 0 total
+          - generic [ref=e155]:
+            - paragraph [ref=e156]: R$ 0,00
+            - paragraph [ref=e157]: Em aberto
+            - paragraph [ref=e158]: projetos ativos
+          - generic [ref=e163]:
+            - paragraph [ref=e164]: R$ 0,00
+            - paragraph [ref=e165]: Fechado no mês
+            - paragraph [ref=e166]: status concluído
+        - generic [ref=e167]:
+          - generic [ref=e168]:
+            - paragraph [ref=e169]: Leads por Estágio
+            - paragraph [ref=e170]: Nenhum lead com estágio definido.
+          - generic [ref=e171]:
+            - paragraph [ref=e172]: Taxa de Conversão
+            - img [aria-hidden] [ref=e174]:
+              - generic [ref=e177]: 0%
+              - generic [ref=e178]: conversão
+            - paragraph [ref=e179]: 0 de 0 leads têm projeto
+      - generic [ref=e180]:
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - heading "Leads cadastrados" [level=2] [ref=e183]
+            - generic [ref=e184]: "0"
+          - textbox "Buscar por nome, e-mail ou telefone..." [ref=e188]
+          - generic [ref=e189]:
+            - generic [ref=e190]:
+              - generic [ref=e191]: Estágio
+              - generic [ref=e192]:
+                - button "Em captação" [ref=e193] [cursor=pointer]
+                - button "Em negociacao" [ref=e194] [cursor=pointer]
+                - button "Em desenvolvimento" [ref=e195] [cursor=pointer]
+                - button "Concluído" [ref=e196] [cursor=pointer]
+                - button "Pausado" [ref=e197] [cursor=pointer]
+                - button "Cancelado" [ref=e198] [cursor=pointer]
+            - generic [ref=e199]:
+              - generic [ref=e200]: Período
+              - generic [ref=e201]:
+                - button "Todos" [ref=e202] [cursor=pointer]
+                - button "Últimos 7d" [ref=e203] [cursor=pointer]
+                - button "Últimos 30d" [ref=e204] [cursor=pointer]
+                - button "Personalizado" [ref=e205] [cursor=pointer]
+            - generic [ref=e206]:
+              - generic [ref=e207]: Status
+              - generic [ref=e208]:
+                - button "Todos" [ref=e209] [cursor=pointer]
+                - button "Com projeto aberto" [ref=e210] [cursor=pointer]
+                - button "Sem projeto" [ref=e211] [cursor=pointer]
+                - button "Arquivado" [ref=e212] [cursor=pointer]
+        - generic [ref=e213]:
+          - generic [ref=e214]: Lead
+          - generic [ref=e215]: Contato
+          - generic [ref=e216]: Descrição
+          - generic [ref=e217]: Ação
+        - generic [ref=e218]:
+          - paragraph [ref=e222]: Nenhum lead cadastrado
+          - paragraph [ref=e223]: Clique em "Novo Lead" para começar
+          - button "Adicionar primeiro lead" [ref=e224] [cursor=pointer]

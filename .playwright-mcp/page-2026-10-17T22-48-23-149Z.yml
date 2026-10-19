@@ -1,0 +1,86 @@
+- generic [ref=f37e3]:
+  - complementary [ref=f37e4]:
+    - generic [ref=f37e5]:
+      - link "UserFlow." [ref=f37e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f37e8] [cursor=pointer]
+    - navigation "Principal" [ref=f37e12]:
+      - link "Dashboard" [ref=f37e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f37e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f37e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f37e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f37e40]: Análise
+      - link "Relatórios" [ref=f37e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f37e46]: Configurações
+      - link "Funis" [ref=f37e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f37e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f37e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f37e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f37e71]: QU
+      - generic [ref=f37e72]:
+        - generic [ref=f37e73]: QA UserFlow
+        - generic [ref=f37e74]: qa-userflow@example.test
+  - main [ref=f37e78]:
+    - generic [ref=f37e79]:
+      - generic [ref=f37e82]:
+        - heading "Por que perdemos" [level=1] [ref=f37e83]
+        - paragraph [ref=f37e84]: 19/07/2026 a 17/10/2026 · leads e projetos
+        - generic [ref=f37e85]:
+          - generic [ref=f37e86]:
+            - radiogroup "Período" [ref=f37e87]:
+              - button "7 dias" [ref=f37e88] [cursor=pointer]
+              - button "30 dias" [ref=f37e89] [cursor=pointer]
+              - button "Mês atual" [ref=f37e90] [cursor=pointer]
+              - button "Mês anterior" [ref=f37e91] [cursor=pointer]
+              - button "Personalizado" [pressed] [ref=f37e92] [cursor=pointer]
+            - textbox "De" [ref=f37e93]: 2026-07-19
+            - generic [ref=f37e94]: a
+            - textbox "Até" [ref=f37e95]: 2026-10-17
+          - radiogroup [ref=f37e96]:
+            - button "Leads e projetos" [pressed] [ref=f37e97] [cursor=pointer]
+            - button "Leads" [ref=f37e98] [cursor=pointer]
+            - button "Projetos" [ref=f37e99] [cursor=pointer]
+      - generic [ref=f37e100]:
+        - generic [ref=f37e101]:
+          - generic [ref=f37e102]:
+            - paragraph [ref=f37e104]: Perdas no período
+            - paragraph [ref=f37e109]: "1"
+            - paragraph [ref=f37e110]: 1 lead · 0 projetos
+          - generic [ref=f37e111]:
+            - paragraph [ref=f37e113]: Valor perdido
+            - paragraph [ref=f37e117]: R$ 0,00
+            - paragraph [ref=f37e118]: Σ do que estava em jogo
+          - generic [ref=f37e119]:
+            - paragraph [ref=f37e121]: Motivo principal
+            - paragraph [ref=f37e125]: Escolheu concorrente
+            - paragraph [ref=f37e126]: 100% das perdas
+        - generic [ref=f37e128]:
+          - generic [ref=f37e130]:
+            - heading "Perdas por motivo" [level=2] [ref=f37e131]
+            - paragraph [ref=f37e132]: Percentual sobre a quantidade; o valor vai ao lado.
+          - list [ref=f37e133]:
+            - listitem [ref=f37e134]:
+              - generic [ref=f37e136]:
+                - generic [ref=f37e137]: Escolheu concorrente
+                - generic [ref=f37e139]: "1"
+          - table [ref=f37e143]:
+            - rowgroup [ref=f37e144]:
+              - row [ref=f37e145]:
+                - columnheader "Motivo" [ref=f37e146]
+                - columnheader "Perdas" [ref=f37e147]
+                - columnheader "%" [ref=f37e148]
+                - columnheader "Valor" [ref=f37e149]
+            - rowgroup [ref=f37e150]:
+              - row [ref=f37e151]:
+                - cell "Escolheu concorrente" [ref=f37e152]
+                - cell "1" [ref=f37e153]
+                - cell "100%" [ref=f37e154]
+                - cell "R$ 0,00" [ref=f37e155]

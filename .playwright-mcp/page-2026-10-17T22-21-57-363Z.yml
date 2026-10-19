@@ -1,0 +1,82 @@
+- generic [ref=f19e3]:
+  - banner [ref=f19e4]:
+    - link "UserFlow." [ref=f19e5] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/dashboard
+    - button "Abrir menu" [ref=f19e7] [cursor=pointer]
+  - main [ref=f19e9]:
+    - generic [ref=f19e10]:
+      - generic [ref=f19e13]:
+        - heading "Tarefas" [level=1] [ref=f19e14]
+        - paragraph [ref=f19e15]: 2 tarefas
+      - radiogroup "Escopo" [ref=f19e16]:
+        - button "Atrasadas" [ref=f19e17] [cursor=pointer]
+        - button "Hoje" [ref=f19e18] [cursor=pointer]
+        - button "Próximos 7 dias" [ref=f19e19] [cursor=pointer]
+        - button "Pendentes" [pressed] [ref=f19e20] [cursor=pointer]
+        - button "Concluídas" [ref=f19e21] [cursor=pointer]
+      - generic [ref=f19e23]:
+        - generic [ref=f19e24]:
+          - generic [ref=f19e25]: Buscar por título ou lead
+          - searchbox "Buscar por título ou lead" [ref=f19e26]
+        - button "Filtros" [ref=f19e27] [cursor=pointer]
+      - generic [ref=f19e29]:
+        - generic [ref=f19e30]:
+          - paragraph [ref=f19e31]: 2 resultados
+          - generic [ref=f19e32]:
+            - button "Linhas compactas" [ref=f19e33] [cursor=pointer]
+            - button "Colunas" [ref=f19e37] [cursor=pointer]
+        - table [ref=f19e41]:
+          - rowgroup [ref=f19e42]:
+            - row [ref=f19e43]:
+              - columnheader [ref=f19e44]:
+                - checkbox "Selecionar todos desta página" [ref=f19e45]
+              - columnheader [ref=f19e46]:
+                - button "Tarefa" [ref=f19e47] [cursor=pointer]
+              - columnheader "Lead" [ref=f19e51]
+              - columnheader "Ações" [ref=f19e52]
+          - rowgroup [ref=f19e54]:
+            - row [ref=f19e55]:
+              - cell [ref=f19e56]:
+                - checkbox "Selecionar Enviar contrato (hoje)" [ref=f19e57]
+              - cell "Concluir Enviar contrato (hoje) Enviar contrato (hoje) Hoje" [ref=f19e58]:
+                - generic [ref=f19e59]:
+                  - checkbox "Concluir Enviar contrato (hoje)" [ref=f19e60]
+                  - generic [ref=f19e61]:
+                    - paragraph [ref=f19e62]: Enviar contrato (hoje)
+                    - paragraph [ref=f19e63]:
+                      - generic [ref=f19e64]: Hoje
+              - cell [ref=f19e66]:
+                - link "Ana Souza Lima" [ref=f19e67] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/38?aba=tarefas
+              - cell [ref=f19e68]:
+                - generic [ref=f19e69]:
+                  - button "Editar" [ref=f19e71] [cursor=pointer]
+                  - button "Excluir" [ref=f19e76] [cursor=pointer]
+            - row [ref=f19e80]:
+              - cell [ref=f19e81]:
+                - checkbox "Selecionar Follow-up semana que vem" [ref=f19e82]
+              - cell "Concluir Follow-up semana que vem Follow-up semana que vem 21/10/2026" [ref=f19e83]:
+                - generic [ref=f19e84]:
+                  - checkbox "Concluir Follow-up semana que vem" [ref=f19e85]
+                  - generic [ref=f19e86]:
+                    - paragraph [ref=f19e87]: Follow-up semana que vem
+                    - paragraph [ref=f19e88]:
+                      - generic [ref=f19e89]: 21/10/2026
+              - cell [ref=f19e91]:
+                - link "Ana Souza Lima" [ref=f19e92] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/38?aba=tarefas
+              - cell [ref=f19e93]:
+                - generic [ref=f19e94]:
+                  - button "Editar" [ref=f19e96] [cursor=pointer]
+                  - button "Excluir" [ref=f19e101] [cursor=pointer]
+        - navigation "Paginação" [ref=f19e106]:
+          - paragraph [ref=f19e107]: 1–2 de 2
+          - generic [ref=f19e108]:
+            - combobox [ref=f19e110]:
+              - option "25" [selected]
+              - option "50"
+              - option "100"
+            - generic [ref=f19e111]:
+              - button "Página anterior" [disabled] [ref=f19e112]
+              - button "Página 1" [ref=f19e115] [cursor=pointer]: "1"
+              - button "Próxima página" [disabled] [ref=f19e116]

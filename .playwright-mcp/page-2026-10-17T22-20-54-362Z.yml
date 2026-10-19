@@ -1,0 +1,173 @@
+- generic [ref=f14e3]:
+  - complementary [ref=f14e4]:
+    - generic [ref=f14e5]:
+      - link "UserFlow." [ref=f14e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f14e8] [cursor=pointer]
+    - navigation "Principal" [ref=f14e12]:
+      - link "Dashboard" [ref=f14e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f14e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f14e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f14e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f14e40]: Análise
+      - link "Relatórios" [ref=f14e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f14e46]: Configurações
+      - link "Funis" [ref=f14e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f14e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f14e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f14e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f14e71]: QU
+      - generic [ref=f14e72]:
+        - generic [ref=f14e73]: QA UserFlow
+        - generic [ref=f14e74]: qa-userflow@example.test
+  - main [ref=f14e78]:
+    - generic [ref=f14e79]:
+      - generic [ref=f14e81]:
+        - generic [ref=f14e82]:
+          - heading "Leads" [level=1] [ref=f14e83]
+          - paragraph [ref=f14e84]: 2 leads
+        - button [ref=f14e86] [cursor=pointer]
+      - generic [ref=f14e89]:
+        - generic [ref=f14e91]:
+          - generic [ref=f14e92]: Buscar por nome, e-mail ou telefone
+          - searchbox "Buscar por nome, e-mail ou telefone" [ref=f14e93]
+        - generic [ref=f14e94]:
+          - group "Estágio" [ref=f14e95]:
+            - button "Em captação" [ref=f14e97] [cursor=pointer]
+            - button "Em negociacao" [ref=f14e99] [cursor=pointer]
+            - button "Em desenvolvimento" [ref=f14e101] [cursor=pointer]
+            - button "Concluído" [ref=f14e103] [cursor=pointer]
+            - button "Pausado" [ref=f14e105] [cursor=pointer]
+            - button "Cancelado" [ref=f14e107] [cursor=pointer]
+          - generic "Situação" [ref=f14e109]:
+            - combobox [ref=f14e110]:
+              - option "Qualquer situação" [selected]
+              - option "Em aberto"
+              - option "Ganhos"
+              - option "Perdidos"
+              - option "Com projeto em aberto"
+              - option "Sem projeto"
+          - generic "Responsável" [ref=f14e111]:
+            - combobox [ref=f14e112]:
+              - option "Todos os responsáveis" [selected]
+              - option "QA UserFlow"
+          - generic [ref=f14e113]:
+            - generic [ref=f14e114]: Criado em
+            - 'textbox "Criado em: de" [ref=f14e116]'
+            - generic [ref=f14e117]: a
+            - 'textbox "Criado em: até" [ref=f14e119]'
+            - button "7 dias" [ref=f14e120] [cursor=pointer]
+            - button "30 dias" [ref=f14e121] [cursor=pointer]
+          - generic [ref=f14e122] [cursor=pointer]:
+            - switch "Sem contato há +14 dias" [ref=f14e123]
+            - generic [ref=f14e125]: Sem contato há +14 dias
+      - generic [ref=f14e126]:
+        - generic [ref=f14e127]:
+          - paragraph [ref=f14e387]: 2 resultados
+          - generic [ref=f14e388]:
+            - button "Linhas compactas" [ref=f14e389] [cursor=pointer]
+            - button "Colunas" [ref=f14e393] [cursor=pointer]
+        - table [ref=f14e138]:
+          - rowgroup [ref=f14e139]:
+            - row [ref=f14e140]:
+              - columnheader [ref=f14e141]:
+                - checkbox "Selecionar todos desta página" [ref=f14e142]
+              - columnheader [ref=f14e143]:
+                - button "Lead" [ref=f14e144] [cursor=pointer]
+              - columnheader "Telefone" [ref=f14e148]
+              - columnheader [ref=f14e149]:
+                - button "Estágio" [ref=f14e150] [cursor=pointer]
+              - columnheader [ref=f14e154]:
+                - button "Valor estimado" [ref=f14e155] [cursor=pointer]
+              - columnheader [ref=f14e159]:
+                - button "Previsão" [ref=f14e160] [cursor=pointer]
+              - columnheader [ref=f14e164]:
+                - button "Responsável" [ref=f14e165] [cursor=pointer]
+              - columnheader [ref=f14e169]:
+                - button "Último contato" [ref=f14e170] [cursor=pointer]
+              - columnheader [ref=f14e174]:
+                - button "Criado em" [ref=f14e175] [cursor=pointer]
+              - columnheader "Ações" [ref=f14e178]
+          - rowgroup [ref=f14e180]:
+            - row [ref=f14e396] [cursor=pointer]:
+              - cell [ref=f14e308]:
+                - checkbox "Selecionar Bruno Teste Grade" [ref=f14e309]
+              - cell [ref=f14e310]:
+                - generic [ref=f14e311]:
+                  - img "Bruno Teste Grade" [ref=f14e312]: BT
+                  - generic [ref=f14e313]:
+                    - link "Bruno Teste Grade" [ref=f14e314]:
+                      - /url: http://127.0.0.1:8000/leads/39
+                    - paragraph [ref=f14e315]: bruno.grade@exemplo.test
+              - cell [ref=f14e316]:
+                - generic [ref=f14e317]:
+                  - text: (11) 97777-6666
+                  - link "Abrir no WhatsApp" [ref=f14e319]:
+                    - /url: https://wa.me/5511977776666
+              - cell "Em negociacao" [ref=f14e397]
+              - cell "R$ 2.500,0040%" [ref=f14e327]
+              - cell "—" [ref=f14e329]
+              - cell "QA UserFlow" [ref=f14e330]
+              - cell "hoje" [ref=f14e331]
+              - cell "17/10/2026" [ref=f14e332]
+              - cell [ref=f14e333]:
+                - generic [ref=f14e334]:
+                  - link "Abrir" [ref=f14e336]:
+                    - /url: http://127.0.0.1:8000/leads/39
+                  - button "Mover para a lixeira" [ref=f14e342]
+            - row [ref=f14e181] [cursor=pointer]:
+              - cell [ref=f14e182]:
+                - checkbox "Selecionar Ana Souza Lima" [ref=f14e183]
+              - cell [ref=f14e184]:
+                - generic [ref=f14e185]:
+                  - img "Ana Souza Lima" [ref=f14e186]: AS
+                  - generic [ref=f14e187]:
+                    - link "Ana Souza Lima" [ref=f14e188]:
+                      - /url: http://127.0.0.1:8000/leads/38
+                    - paragraph [ref=f14e189]: ana.souza@exemplo.test
+              - cell [ref=f14e190]:
+                - generic [ref=f14e191]:
+                  - text: (11) 98888-7777
+                  - link "Abrir no WhatsApp" [ref=f14e193]:
+                    - /url: https://wa.me/5511988887777
+              - cell "Concluído" [ref=f14e196]
+              - cell "R$ 12.000,0060%" [ref=f14e201]
+              - cell "30/11/2026" [ref=f14e203]
+              - cell "QA UserFlow" [ref=f14e204]
+              - cell "hoje" [ref=f14e205]
+              - cell "17/10/2026" [ref=f14e206]
+              - cell [ref=f14e207]:
+                - generic [ref=f14e208]:
+                  - link "Abrir" [ref=f14e210]:
+                    - /url: http://127.0.0.1:8000/leads/38
+                  - button "Mover para a lixeira" [ref=f14e216]
+        - navigation "Paginação" [ref=f14e221]:
+          - paragraph [ref=f14e222]: 1–2 de 2
+          - generic [ref=f14e223]:
+            - generic [ref=f14e224]:
+              - generic [ref=f14e225]: Por página
+              - combobox "Por página" [ref=f14e226]:
+                - option "25" [selected]
+                - option "50"
+                - option "100"
+            - generic [ref=f14e227]:
+              - button "Página anterior" [disabled] [ref=f14e228]
+              - button "Página 1" [ref=f14e231] [cursor=pointer]: "1"
+              - button "Próxima página" [disabled] [ref=f14e232]
+  - dialog [ref=f14e408]:
+    - generic [ref=f14e409]:
+      - banner [ref=f14e410]:
+        - heading "Mover “Bruno Teste Grade” para a lixeira?" [level=2] [ref=f14e412]
+        - button "Fechar" [ref=f14e414] [cursor=pointer]
+      - paragraph [ref=f14e419]: O lead some das listas e do pipeline, com projetos, tarefas, anotações e documentos. Você pode restaurá-lo na Lixeira.
+      - contentinfo [ref=f14e420]:
+        - button "Cancelar" [active] [ref=f14e421] [cursor=pointer]
+        - button "Mover para a lixeira" [ref=f14e422] [cursor=pointer]

@@ -1,0 +1,59 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: UserFlow.
+    - link [ref=e7] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/login
+      - text: Já tem uma conta?
+      - strong [ref=e8]: Entrar
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]: Plataforma de gestão
+      - heading "Comece a gerenciar com simplicidade" [level=1] [ref=e12]
+      - paragraph [ref=e13]: Crie sua conta gratuitamente e tenha acesso a uma plataforma moderna para gerenciar usuários, permissões e acessos.
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: ＋
+          - text: Gestão Simplificada
+        - generic [ref=e17]:
+          - generic [ref=e18]: ◎
+          - text: Controle de Acesso
+        - generic [ref=e19]:
+          - generic [ref=e20]: ⊞
+          - text: Análises Detalhadas
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]: +10k
+          - generic [ref=e24]: Usuários Gerenciados
+        - generic [ref=e26]:
+          - generic [ref=e27]: 99.9%
+          - generic [ref=e28]: Uptime Garantido
+        - generic [ref=e30]:
+          - generic [ref=e31]: 24/7
+          - generic [ref=e32]: Suporte Dedicado
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - heading "Criar conta" [level=2] [ref=e36]
+        - paragraph [ref=e37]: Preencha os dados para começar
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]: Nome
+          - textbox "Nome" [active] [ref=e41]:
+            - /placeholder: Seu nome completo
+        - generic [ref=e42]:
+          - generic [ref=e43]: E-mail
+          - textbox "E-mail" [ref=e44]:
+            - /placeholder: seu@email.com
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]: Senha
+            - textbox "Senha" [ref=e48]:
+              - /placeholder: ••••••••
+          - generic [ref=e49]:
+            - generic [ref=e50]: Confirmar senha
+            - textbox "Confirmar senha" [ref=e51]:
+              - /placeholder: ••••••••
+        - button "Criar conta" [ref=e52] [cursor=pointer]
+        - paragraph [ref=e53]:
+          - text: Já tem uma conta?
+          - link "Entrar" [ref=e54] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/login

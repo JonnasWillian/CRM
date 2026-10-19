@@ -1,0 +1,10 @@
+[ 3663834ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5173/@vite/client:912
+[45492653ms] [INFO] Autofocus processing was blocked because a document already has a focused element. @ http://127.0.0.1:8000/login:0
+[45498434ms] [INFO] Autofocus processing was blocked because a document already has a focused element. @ http://127.0.0.1:8000/login:0
+[45709053ms] [INFO] Autofocus processing was blocked because a document already has a focused element. @ http://127.0.0.1:8000/login:0
+[47550710ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:8000/profile:0
+[47580649ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5173/@vite/client:912
+[47580651ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5173/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/@vite/client:984
+[47583092ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:8000/profile:0
+[47903170ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:8000/profile:0
+[48346333ms] [VERBOSE] [DOM] Password forms should have (optionally hidden) username fields for accessibility: (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:8000/profile:0

@@ -1,0 +1,79 @@
+- generic [ref=f18e3]:
+  - banner [ref=f18e4]:
+    - link "UserFlow." [ref=f18e5] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/dashboard
+    - button "Abrir menu" [ref=f18e7] [cursor=pointer]
+  - main [ref=f18e9]:
+    - generic [ref=f18e10]:
+      - generic [ref=f18e12]:
+        - generic [ref=f18e13]:
+          - heading "Leads" [level=1] [ref=f18e14]
+          - paragraph [ref=f18e15]: 2 leads
+        - button [ref=f18e17] [cursor=pointer]
+      - generic [ref=f18e21]:
+        - generic [ref=f18e22]:
+          - generic [ref=f18e23]: Buscar por nome, e-mail ou telefone
+          - searchbox "Buscar por nome, e-mail ou telefone" [ref=f18e24]
+        - button "Filtros" [ref=f18e25] [cursor=pointer]
+      - generic [ref=f18e27]:
+        - generic [ref=f18e28]:
+          - paragraph [ref=f18e29]: 2 resultados
+          - generic [ref=f18e30]:
+            - button "Linhas compactas" [ref=f18e31] [cursor=pointer]
+            - button "Colunas" [ref=f18e35] [cursor=pointer]
+        - table [ref=f18e39]:
+          - rowgroup [ref=f18e40]:
+            - row [ref=f18e41]:
+              - columnheader [ref=f18e42]:
+                - checkbox "Selecionar todos desta página" [ref=f18e43]
+              - columnheader [ref=f18e44]:
+                - button "Lead" [ref=f18e45] [cursor=pointer]
+              - columnheader [ref=f18e49]:
+                - button "Estágio" [ref=f18e50] [cursor=pointer]
+              - columnheader "Ações" [ref=f18e54]
+          - rowgroup [ref=f18e56]:
+            - row [ref=f18e57] [cursor=pointer]:
+              - cell [ref=f18e58]:
+                - checkbox "Selecionar Bruno Teste Grade" [ref=f18e59]
+              - cell [ref=f18e60]:
+                - generic [ref=f18e62]:
+                  - link "Bruno Teste Grade" [ref=f18e63]:
+                    - /url: http://127.0.0.1:8000/leads/39
+                  - paragraph [ref=f18e64]: bruno.grade@exemplo.test
+                  - paragraph [ref=f18e65]: Em negociacao · R$ 2.500,00
+              - cell "Em negociacao" [ref=f18e66]
+              - cell [ref=f18e71]:
+                - generic [ref=f18e72]:
+                  - link "Abrir" [ref=f18e74]:
+                    - /url: http://127.0.0.1:8000/leads/39
+                  - link "Abrir no WhatsApp" [ref=f18e80]:
+                    - /url: https://wa.me/5511977776666
+                  - button "Mover para a lixeira" [ref=f18e84]
+            - row [ref=f18e88] [cursor=pointer]:
+              - cell [ref=f18e89]:
+                - checkbox "Selecionar Ana Souza Lima" [ref=f18e90]
+              - cell [ref=f18e91]:
+                - generic [ref=f18e93]:
+                  - link "Ana Souza Lima" [ref=f18e94]:
+                    - /url: http://127.0.0.1:8000/leads/38
+                  - paragraph [ref=f18e95]: ana.souza@exemplo.test
+                  - paragraph [ref=f18e96]: Concluído · R$ 12.000,00
+              - cell "Concluído" [ref=f18e97]
+              - cell [ref=f18e102]:
+                - generic [ref=f18e103]:
+                  - link "Abrir" [ref=f18e105]:
+                    - /url: http://127.0.0.1:8000/leads/38
+                  - link "Abrir no WhatsApp" [ref=f18e111]:
+                    - /url: https://wa.me/5511988887777
+                  - button "Mover para a lixeira" [ref=f18e115]
+        - navigation "Paginação" [ref=f18e120]:
+          - paragraph [ref=f18e121]: 1–2 de 2
+          - generic [ref=f18e122]:
+            - combobox [ref=f18e124]:
+              - option "25" [selected]
+              - option "50"
+              - option "100"
+            - generic [ref=f18e125]:
+              - button "Página anterior" [disabled] [ref=f18e126]
+              - button "Página 1" [ref=f18e129] [cursor=pointer]: "1"
+              - button "Próxima página" [disabled] [ref=f18e130]

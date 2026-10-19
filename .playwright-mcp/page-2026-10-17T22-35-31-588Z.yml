@@ -1,0 +1,51 @@
+- generic [ref=f28e3]:
+  - complementary [ref=f28e4]:
+    - generic [ref=f28e5]:
+      - link "UserFlow." [ref=f28e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f28e8] [cursor=pointer]
+    - navigation "Principal" [ref=f28e12]:
+      - link "Dashboard" [ref=f28e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f28e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f28e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f28e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f28e40]: Análise
+      - link "Relatórios" [ref=f28e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f28e46]: Configurações
+      - link "Funis" [ref=f28e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f28e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f28e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f28e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f28e71]: QU
+      - generic [ref=f28e72]:
+        - generic [ref=f28e73]: QA UserFlow
+        - generic [ref=f28e74]: qa-userflow@example.test
+  - main [ref=f28e78]:
+    - generic [ref=f28e81]:
+      - generic [ref=f28e82]:
+        - heading "Pipeline" [level=1] [ref=f28e83]
+        - generic [ref=f28e84]:
+          - generic "Funil" [ref=f28e85]:
+            - combobox [disabled] [ref=f28e86]:
+              - option "Vendas" [selected]
+          - generic [ref=f28e87]:
+            - generic [ref=f28e88]: Buscar
+            - searchbox "Buscar" [ref=f28e89]
+          - generic "Responsável" [ref=f28e90]:
+            - combobox [ref=f28e91]:
+              - option "Todos os responsáveis" [selected]
+              - option "QA UserFlow"
+          - generic [ref=f28e92] [cursor=pointer]:
+            - switch "Só parados +14d" [ref=f28e93]
+            - generic [ref=f28e95]: Só parados +14d
+      - generic [ref=f28e96]:
+        - button "Mais ações" [ref=f28e98] [cursor=pointer]
+        - button [ref=f28e103] [cursor=pointer]

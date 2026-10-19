@@ -1,0 +1,53 @@
+- generic [ref=f11e3]:
+  - complementary [ref=f11e4]:
+    - generic [ref=f11e5]:
+      - link "UserFlow." [ref=f11e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f11e8] [cursor=pointer]
+    - navigation "Principal" [ref=f11e12]:
+      - link "Dashboard" [ref=f11e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f11e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f11e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f11e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f11e40]: Análise
+      - link "Relatórios" [ref=f11e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f11e46]: Configurações
+      - link "Funis" [ref=f11e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f11e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f11e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f11e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f11e71]: QU
+      - generic [ref=f11e72]:
+        - generic [ref=f11e73]: QA UserFlow
+        - generic [ref=f11e74]: qa-userflow@example.test
+  - main [ref=f11e78]:
+    - generic [ref=f11e79]:
+      - generic [ref=f11e81]:
+        - generic [ref=f11e82]:
+          - heading "Boa noite, QA" [level=1] [ref=f11e83]
+          - paragraph [ref=f11e84]: sábado, 17 de outubro
+          - generic [ref=f11e85]:
+            - radiogroup "Período" [ref=f11e87]:
+              - button "7 dias" [ref=f11e88] [cursor=pointer]
+              - button "30 dias" [pressed] [ref=f11e89] [cursor=pointer]
+              - button "Mês atual" [ref=f11e90] [cursor=pointer]
+              - button "Mês anterior" [ref=f11e91] [cursor=pointer]
+              - button "Personalizado" [ref=f11e92] [cursor=pointer]
+            - generic "Vendedor" [ref=f11e93]:
+              - combobox [ref=f11e94]:
+                - option "Toda a equipe"
+                - option "QA UserFlow"
+        - link [ref=f11e96] [cursor=pointer]:
+          - /url: http://127.0.0.1:8000/leads?novo=1
+      - generic [ref=f11e126]:
+        - heading "Tarefas" [level=2] [ref=f11e128]
+        - link "Ver todas" [ref=f11e130] [cursor=pointer]:
+          - /url: http://127.0.0.1:8000/tarefas?escopo=pendentes

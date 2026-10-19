@@ -1,0 +1,26 @@
+- generic [ref=f30e3]:
+  - banner [ref=f30e4]:
+    - link "UserFlow." [ref=f30e5] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/dashboard
+    - button "Abrir menu" [ref=f30e7] [cursor=pointer]
+  - main [ref=f30e9]:
+    - generic [ref=f30e12]:
+      - generic [ref=f30e13]:
+        - heading "Pipeline" [level=1] [ref=f30e14]
+        - generic [ref=f30e15]:
+          - generic "Funil" [ref=f30e16]:
+            - combobox [disabled] [ref=f30e17]:
+              - option "Vendas" [selected]
+          - generic [ref=f30e18]:
+            - generic [ref=f30e19]: Buscar
+            - searchbox "Buscar" [ref=f30e20]
+          - generic "Responsável" [ref=f30e21]:
+            - combobox [ref=f30e22]:
+              - option "Todos os responsáveis" [selected]
+              - option "QA UserFlow"
+          - generic [ref=f30e23] [cursor=pointer]:
+            - switch "Só parados +14d" [ref=f30e24]
+            - generic [ref=f30e26]: Só parados +14d
+      - generic [ref=f30e27]:
+        - button "Mais ações" [ref=f30e29] [cursor=pointer]
+        - button [ref=f30e34] [cursor=pointer]

@@ -1,0 +1,137 @@
+- generic [ref=f7e3]:
+  - complementary [ref=f7e4]:
+    - generic [ref=f7e5]:
+      - link "UserFlow." [ref=f7e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f7e8] [cursor=pointer]
+    - navigation "Principal" [ref=f7e12]:
+      - link "Dashboard" [ref=f7e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Pipeline" [ref=f7e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - paragraph [ref=f7e26]: Análise
+      - link "Relatórios" [ref=f7e28] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f7e32]: Configurações
+      - link "Funis" [ref=f7e34] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f7e41] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f7e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f7e56] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f7e57]: QU
+      - generic [ref=f7e58]:
+        - generic [ref=f7e59]: QA UserFlow
+        - generic [ref=f7e60]: qa-userflow@example.test
+  - main [ref=f7e64]:
+    - generic [ref=f7e65]:
+      - generic [ref=f7e66]:
+        - navigation "Você está em" [ref=f7e67]:
+          - link "Dashboard" [ref=f7e68] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/dashboard
+          - generic [ref=f7e71]: Ana Souza Lima
+        - generic [ref=f7e72]:
+          - generic [ref=f7e73]:
+            - heading "Ana Souza Lima" [level=1] [ref=f7e74]
+            - generic [ref=f7e75]:
+              - button "Mover de estágio" [ref=f7e77] [cursor=pointer]:
+                - generic [ref=f7e78]: Em captação
+              - dialog [ref=f7e228]:
+                - generic [ref=f7e229]:
+                  - generic [ref=f7e230]:
+                    - heading "Marcar “Ana Souza Lima” como ganho?" [level=2] [ref=f7e232]
+                    - button "Fechar" [ref=f7e234] [cursor=pointer]
+                  - generic [ref=f7e238]:
+                    - paragraph [ref=f7e239]: O lead sai dos ativos e entra nos fechados do período. Dá para mover de volta depois.
+                    - generic [ref=f7e242]:
+                      - generic [ref=f7e243]: Valor fechado
+                      - generic [ref=f7e244]:
+                        - generic [aria-hidden]: R$
+                        - textbox "Valor fechado" [active] [ref=f7e245]:
+                          - /placeholder: 0,00
+                          - text: 12.000,00
+                      - paragraph [ref=f7e246]: Pré-preenchido com o valor estimado; ajuste se o negócio fechou por outro valor.
+                  - generic [ref=f7e247]:
+                    - button "Cancelar" [ref=f7e248] [cursor=pointer]
+                    - button "Marcar como ganho" [ref=f7e249] [cursor=pointer]
+              - generic [ref=f7e83]: Funil Vendas
+              - generic [ref=f7e84]: QA UserFlow
+              - link "ana.souza@exemplo.test" [ref=f7e88] [cursor=pointer]:
+                - /url: mailto:ana.souza@exemplo.test
+              - generic [ref=f7e92]:
+                - link "(11) 98888-7777" [ref=f7e93] [cursor=pointer]:
+                  - /url: tel:+5511988887777
+                - link "Abrir no WhatsApp" [ref=f7e97] [cursor=pointer]:
+                  - /url: https://wa.me/5511988887777
+            - generic [ref=f7e100]:
+              - generic [ref=f7e101]: R$ 12.000,00
+              - generic [ref=f7e106]: 60% de chance
+              - generic [ref=f7e112]: Previsão 30/11/2026
+          - generic [ref=f7e116]:
+            - button [ref=f7e117] [cursor=pointer]
+            - button "Mais ações" [ref=f7e121] [cursor=pointer]
+      - generic [ref=f7e126]:
+        - img "Ana Souza Lima" [ref=f7e127]: AS
+        - generic [ref=f7e128]:
+          - tablist [ref=f7e129]:
+            - tab "Atividades" [ref=f7e130] [cursor=pointer]
+            - tab "Tarefas 0" [ref=f7e134] [cursor=pointer]:
+              - text: Tarefas
+              - generic [ref=f7e138]: "0"
+            - tab "Anotações 0" [ref=f7e139] [cursor=pointer]:
+              - text: Anotações
+              - generic [ref=f7e143]: "0"
+            - tab "Projetos 0" [ref=f7e144] [cursor=pointer]:
+              - text: Projetos
+              - generic [ref=f7e147]: "0"
+            - tab "Documentos 0" [ref=f7e148] [cursor=pointer]:
+              - text: Documentos
+              - generic [ref=f7e152]: "0"
+            - tab "Dados" [selected] [ref=f7e153] [cursor=pointer]
+          - tabpanel "Dados" [ref=f7e157]:
+            - generic [ref=f7e158]:
+              - generic [ref=f7e160]:
+                - heading "Contato" [level=2] [ref=f7e163]
+                - generic [ref=f7e164]:
+                  - generic [ref=f7e166]:
+                    - generic [ref=f7e167]: Nome *
+                    - textbox "Nome" [ref=f7e169]: Ana Souza Lima
+                  - generic [ref=f7e171]:
+                    - generic [ref=f7e172]: E-mail *
+                    - textbox "E-mail" [ref=f7e174]: ana.souza@exemplo.test
+                  - generic [ref=f7e176]:
+                    - generic [ref=f7e177]: Telefone
+                    - textbox "Telefone" [ref=f7e179]:
+                      - /placeholder: (00) 00000-0000
+                      - text: (11) 98888-7777
+                    - paragraph [ref=f7e180]: "Número internacional: comece com +."
+                  - generic [ref=f7e182]:
+                    - generic [ref=f7e183]: Descrição
+                    - generic [ref=f7e184]:
+                      - textbox "Descrição" [ref=f7e185]:
+                        - /placeholder: Observações gerais
+                        - text: Indicação da feira. Interesse em site institucional.
+                      - paragraph [ref=f7e186]: 52/5000
+              - generic [ref=f7e188]:
+                - generic [ref=f7e190]:
+                  - heading "Negócio" [level=2] [ref=f7e191]
+                  - paragraph [ref=f7e192]: Alimenta os totais do pipeline e a previsão do dashboard.
+                - generic [ref=f7e193]:
+                  - generic [ref=f7e195]:
+                    - generic [ref=f7e196]: Valor estimado
+                    - generic [ref=f7e197]:
+                      - generic [aria-hidden]: R$
+                      - textbox "Valor estimado" [ref=f7e198]:
+                        - /placeholder: 0,00
+                        - text: 12.000,00
+                  - generic [ref=f7e200]:
+                    - generic [ref=f7e201]: Probabilidade (%)
+                    - spinbutton "Probabilidade (%)" [ref=f7e203]: "60"
+                    - paragraph [ref=f7e204]: De 0 a 100. O estágio pode sugerir um valor.
+                  - generic [ref=f7e206]:
+                    - generic [ref=f7e207]: Previsão de fechamento
+                    - textbox "Previsão de fechamento" [ref=f7e208]: 2026-11-30
+              - generic [ref=f7e209]:
+                - button "Descartar" [disabled] [ref=f7e210]
+                - button "Salvar alterações" [disabled] [ref=f7e211]

@@ -1,0 +1,114 @@
+- generic [ref=f28e3]:
+  - complementary [ref=f28e4]:
+    - generic [ref=f28e5]:
+      - link "UserFlow." [ref=f28e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f28e8] [cursor=pointer]
+    - navigation "Principal" [ref=f28e12]:
+      - link "Dashboard" [ref=f28e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f28e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f28e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f28e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f28e40]: Análise
+      - link "Relatórios" [ref=f28e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f28e46]: Configurações
+      - link "Funis" [ref=f28e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f28e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f28e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f28e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f28e71]: QU
+      - generic [ref=f28e72]:
+        - generic [ref=f28e73]: QA UserFlow
+        - generic [ref=f28e74]: qa-userflow@example.test
+  - main [ref=f28e78]:
+    - generic [ref=f28e79]:
+      - generic [ref=f28e81]:
+        - generic [ref=f28e82]:
+          - heading "Pipeline" [level=1] [ref=f28e83]
+          - paragraph [ref=f28e127]: 2 leads · R$ 2.500,00 em aberto · R$ 1.000,00 ponderado
+          - generic [ref=f28e84]:
+            - generic "Funil" [ref=f28e85]:
+              - combobox [disabled] [ref=f28e86]:
+                - option "Vendas" [selected]
+            - generic [ref=f28e87]:
+              - generic [ref=f28e88]: Buscar
+              - searchbox "Buscar" [ref=f28e89]
+            - generic "Responsável" [ref=f28e90]:
+              - combobox [ref=f28e91]:
+                - option "Todos os responsáveis" [selected]
+                - option "QA UserFlow"
+            - generic [ref=f28e92] [cursor=pointer]:
+              - switch "Só parados +14d" [ref=f28e93]
+              - generic [ref=f28e95]: Só parados +14d
+        - generic [ref=f28e96]:
+          - button "Mais ações" [ref=f28e98] [cursor=pointer]
+          - button [ref=f28e103] [cursor=pointer]
+      - generic [ref=f28e128]:
+        - region "Em captação" [ref=f28e129]:
+          - generic [ref=f28e131]:
+            - heading "Em captação" [level=2] [ref=f28e132]
+            - generic [ref=f28e133]: "0"
+          - paragraph [ref=f28e135]: Nenhum lead aquiArraste um lead ou clique em Adicionar.
+          - button "Adicionar" [ref=f28e137] [cursor=pointer]
+        - region "Em negociacao" [ref=f28e139]:
+          - generic [ref=f28e141]:
+            - heading "Em negociacao" [level=2] [ref=f28e142]
+            - generic [ref=f28e143]: "0"
+          - paragraph [ref=f28e145]: Nenhum lead aquiArraste um lead ou clique em Adicionar.
+          - button "Adicionar" [ref=f28e147] [cursor=pointer]
+        - region "Em desenvolvimento" [ref=f28e149]:
+          - generic [ref=f28e150]:
+            - generic [ref=f28e151]:
+              - heading "Em desenvolvimento" [level=2] [ref=f28e152]
+              - generic [ref=f28e153]: "1"
+            - paragraph [ref=f28e154]: R$ 2.500,00 · R$ 1.000,00 pond.
+          - article "Bruno Teste Grade. Shift+setas move de coluna, M abre o menu." [ref=f28e156]:
+            - generic [ref=f28e157]:
+              - img "Bruno Teste Grade" [ref=f28e158]: BT
+              - generic [ref=f28e159]:
+                - link "Bruno Teste Grade" [ref=f28e160] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/39?de=pipeline
+                - paragraph [ref=f28e161]: QA UserFlow
+              - button "Ações do lead" [ref=f28e164] [cursor=pointer]
+            - generic [ref=f28e167]:
+              - generic [ref=f28e168]: R$ 2.500,00
+              - generic [ref=f28e169]: 40%
+              - generic "Último contato" [ref=f28e171]: hoje
+          - button "Adicionar" [ref=f28e176] [cursor=pointer]
+        - region "Concluído" [ref=f28e178]:
+          - generic [ref=f28e180]:
+            - heading "Concluído" [level=2] [ref=f28e181]
+            - generic [ref=f28e182]: "1"
+          - article "Ana Souza Lima. Shift+setas move de coluna, M abre o menu." [ref=f28e184]:
+            - generic [ref=f28e185]:
+              - img "Ana Souza Lima" [ref=f28e186]: AS
+              - generic [ref=f28e187]:
+                - link "Ana Souza Lima" [ref=f28e188] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/38?de=pipeline
+                - paragraph [ref=f28e189]: QA UserFlow
+              - button "Ações do lead" [ref=f28e192] [cursor=pointer]
+            - generic [ref=f28e195]:
+              - generic [ref=f28e196]: R$ 12.000,00
+              - generic "Último contato" [ref=f28e197]: hoje
+              - generic [ref=f28e201]: 30/11/2026
+          - button "Adicionar" [ref=f28e205] [cursor=pointer]
+        - region "Pausado" [ref=f28e207]:
+          - generic [ref=f28e209]:
+            - heading "Pausado" [level=2] [ref=f28e210]
+            - generic [ref=f28e211]: "0"
+          - paragraph [ref=f28e213]: Nenhum lead aquiArraste um lead ou clique em Adicionar.
+          - button "Adicionar" [ref=f28e215] [cursor=pointer]
+        - region "Cancelado" [ref=f28e217]:
+          - generic [ref=f28e219]:
+            - heading "Cancelado" [level=2] [ref=f28e220]
+            - generic [ref=f28e221]: "0"
+          - paragraph [ref=f28e223]: Nenhum lead aquiArraste um lead ou clique em Adicionar.
+          - button "Adicionar" [ref=f28e225] [cursor=pointer]

@@ -1,0 +1,131 @@
+- generic [ref=f16e3]:
+  - complementary [ref=f16e4]:
+    - generic [ref=f16e5]:
+      - link "UserFlow." [ref=f16e6] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - button "Recolher menu" [ref=f16e8] [cursor=pointer]
+    - navigation "Principal" [ref=f16e12]:
+      - link "Dashboard" [ref=f16e14] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+      - link "Leads" [ref=f16e22] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/leads
+      - link "Pipeline" [ref=f16e30] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/kanban
+      - link "Tarefas" [ref=f16e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/tarefas
+      - paragraph [ref=f16e40]: Análise
+      - link "Relatórios" [ref=f16e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/relatorios/perdas
+      - paragraph [ref=f16e46]: Configurações
+      - link "Funis" [ref=f16e48] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/funis
+      - link "Motivos de perda" [ref=f16e55] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/configuracoes/motivos-perda
+      - link "Modelos de tarefa" [ref=f16e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/modelos-tarefa
+    - button "QA UserFlow QA UserFlow qa-userflow@example.test" [ref=f16e70] [cursor=pointer]:
+      - img "QA UserFlow" [ref=f16e71]: QU
+      - generic [ref=f16e72]:
+        - generic [ref=f16e73]: QA UserFlow
+        - generic [ref=f16e74]: qa-userflow@example.test
+  - main [ref=f16e78]:
+    - generic [ref=f16e79]:
+      - generic [ref=f16e82]:
+        - heading "Tarefas" [level=1] [ref=f16e83]
+        - paragraph [ref=f16e84]: 3 tarefas
+      - radiogroup "Escopo" [ref=f16e85]:
+        - button "Atrasadas" [ref=f16e86] [cursor=pointer]
+        - button "Hoje" [ref=f16e87] [cursor=pointer]
+        - button "Próximos 7 dias" [ref=f16e88] [cursor=pointer]
+        - button "Pendentes" [pressed] [ref=f16e89] [cursor=pointer]
+        - button "Concluídas" [ref=f16e90] [cursor=pointer]
+      - generic [ref=f16e91]:
+        - generic [ref=f16e93]:
+          - generic [ref=f16e94]: Buscar por título ou lead
+          - searchbox "Buscar por título ou lead" [ref=f16e95]
+        - generic "Responsável" [ref=f16e97]:
+          - combobox [ref=f16e98]:
+            - option "Todos os responsáveis" [selected]
+            - option "QA UserFlow"
+      - generic [ref=f16e99]:
+        - generic [ref=f16e100]:
+          - paragraph [ref=f16e101]: 3 resultados
+          - generic [ref=f16e102]:
+            - button "Linhas compactas" [ref=f16e103] [cursor=pointer]
+            - button "Colunas" [ref=f16e107] [cursor=pointer]
+        - table [ref=f16e111]:
+          - rowgroup [ref=f16e112]:
+            - row [ref=f16e113]:
+              - columnheader [ref=f16e114]:
+                - checkbox "Selecionar todos desta página" [ref=f16e115]
+              - columnheader [ref=f16e116]:
+                - button "Tarefa" [ref=f16e117] [cursor=pointer]
+              - columnheader "Lead" [ref=f16e121]
+              - columnheader [ref=f16e122]:
+                - button "Vencimento" [ref=f16e123] [cursor=pointer]
+              - columnheader "Responsável" [ref=f16e126]
+              - columnheader "Ações" [ref=f16e127]
+          - rowgroup [ref=f16e129]:
+            - row [ref=f16e130]:
+              - cell [ref=f16e131]:
+                - checkbox "Selecionar Ligar para Ana (atrasada)" [ref=f16e132]
+              - cell [ref=f16e133]:
+                - generic [ref=f16e134]:
+                  - checkbox "Concluir Ligar para Ana (atrasada)" [ref=f16e135]
+                  - generic [ref=f16e136]:
+                    - paragraph [ref=f16e137]: Ligar para Ana (atrasada)
+                    - paragraph [ref=f16e138]: Confirmar proposta
+              - cell [ref=f16e139]:
+                - link "Ana Souza Lima" [ref=f16e140] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/38?aba=tarefas
+              - cell "Vencida há 3 dias" [ref=f16e141]
+              - cell "QA UserFlow" [ref=f16e144]
+              - cell [ref=f16e145]:
+                - generic [ref=f16e146]:
+                  - button "Editar" [ref=f16e148] [cursor=pointer]
+                  - button "Excluir" [ref=f16e153] [cursor=pointer]
+            - row [ref=f16e157]:
+              - cell [ref=f16e158]:
+                - checkbox "Selecionar Enviar contrato (hoje)" [ref=f16e159]
+              - cell [ref=f16e160]:
+                - generic [ref=f16e161]:
+                  - checkbox "Concluir Enviar contrato (hoje)" [ref=f16e162]
+                  - paragraph [ref=f16e164]: Enviar contrato (hoje)
+              - cell [ref=f16e165]:
+                - link "Ana Souza Lima" [ref=f16e166] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/38?aba=tarefas
+              - cell "Hoje" [ref=f16e167]
+              - cell "QA UserFlow" [ref=f16e170]
+              - cell [ref=f16e171]:
+                - generic [ref=f16e172]:
+                  - button "Editar" [ref=f16e174] [cursor=pointer]
+                  - button "Excluir" [ref=f16e179] [cursor=pointer]
+            - row [ref=f16e183]:
+              - cell [ref=f16e184]:
+                - checkbox "Selecionar Follow-up semana que vem" [ref=f16e185]
+              - cell [ref=f16e186]:
+                - generic [ref=f16e187]:
+                  - checkbox "Concluir Follow-up semana que vem" [ref=f16e188]
+                  - paragraph [ref=f16e190]: Follow-up semana que vem
+              - cell [ref=f16e191]:
+                - link "Ana Souza Lima" [ref=f16e192] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/leads/38?aba=tarefas
+              - cell "21/10/2026" [ref=f16e193]
+              - cell "QA UserFlow" [ref=f16e196]
+              - cell [ref=f16e197]:
+                - generic [ref=f16e198]:
+                  - button "Editar" [ref=f16e200] [cursor=pointer]
+                  - button "Excluir" [ref=f16e205] [cursor=pointer]
+        - navigation "Paginação" [ref=f16e210]:
+          - paragraph [ref=f16e211]: 1–3 de 3
+          - generic [ref=f16e212]:
+            - generic [ref=f16e213]:
+              - generic [ref=f16e214]: Por página
+              - combobox "Por página" [ref=f16e215]:
+                - option "25" [selected]
+                - option "50"
+                - option "100"
+            - generic [ref=f16e216]:
+              - button "Página anterior" [disabled] [ref=f16e217]
+              - button "Página 1" [ref=f16e220] [cursor=pointer]: "1"
+              - button "Próxima página" [disabled] [ref=f16e221]

@@ -1,0 +1,28 @@
+- generic [ref=f17e3]:
+  - banner [ref=f17e4]:
+    - link "UserFlow." [ref=f17e5] [cursor=pointer]:
+      - /url: http://127.0.0.1:8000/dashboard
+    - button "Abrir menu" [ref=f17e7] [cursor=pointer]
+  - main [ref=f17e9]:
+    - generic [ref=f17e10]:
+      - generic [ref=f17e12]:
+        - generic [ref=f17e13]:
+          - heading "Boa noite, QA" [level=1] [ref=f17e14]
+          - paragraph [ref=f17e15]: sábado, 17 de outubro
+          - generic [ref=f17e16]:
+            - radiogroup "Período" [ref=f17e18]:
+              - button "7 dias" [ref=f17e19] [cursor=pointer]
+              - button "30 dias" [pressed] [ref=f17e20] [cursor=pointer]
+              - button "Mês atual" [ref=f17e21] [cursor=pointer]
+              - button "Mês anterior" [ref=f17e22] [cursor=pointer]
+              - button "Personalizado" [ref=f17e23] [cursor=pointer]
+            - generic "Vendedor" [ref=f17e24]:
+              - combobox [ref=f17e25]:
+                - option "Toda a equipe" [selected]
+                - option "QA UserFlow"
+        - link [ref=f17e27] [cursor=pointer]:
+          - /url: http://127.0.0.1:8000/leads?novo=1
+      - generic [ref=f17e57]:
+        - heading "Tarefas" [level=2] [ref=f17e59]
+        - link "Ver todas" [ref=f17e61] [cursor=pointer]:
+          - /url: http://127.0.0.1:8000/tarefas?escopo=pendentes
