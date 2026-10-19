@@ -15,18 +15,49 @@ class ProjetoObserver
      */
     public function saving(Projeto $projeto): void
     {
+        self::sincronizarRecorrencia($projeto);
+
         if (! $projeto->isDirty('status_id')) {
             return;
         }
 
-        $ganho = $projeto->status_id
-            ? (bool) DB::table('status')->where('id', $projeto->status_id)->value('is_won')
-            : false;
+        $status = $projeto->status_id ? DB::table('status')->where('id', $projeto->status_id)->first(['is_won', 'is_lost']) : null;
 
-        if (! $ganho) {
+        if (! $status?->is_won) {
             $projeto->fechado_em = null;
         } elseif ($projeto->fechado_em === null) {
             $projeto->fechado_em = now();
+        }
+
+        // Contrato recorrente perdido = cancelado: a contagem de meses para aqui.
+        if (! $status?->is_lost) {
+            $projeto->cancelado_em = null;
+        } elseif ($projeto->cancelado_em === null) {
+            $projeto->cancelado_em = now();
+        }
+    }
+
+    /**
+     * Recorrente: o valor do projeto é o total do contrato e o fim é o fim do
+     * último período — assim as somas que já existem (projetos em aberto,
+     * ganhos, valor da perda, Pipeline) continuam certas sem saber de meses.
+     */
+    public static function sincronizarRecorrencia(Projeto $projeto): void
+    {
+        if (! $projeto->ehRecorrente()) {
+            $projeto->valor_mensal = null;
+            $projeto->duracao_meses = null;
+
+            return;
+        }
+
+        $projeto->parcelas = false;
+        $projeto->qtd_parcelas = null;
+        $projeto->unsetRelation('aditivos');
+        $cronograma = $projeto->cronograma();
+        if ($cronograma !== null) {
+            $projeto->preco = $cronograma->valorTotal();
+            $projeto->data_final = $cronograma->fim()->toDateString();
         }
     }
 

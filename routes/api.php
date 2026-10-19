@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LixeiraController;
 use App\Http\Controllers\Api\MotivoPerdaController;
 use App\Http\Controllers\Api\PerdaRelatorioController;
+use App\Http\Controllers\Api\ProjetoAditivoController;
 use App\Http\Controllers\Api\ProjetoAnexoController;
 use App\Http\Controllers\Api\ProjetoAnotacaoController;
 use App\Http\Controllers\Api\ProjetoController;
@@ -103,6 +104,10 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::put('/projetos/{projeto}', [ProjetoController::class, 'update'])->name('projetos.update');
     Route::delete('/projetos/{projeto}', [ProjetoController::class, 'destroy'])->name('projetos.destroy');
     Route::patch('/projetos/{projeto}/restaurar', [ProjetoController::class, 'restaurar'])->withTrashed()->name('projetos.restaurar');
+
+    // Contrato recorrente: renovações e aditivos (só o último sai).
+    Route::post('/projetos/{projeto}/aditivos', [ProjetoAditivoController::class, 'store'])->name('projetos.aditivos.store');
+    Route::delete('/projeto-aditivos/{projetoAditivo}', [ProjetoAditivoController::class, 'destroy'])->name('projeto-aditivos.destroy');
 
     Route::get('/projetos/{projeto}/anotacoes', [ProjetoAnotacaoController::class, 'index'])->name('projetos.anotacoes.index');
     Route::post('/projetos/{projeto}/anotacoes', [ProjetoAnotacaoController::class, 'store'])->name('projetos.anotacoes.store');

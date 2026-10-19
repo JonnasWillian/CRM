@@ -87,7 +87,11 @@ class ProjetoRequest extends FormRequest
             'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
             'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'preco' => 'nullable|numeric',
-            'data_inicial' => 'nullable|date',
+            'tipo' => ['nullable', 'in:unico,recorrente'],
+            // Recorrente: valor mensal × prazo, a partir do início.
+            'valor_mensal' => ['nullable', 'required_if:tipo,recorrente', 'numeric', 'min:0', 'max:9999999999.99'],
+            'duracao_meses' => ['nullable', 'required_if:tipo,recorrente', 'integer', 'between:1,240'],
+            'data_inicial' => ['nullable', 'required_if:tipo,recorrente', 'date'],
             'data_final' => 'nullable|date',
             'parcelas' => 'nullable|boolean',
             'qtd_parcelas' => 'nullable|numeric',
@@ -102,7 +106,11 @@ class ProjetoRequest extends FormRequest
             'nome' => ['required', 'string', 'min:5', 'max:'.LimitesDeTexto::NOME],
             'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
             'preco' => 'nullable|numeric',
-            'data_inicial' => 'nullable|date',
+            'tipo' => ['nullable', 'in:unico,recorrente'],
+            // Recorrente: valor mensal × prazo, a partir do início.
+            'valor_mensal' => ['nullable', 'required_if:tipo,recorrente', 'numeric', 'min:0', 'max:9999999999.99'],
+            'duracao_meses' => ['nullable', 'required_if:tipo,recorrente', 'integer', 'between:1,240'],
+            'data_inicial' => ['nullable', 'required_if:tipo,recorrente', 'date'],
             'data_final' => 'nullable|date',
             'parcelas' => 'nullable|boolean',
             'qtd_parcelas' => 'nullable|numeric',
@@ -142,6 +150,11 @@ class ProjetoRequest extends FormRequest
     {
         return [
             ...RegrasDePerda::mensagens(),
+
+            'valor_mensal.required_if' => 'Informe o valor mensal do contrato.',
+            'duracao_meses.required_if' => 'Informe o prazo do contrato em meses.',
+            'duracao_meses.between' => 'O prazo vai de 1 a 240 meses.',
+            'data_inicial.required_if' => 'Informe quando o contrato começa.',
 
             'nome.required' => 'O campo nome é obrigatório.',
             'nome.min' => 'O nome deve ter no mínimo :min caracteres.',

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
-import { ArrowRightLeft, Briefcase, CalendarClock, CheckCircle2, Clock, FileText, MessageSquare, Paperclip, RotateCcw, Tag, Trash2, Upload, UserPlus, UserRound } from 'lucide-vue-next';
+import { ArrowRightLeft, Briefcase, CalendarClock, CheckCircle2, Clock, FileText, MessageSquare, Paperclip, RefreshCw, RotateCcw, Tag, Trash2, Upload, UserPlus, UserRound } from 'lucide-vue-next';
 import AppAlert from '@/Components/ui/AppAlert.vue';
 import AppBadge from '@/Components/ui/AppBadge.vue';
 import AppButton from '@/Components/ui/AppButton.vue';
@@ -51,6 +51,7 @@ const TIPOS = {
     projeto_anexo_removido: { tom: 'neutral', rotulo: 'Anexo de projeto removido', icone: Trash2 },
     projeto_removido: { tom: 'danger', rotulo: 'Projeto na lixeira', icone: Trash2 },
     projeto_restaurado: { tom: 'primary', rotulo: 'Projeto restaurado', icone: RotateCcw },
+    projeto_aditivo: { tom: 'primary', rotulo: 'Contrato renovado/aditivo', icone: RefreshCw },
     lead_removido: { tom: 'danger', rotulo: 'Lead na lixeira', icone: Trash2 },
     lead_restaurado: { tom: 'neutral', rotulo: 'Lead restaurado', icone: RotateCcw },
 };
@@ -74,6 +75,7 @@ const titulo = (e) => ({
     projeto_anexo_removido: e.nome ? `Anexo removido: ${e.nome}` : 'Anexo removido',
     projeto_removido: `Projeto na lixeira: “${e.nome ?? ''}”`,
     projeto_restaurado: `Projeto restaurado: “${e.nome ?? ''}”`,
+    projeto_aditivo: `${e.rotulo ?? 'Contrato alterado'} em “${e.projeto_nome ?? 'projeto'}”: ${e.resumo ?? ''}`,
     lead_removido: 'Lead movido para a lixeira',
     lead_restaurado: 'Lead restaurado',
 }[e.tipo] ?? config(e.tipo).rotulo);

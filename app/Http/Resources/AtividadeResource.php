@@ -64,6 +64,11 @@ class AtividadeResource extends JsonResource
             $campos['estagio_novo'] = $this->nomeDoEstagio($propriedades, $subject, 'novo');
         }
 
+        if ($tipo === 'projeto_aditivo') {
+            $campos['resumo'] = $propriedades->get('resumo');
+            $campos['rotulo'] = $this->description;
+        }
+
         if ($tipo === 'responsavel_alterado') {
             $campos['responsavel_anterior'] = $propriedades->get('responsavel_anterior') ?? '—';
             $campos['responsavel_novo'] = $propriedades->get('responsavel_novo') ?? '—';

@@ -19,7 +19,7 @@ class ProjetoController extends Controller
         $this->authorize('view', $usuario);
 
         $pagina = Projeto::where('usuario_id', $usuario->id)
-            ->with('status')
+            ->with(['status', 'aditivos'])
             ->withCount(['anotacoes', 'anexos'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -36,14 +36,14 @@ class ProjetoController extends Controller
         $projeto = new Projeto;
         app(AplicarTransicao::class)($projeto, [...$request->validated(), 'usuario_id' => $usuario->id], RegrasDePerda::extrair($request));
 
-        return response()->json(['message' => 'Projeto salvo.', 'data' => $projeto->fresh('status')], 201);
+        return response()->json(['message' => 'Projeto salvo.', 'data' => $projeto->fresh(['status', 'aditivos'])], 201);
     }
 
     public function show(Projeto $projeto): JsonResponse
     {
         $this->authorize('view', $projeto);
 
-        return response()->json($projeto->load('status'));
+        return response()->json($projeto->load(['status', 'aditivos']));
     }
 
     public function update(ProjetoRequest $request, Projeto $projeto): JsonResponse
@@ -51,7 +51,7 @@ class ProjetoController extends Controller
         // Instância autorizada em ProjetoRequest::authorize().
         app(AplicarTransicao::class)($projeto, $request->validated(), RegrasDePerda::extrair($request));
 
-        return response()->json(['message' => 'Projeto salvo.', 'data' => $projeto->fresh('status')]);
+        return response()->json(['message' => 'Projeto salvo.', 'data' => $projeto->fresh(['status', 'aditivos'])]);
     }
 
     public function destroy(Projeto $projeto): JsonResponse

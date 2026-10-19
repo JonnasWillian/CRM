@@ -49,6 +49,12 @@ const totais = computed(() => {
 
 const contagem = () => lista.meta.value && emit('contagem', { chave: 'projetos', total: lista.meta.value.total });
 
+// Renovação/aditivo devolve o projeto recalculado: troca na lista sem recarregar a página toda.
+function atualizarProjeto(novo) {
+    const i = lista.linhas.value.findIndex((p) => p.id === novo.id);
+    if (i >= 0) lista.linhas.value.splice(i, 1, { ...lista.linhas.value[i], ...novo });
+}
+
 async function aposSalvar() {
     await lista.recarregar();
     contagem();
@@ -95,12 +101,18 @@ async function excluir(projeto) {
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="truncate text-md font-semibold text-fg-0">{{ p.nome }}</h3>
+                            <AppBadge v-if="p.tipo === 'recorrente'" tom="primary">Recorrente</AppBadge>
                             <AppBadge :tom="tomDoStatus(p.status)" ponto>{{ p.status?.descricao ?? '—' }}</AppBadge>
                         </div>
                         <p v-if="p.descricao" class="mt-1 line-clamp-2 text-sm text-fg-1">{{ p.descricao }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-2">
-                            <span v-if="p.preco" class="num font-medium text-fg-0">{{ formatBRL(p.preco) }}</span>
-                            <span v-if="p.data_inicial || p.data_final" class="inline-flex items-center gap-1"><Calendar :size="13" aria-hidden="true" />{{ formatarData(p.data_inicial) ?? '…' }} → {{ formatarData(p.data_final) ?? '…' }}</span>
+                            <template v-if="p.recorrencia">
+                                <span class="num font-medium text-fg-0">{{ formatBRL(p.recorrencia.valor_mes_atual || p.recorrencia.periodos[0]?.valor_mensal) }}/mês</span>
+                                <span class="num">{{ p.recorrencia.meses_decorridos }} de {{ p.recorrencia.meses_total }} meses · até {{ formatarData(p.recorrencia.fim) }}</span>
+                                <AppBadge v-if="p.recorrencia.vence_em_breve" tom="warn">Vence em breve</AppBadge>
+                            </template>
+                            <span v-else-if="p.preco" class="num font-medium text-fg-0">{{ formatBRL(p.preco) }}</span>
+                            <span v-if="!p.recorrencia && (p.data_inicial || p.data_final)" class="inline-flex items-center gap-1"><Calendar :size="13" aria-hidden="true" />{{ formatarData(p.data_inicial) ?? '…' }} → {{ formatarData(p.data_final) ?? '…' }}</span>
                             <span v-if="p.parcelas && p.qtd_parcelas" class="inline-flex items-center gap-1"><CreditCard :size="13" aria-hidden="true" />{{ p.qtd_parcelas }}x</span>
                             <span class="num">{{ contagensDetalhe[p.id]?.anotacoes ?? p.anotacoes_count ?? 0 }} anotações · {{ contagensDetalhe[p.id]?.anexos ?? p.anexos_count ?? 0 }} anexos</span>
                         </div>
@@ -111,7 +123,7 @@ async function excluir(projeto) {
                         <IconButton :icone="Trash2" rotulo="Mover para a lixeira" variante="danger" @click="excluir(p)" />
                     </div>
                 </div>
-                <ProjetoDetalhe v-if="expandido === p.id" :projeto="p" @contagens="contagensDetalhe[p.id] = $event" />
+                <ProjetoDetalhe v-if="expandido === p.id" :projeto="p" @contagens="contagensDetalhe[p.id] = $event" @atualizado="atualizarProjeto" />
             </li>
         </ul>
         <AppPagination v-if="lista.meta.value && lista.meta.value.last_page > 1" :meta="lista.meta.value" :opcoes-por-pagina="[20, 50, 100]" :carregando="lista.carregando.value" @update:pagina="lista.irParaPagina" @update:por-pagina="lista.porPagina" />

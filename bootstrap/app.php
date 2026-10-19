@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // e a ordem de declaração das rotas deixa de ser armadilha.
             foreach (['usuario', 'projeto', 'anotacao', 'arquivo', 'tarefa', 'tarefaPadrao',
                 'projetoAnotacao', 'projetoAnexo', 'funil', 'estagio', 'motivo',
-                'agente', 'convite', 'importacao'] as $parametro) {
+                'agente', 'convite', 'importacao', 'projetoAditivo'] as $parametro) {
                 \Illuminate\Support\Facades\Route::pattern($parametro, '[0-9]+');
             }
         },

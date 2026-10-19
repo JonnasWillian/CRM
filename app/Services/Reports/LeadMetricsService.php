@@ -43,6 +43,44 @@ class LeadMetricsService
         return Cache::remember($chave, (int) config('reports.metricas_ttl', 300), fn () => $this->calcular($agente, $periodo, $funilId));
     }
 
+    /**
+     * Receita recorrente dos contratos GANHOS (status is_won) dos leads
+     * visíveis: o valor do mês atual de cada contrato vigente (MRR), o que
+     * falta a realizar e quantos vencem em até 31 dias. Calculado em PHP pelo
+     * CronogramaDeRecorrencia — contratos são poucos e o resultado vai para o cache.
+     */
+    private function recorrencia(callable $ids): array
+    {
+        $contratos = Projeto::query()
+            ->where('tipo', 'recorrente')
+            ->whereIn('usuario_id', $ids())
+            ->whereHas('status', fn ($q) => $q->where('is_won', true))
+            ->with('aditivos')
+            ->get();
+
+        $mrr = 0.0;
+        $aRealizar = 0.0;
+        $vigentes = 0;
+        $vencendo = 0;
+        foreach ($contratos as $projeto) {
+            $c = $projeto->cronograma();
+            if ($c === null) {
+                continue;
+            }
+            $mrr += $c->valorMesAtual();
+            $aRealizar += $c->valorARealizar();
+            $vigentes += $c->situacao() === 'vigente' ? 1 : 0;
+            $vencendo += $c->venceEmBreve() ? 1 : 0;
+        }
+
+        return [
+            'mrr' => round($mrr, 2),
+            'contratos_vigentes' => $vigentes,
+            'a_realizar' => round($aRealizar, 2),
+            'vencendo_30d' => $vencendo,
+        ];
+    }
+
     private function calcular(?User $agente, Periodo $periodo, ?int $funilId): array
     {
         $leads = fn (): Builder => Usuario::query()
@@ -137,6 +175,7 @@ class LeadMetricsService
 
         return [
             'periodo' => $periodo->toArray(),
+            'recorrencia' => $this->recorrencia($ids),
             'estado' => [
                 'leads_ativos' => $leadsAtivos,
                 'leads_fechados' => $leadsFechados,

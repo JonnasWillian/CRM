@@ -28,7 +28,7 @@ class LeadAtividadeController extends Controller
     public const GRUPOS = [
         'anotacao' => ['anotacao', 'anotacao_removida'],
         'arquivo' => ['arquivo', 'arquivo_removido'],
-        'projeto' => ['projeto', 'projeto_anotacao', 'projeto_anexo', 'projeto_anotacao_removida', 'projeto_anexo_removido', 'projeto_removido', 'projeto_restaurado'],
+        'projeto' => ['projeto', 'projeto_anotacao', 'projeto_anexo', 'projeto_anotacao_removida', 'projeto_anexo_removido', 'projeto_removido', 'projeto_restaurado', 'projeto_aditivo'],
         'tarefa' => ['tarefa_criada', 'tarefa_concluida'],
         'estagio' => ['status_alterado', 'funil_alterado', 'responsavel_alterado'],
     ];

@@ -9,6 +9,7 @@ import AppTextarea from '@/Components/ui/AppTextarea.vue';
 import EmptyState from '@/Components/ui/EmptyState.vue';
 import IconButton from '@/Components/ui/IconButton.vue';
 import SkeletonRows from '@/Components/ui/SkeletonRows.vue';
+import ProjetoContrato from './ProjetoContrato.vue';
 import { useConfirm } from '@/Composables/useConfirm';
 import { useListagemAxios } from '@/Composables/useListagemAxios';
 import { useToast } from '@/Composables/useToast';
@@ -17,12 +18,12 @@ import { formatarDataHora, formatarTamanho } from '@/utils/formatadores';
 
 /** Anotações e anexos de um projeto, dentro do card expandido. */
 const props = defineProps({ projeto: { type: Object, required: true } });
-const emit = defineEmits(['contagens']);
+const emit = defineEmits(['contagens', 'atualizado']);
 
 const toast = useToast();
 const { confirmar } = useConfirm();
 
-const aba = ref('anotacoes');
+const aba = ref(props.projeto.tipo === 'recorrente' ? 'contrato' : 'anotacoes');
 const anotacoes = useListagemAxios(() => route('api.projetos.anotacoes.index', props.projeto.id), { padrao: { per_page: 10 } });
 const anexos = useListagemAxios(() => route('api.projetos.anexos.index', props.projeto.id), { padrao: { per_page: 10 } });
 
@@ -111,9 +112,11 @@ async function apagarAnexo(a) {
 
 <template>
     <div class="border-t border-line bg-bg-0/50 px-4 pb-4">
-        <AppTabs v-model="aba" :abas="[{ chave: 'anotacoes', rotulo: 'Anotações', contagem: anotacoes.meta.value?.total ?? 0 }, { chave: 'anexos', rotulo: 'Anexos', contagem: anexos.meta.value?.total ?? 0 }]" tamanho="sm" />
+        <AppTabs v-model="aba" :abas="[...(projeto.tipo === 'recorrente' ? [{ chave: 'contrato', rotulo: 'Contrato' }] : []), { chave: 'anotacoes', rotulo: 'Anotações', contagem: anotacoes.meta.value?.total ?? 0 }, { chave: 'anexos', rotulo: 'Anexos', contagem: anexos.meta.value?.total ?? 0 }]" tamanho="sm" />
 
-        <div v-if="aba === 'anotacoes'" class="mt-3 space-y-3">
+        <ProjetoContrato v-if="aba === 'contrato'" :projeto="projeto" @atualizado="emit('atualizado', $event)" />
+
+        <div v-else-if="aba === 'anotacoes'" class="mt-3 space-y-3">
             <div class="flex items-start gap-2">
                 <div class="flex-1">
                     <AppTextarea v-model="nova" :rows="2" limite="anotacao" placeholder="Registre um acontecimento ou observação" @keydown.ctrl.enter.prevent="salvarNova" />
