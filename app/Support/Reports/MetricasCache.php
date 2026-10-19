@@ -17,11 +17,18 @@ use Illuminate\Support\Facades\Cache;
  */
 final class MetricasCache
 {
+    /**
+     * Formato da resposta em cache. Suba quando o array de métricas mudar de
+     * forma: entradas antigas deixam de ser lidas no mesmo deploy.
+     */
+    public const FORMATO = 2;
+
     public static function chave(int $tenantId, ?int $agenteId, ?int $funilId, string $hash): string
     {
         return sprintf(
-            'tenant:%d:metricas:v%d:%s:%s:%s',
+            'tenant:%d:metricas:f%d:v%d:%s:%s:%s',
             $tenantId,
+            self::FORMATO,
             self::versao($tenantId),
             $agenteId === null ? 'todos' : (string) $agenteId,
             $funilId === null ? 'todos' : (string) $funilId,

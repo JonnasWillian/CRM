@@ -44,40 +44,34 @@ class LeadMetricsService
     }
 
     /**
-     * Receita recorrente dos contratos GANHOS (status is_won) dos leads
-     * visíveis: o valor do mês atual de cada contrato vigente (MRR), o que
-     * falta a realizar e quantos vencem em até 31 dias. Calculado em PHP pelo
-     * CronogramaDeRecorrencia — contratos são poucos e o resultado vai para o cache.
+     * O que a empresa já está faturando e o que está em projeção, lado a lado.
+     * Faturando: recorrência (MRR e o faturado no período) + projetos de valor
+     * único ganhos no período. Projeção: o que falta dos contratos recorrentes,
+     * projetos únicos em negociação e leads em negociação (valor e ponderado).
      */
-    private function recorrencia(callable $ids): array
+    private function faturamentoEProjecao(callable $ids, Periodo $periodo, float $unicosGanhos, float $unicosAbertos, int $qtdUnicosAbertos, object $leadsAbertos): array
     {
-        $contratos = Projeto::query()
-            ->where('tipo', 'recorrente')
-            ->whereIn('usuario_id', $ids())
-            ->whereHas('status', fn ($q) => $q->where('is_won', true))
-            ->with('aditivos')
-            ->get();
-
-        $mrr = 0.0;
-        $aRealizar = 0.0;
-        $vigentes = 0;
-        $vencendo = 0;
-        foreach ($contratos as $projeto) {
-            $c = $projeto->cronograma();
-            if ($c === null) {
-                continue;
-            }
-            $mrr += $c->valorMesAtual();
-            $aRealizar += $c->valorARealizar();
-            $vigentes += $c->situacao() === 'vigente' ? 1 : 0;
-            $vencendo += $c->venceEmBreve() ? 1 : 0;
-        }
+        $rec = ResumoDeRecorrencia::resumir(ResumoDeRecorrencia::contratos($ids()), $periodo);
 
         return [
-            'mrr' => round($mrr, 2),
-            'contratos_vigentes' => $vigentes,
-            'a_realizar' => round($aRealizar, 2),
-            'vencendo_30d' => $vencendo,
+            'faturamento' => [
+                'mrr' => $rec['mrr'],
+                'contratos_vigentes' => $rec['contratos_vigentes'],
+                'recorrente_no_periodo' => $rec['no_periodo'],
+                'recorrente_acumulado' => $rec['acumulado'],
+                'projetos_unicos_no_periodo' => round($unicosGanhos, 2),
+                'total_no_periodo' => round($rec['no_periodo'] + $unicosGanhos, 2),
+            ],
+            'projecao' => [
+                'recorrente_a_realizar' => $rec['a_realizar'],
+                'contratos_a_iniciar' => $rec['contratos_a_iniciar'],
+                'contratos_vencendo_30d' => $rec['vencendo_30d'],
+                'projetos_em_negociacao' => round($unicosAbertos, 2),
+                'projetos_em_negociacao_qtd' => $qtdUnicosAbertos,
+                'leads_em_negociacao' => (float) $leadsAbertos->valor_estimado,
+                'leads_ponderado' => round((float) $leadsAbertos->valor_ponderado, 2),
+                'total' => round($rec['a_realizar'] + $unicosAbertos + (float) $leadsAbertos->valor_ponderado, 2),
+            ],
         ];
     }
 
@@ -95,7 +89,9 @@ class LeadMetricsService
         $leadsAtivos = $leads()->whereHas('estagio', fn ($q) => $q->aberto())->count();
         $leadsFechados = $leads()->whereHas('estagio', fn ($q) => $q->fechado())->count();
         $totalLeads = $leads()->count();
-        $valorProjetosAbertos = (float) Projeto::whereIn('usuario_id', $ids())->whereHas('status', fn ($q) => $q->open())->sum('preco');
+        // Só projetos de valor único: o recorrente tem a própria conta (faturando × projeção).
+        $valorProjetosAbertos = (float) Projeto::whereIn('usuario_id', $ids())->where('tipo', '!=', 'recorrente')->whereHas('status', fn ($q) => $q->open())->sum('preco');
+        $qtdProjetosAbertos = Projeto::whereIn('usuario_id', $ids())->where('tipo', '!=', 'recorrente')->whereHas('status', fn ($q) => $q->open())->count();
         $semContato = $leads()->whereDoesntHave('estagio', fn ($q) => $q->fechado())
             ->where('usuarios.ultimo_contato_em', '<', now()->subDays((int) config('leads.dias_estagnado', 14)))
             ->count();
@@ -133,6 +129,7 @@ class LeadMetricsService
         $valorGanho = (float) $ganhos->valor;
 
         $valorFechadoProjetos = (float) Projeto::whereIn('usuario_id', $ids())
+            ->where('tipo', '!=', 'recorrente')
             ->whereHas('status', fn ($q) => $q->where('is_won', true))
             ->whereBetween('fechado_em', [$inicio, $fim])
             ->sum('preco');
@@ -175,7 +172,7 @@ class LeadMetricsService
 
         return [
             'periodo' => $periodo->toArray(),
-            'recorrencia' => $this->recorrencia($ids),
+            ...$this->faturamentoEProjecao($ids, $periodo, $valorFechadoProjetos, $valorProjetosAbertos, $qtdProjetosAbertos, $agregado),
             'estado' => [
                 'leads_ativos' => $leadsAtivos,
                 'leads_fechados' => $leadsFechados,

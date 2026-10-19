@@ -18,6 +18,7 @@ import SectionHeader from '@/Components/ui/SectionHeader.vue';
 import SkeletonKpi from '@/Components/ui/SkeletonKpi.vue';
 import SkeletonRows from '@/Components/ui/SkeletonRows.vue';
 import StatBar from '@/Components/ui/StatBar.vue';
+import FaturamentoProjecao from '@/Components/relatorios/FaturamentoProjecao.vue';
 import { useToast } from '@/Composables/useToast';
 import { diasDesde, formatBRL, formatarData, parseDataLocal } from '@/utils/formatadores';
 
@@ -149,15 +150,7 @@ async function concluir(tarefa) {
                         <KpiCard rotulo="Sem contato +14d" :valor="m.estado.sem_contato_14d" sub="leads abertos parados" :icone="AlertTriangle" :tom="m.estado.sem_contato_14d ? 'warn' : 'neutral'" contar :href="route('leads.index', { estagnados: 1, ...(filtros.user_id ? { user_id: filtros.user_id } : {}), ...(filtros.funil_id ? { funil_id: filtros.funil_id } : {}) })" />
                     </div>
 
-                    <AppCard v-if="m.recorrencia && (m.recorrencia.contratos_vigentes || m.recorrencia.a_realizar)" class="mt-4">
-                        <SectionHeader titulo="Receita recorrente" descricao="Contratos recorrentes ganhos, contados pelo mês atual" />
-                        <dl class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-                            <div><dt class="text-sm text-fg-2">Neste mês (MRR)</dt><dd class="num mt-1 font-display text-2xl font-semibold text-fg-0">{{ formatBRL(m.recorrencia.mrr) }}</dd></div>
-                            <div><dt class="text-sm text-fg-2">Contratos vigentes</dt><dd class="num mt-1 font-display text-2xl font-semibold text-fg-0">{{ m.recorrencia.contratos_vigentes }}</dd></div>
-                            <div><dt class="text-sm text-fg-2">A realizar</dt><dd class="num mt-1 font-display text-2xl font-semibold text-fg-0">{{ formatBRL(m.recorrencia.a_realizar) }}</dd></div>
-                            <div><dt class="text-sm text-fg-2">Vencem em 30 dias</dt><dd class="num mt-1 font-display text-2xl font-semibold" :class="m.recorrencia.vencendo_30d ? 'text-warn' : 'text-fg-0'">{{ m.recorrencia.vencendo_30d }}</dd></div>
-                        </dl>
-                    </AppCard>
+                    <FaturamentoProjecao v-if="m.faturamento" :faturamento="m.faturamento" :projecao="m.projecao" :periodo="m.periodo.rotulo" class="mt-4" />
 
                     <div class="mt-4 grid gap-4 lg:grid-cols-2">
                         <AppCard>

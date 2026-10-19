@@ -101,4 +101,16 @@ class CronogramaDeRecorrenciaTest extends TestCase
         $this->assertSame(2, $c->mesesDecorridos()); // 31/01 e 28/02
         $this->assertSame('2027-04-29', $c->fim()->toDateString());
     }
+
+    public function test_valor_entre_soma_os_meses_iniciados_no_intervalo(): void
+    {
+        $c = $this->cronograma([['meses' => 12, 'valor_mensal' => 1000]], '2026-10-19');
+
+        $this->assertEquals(1000, $c->valorEntre(Carbon::parse('2026-09-19'), Carbon::parse('2026-10-19')));
+        $this->assertEquals(3000, $c->valorEntre(Carbon::parse('2026-01-01'), Carbon::parse('2026-12-31'))); // dezembro e novembro ainda não começaram
+        $this->assertEquals(0, $c->valorEntre(Carbon::parse('2025-01-01'), Carbon::parse('2025-12-31')));
+
+        $cancelado = $this->cronograma([['meses' => 12, 'valor_mensal' => 1000]], '2027-02-01', '2026-09-20');
+        $this->assertEquals(2000, $cancelado->valorEntre(Carbon::parse('2026-01-01'), Carbon::parse('2026-12-31')));
+    }
 }

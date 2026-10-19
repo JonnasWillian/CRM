@@ -14,6 +14,7 @@ import PeriodoSelector from '@/Components/ui/PeriodoSelector.vue';
 import SectionHeader from '@/Components/ui/SectionHeader.vue';
 import StatBar from '@/Components/ui/StatBar.vue';
 import AbasDeRelatorio from '@/Components/relatorios/AbasDeRelatorio.vue';
+import FaturamentoProjecao from '@/Components/relatorios/FaturamentoProjecao.vue';
 import { formatBRL, parseDataLocal } from '@/utils/formatadores';
 
 /** Visão geral: números do período, comparação entre vendedores e ganhos dos últimos 12 meses. */
@@ -57,6 +58,8 @@ const colunas = [
     { key: 'valor_ganho', rotulo: 'Valor ganho', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'md', formatar: (v) => formatBRL(v) },
     { key: 'perdidos', rotulo: 'Perdidos', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'sm' },
     { key: 'taxa_ganho', rotulo: 'Taxa', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'md', formatar: (v) => (v === null ? '—' : `${v.toLocaleString('pt-BR')}%`) },
+    { key: 'mrr', rotulo: 'Recorrência/mês', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'md', formatar: (v) => formatBRL(v) },
+    { key: 'recorrente_a_realizar', rotulo: 'Recorr. a realizar', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'xl', formatar: (v) => formatBRL(v) },
     { key: 'valor_ponderado', rotulo: 'Previsão pond.', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'lg', formatar: (v) => formatBRL(v) },
 ];
 
@@ -93,6 +96,8 @@ const periodoQuery = computed(() => ({ de: m.value.periodo.inicio, ate: m.value.
                     <KpiCard rotulo="Ticket médio" :valor="m.fluxo.ticket_medio === null ? '—' : formatBRL(m.fluxo.ticket_medio)" :icone="CircleDollarSign" />
                     <KpiCard rotulo="Previsão ponderada" :valor="formatBRL(m.forecast.valor_ponderado)" :sub="`${formatBRL(m.forecast.valor_estimado_aberto)} sem ponderar`" :icone="Wallet" />
                 </div>
+
+                <FaturamentoProjecao :faturamento="m.faturamento" :projecao="m.projecao" :periodo="m.periodo.rotulo" class="mt-4" />
 
                 <section class="mt-4">
                     <SectionHeader titulo="Por vendedor" descricao="Novos, ganhos e perdidos no período; ativos e previsão são o retrato de hoje." class="mb-3" />

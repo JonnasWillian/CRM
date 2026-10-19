@@ -115,6 +115,22 @@ final class CronogramaDeRecorrencia
         return round(array_sum(array_slice($this->valores, 0, $this->mesesDecorridos())), 2);
     }
 
+    /** Soma dos meses que começaram dentro de [de, ate] e já começaram até hoje (ou até o cancelamento). */
+    public function valorEntre(CarbonInterface $de, CarbonInterface $ate): float
+    {
+        $de = CarbonImmutable::instance($de)->startOfDay();
+        $ate = CarbonImmutable::instance($ate)->endOfDay();
+        $soma = 0.0;
+        for ($k = 0; $k < $this->mesesDecorridos(); $k++) {
+            $inicio = $this->inicioDoMes($k);
+            if ($inicio->gte($de) && $inicio->lte($ate)) {
+                $soma += $this->valores[$k];
+            }
+        }
+
+        return round($soma, 2);
+    }
+
     /** O que falta até o fim do contrato; zero se cancelado. */
     public function valorARealizar(): float
     {

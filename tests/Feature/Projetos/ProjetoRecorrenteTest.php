@@ -116,18 +116,19 @@ class ProjetoRecorrenteTest extends TestCase
         $this->actingAs($colega)->postJson("/api/projetos/{$id}/aditivos", ['tipo' => 'renovacao', 'meses' => 6])->assertNotFound();
     }
 
-    public function test_metricas_somam_a_receita_recorrente_dos_contratos_ganhos_vigentes(): void
+    /** Fatura todo contrato vigente não cancelado, qualquer que seja o status de entrega. */
+    public function test_metricas_somam_a_receita_recorrente_dos_contratos_vigentes(): void
     {
         $c = $this->cenario();
-        $this->criar($c); // ganho, vigente: 1.500/mês
-        $this->criar($c, ['valor_mensal' => 900, 'status_id' => $c['aberto']->id]); // proposta: não conta
+        $this->criar($c); // status ganho, vigente: 1.500/mês
+        $this->criar($c, ['valor_mensal' => 900, 'status_id' => $c['aberto']->id]); // em andamento, vigente: também fatura
         $this->criar($c, ['valor_mensal' => 700, 'data_inicial' => '2025-01-10', 'duracao_meses' => 6]); // encerrado
 
-        $r = $this->actingAs($c['dono'])->getJson('/api/metricas')->assertOk()->json('recorrencia');
+        $m = $this->actingAs($c['dono'])->getJson('/api/metricas')->assertOk()->json();
 
-        $this->assertEquals(1500, $r['mrr']);
-        $this->assertSame(1, $r['contratos_vigentes']);
-        $this->assertEquals(13500, $r['a_realizar']);
-        $this->assertSame(0, $r['vencendo_30d']);
+        $this->assertEquals(2400, $m['faturamento']['mrr']);
+        $this->assertSame(2, $m['faturamento']['contratos_vigentes']);
+        $this->assertEquals(13500 + 8100, $m['projecao']['recorrente_a_realizar']);
+        $this->assertSame(0, $m['projecao']['contratos_vencendo_30d']);
     }
 }

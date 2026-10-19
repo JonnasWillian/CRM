@@ -48,11 +48,17 @@ class RelatorioPorVendedor
             ->get()
             ->keyBy('user_id');
 
+        // Recorrência por dono do lead: MRR de hoje e o que falta realizar.
+        $recorrencia = ResumoDeRecorrencia::contratos(Usuario::query()->when($funilId, fn ($q) => $q->where('usuarios.funil_id', $funilId))->select('usuarios.id'))
+            ->groupBy(fn ($p) => $p->usuario?->user_id)
+            ->map(fn ($contratos) => ResumoDeRecorrencia::resumir($contratos, $periodo));
+
         return User::doTenant(app(CurrentTenant::class)->id())
             ->orderBy('name')
             ->get(['id', 'name', 'ativo'])
-            ->filter(fn (User $u) => $u->ativo || $leads->has($u->id) || $perdas->has($u->id))
-            ->map(function (User $u) use ($leads, $perdas) {
+            ->filter(fn (User $u) => $u->ativo || $leads->has($u->id) || $perdas->has($u->id) || $recorrencia->has($u->id))
+            ->map(function (User $u) use ($leads, $perdas, $recorrencia) {
+                $rec = $recorrencia->get($u->id);
                 $l = $leads->get($u->id);
                 $p = $perdas->get($u->id);
                 $ganhos = (int) ($l->ganhos ?? 0);
@@ -70,6 +76,9 @@ class RelatorioPorVendedor
                     'valor_perdido' => (float) ($p->valor_perdido ?? 0),
                     'taxa_ganho' => ($ganhos + $perdidos) > 0 ? round($ganhos / ($ganhos + $perdidos) * 100, 1) : null,
                     'valor_ponderado' => round((float) ($l->valor_ponderado ?? 0), 2),
+                    'mrr' => $rec['mrr'] ?? 0.0,
+                    'recorrente_no_periodo' => $rec['no_periodo'] ?? 0.0,
+                    'recorrente_a_realizar' => $rec['a_realizar'] ?? 0.0,
                 ];
             })->values()->all();
     }
