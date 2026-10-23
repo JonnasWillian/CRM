@@ -52,6 +52,7 @@ class EquipeController extends Controller
     public function reativar(Membros $membros, User $agente): JsonResponse
     {
         $this->authorize('gerenciar', $agente);
+        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($agente->tenant_id, 'usuarios');
         $membros->reativar($agente);
 
         return response()->json(['message' => "“{$agente->name}” reativado."]);
@@ -64,6 +65,7 @@ class EquipeController extends Controller
             'papel' => ['required', Rule::in(Convite::PAPEIS)],
         ], ['email.unique' => 'Este e-mail já tem uma conta no sistema.']);
 
+        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite(app(CurrentTenant::class)->id(), 'usuarios');
         $convite = $convites->convidar($request->user(), $dados['email'], $dados['papel']);
 
         return response()->json(['message' => "Convite enviado para {$convite->email}. Vale por ".Convites::VALIDADE_DIAS.' dias.', 'data' => self::convite($convite)], 201);

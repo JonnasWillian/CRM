@@ -37,6 +37,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'empresa' => 'required|string|min:2|max:255',
+            'plano' => ['nullable', \Illuminate\Validation\Rule::in(array_column(config('comercial.planos', []), 'chave'))],
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], ['empresa.required' => 'Informe o nome da empresa.']);
@@ -68,6 +69,9 @@ class RegisteredUserController extends Controller
             // a atribuição cairia em `tenant_id = null`.
             setPermissionsTeamId($tenant->id);
             $user->assignRole('admin');
+
+            // Toda empresa nasce em teste; o plano escolhido no site fica como pretendido.
+            app(\App\Services\Assinaturas\Assinaturas::class)->iniciarTeste($tenant, $request->input('plano'));
 
             return $user;
         });

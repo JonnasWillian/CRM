@@ -35,6 +35,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             // Nome do produto: logo e títulos leem daqui (APP_NAME), nunca de texto cravado.
             'app' => ['nome' => config('app.name')],
+            // Situação da assinatura (teste, plano, limites, uso) para a faixa do layout e a página de planos.
+            'assinatura' => fn () => $request->user()?->tenant_id ? app(\App\Services\Assinaturas\Assinaturas::class)->resumo($request->user()->tenant_id) : null,
             'auth' => [
                 'user' => $request->user(),
                 // Closures, não arrays prontos: Inertia::share() é chamado por

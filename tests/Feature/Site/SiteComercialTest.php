@@ -31,7 +31,10 @@ class SiteComercialTest extends TestCase
         $this->assertStringContainsString('property="og:image" content="https://meucrm.com.br/og.png"', $html);
         $this->assertStringContainsString('"@type":"SoftwareApplication"', $html);
         $this->assertStringContainsString('"@type":"FAQPage"', $html);
-        $this->assertStringContainsString('href="https://meucrm.com.br/register"', $html);
+        // Links de navegação são relativos: funcionam em qualquer host (APP_URL só vale para canônica, OG e sitemap).
+        $this->assertStringContainsString('href="/register"', $html);
+        $this->assertStringContainsString('href="/precos"', $html);
+        $this->assertStringNotContainsString('href="https://meucrm.com.br/register"', $html);
         $this->assertStringNotContainsString('name="robots" content="noindex', $html);
     }
 

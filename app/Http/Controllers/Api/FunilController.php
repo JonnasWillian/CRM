@@ -60,6 +60,7 @@ class FunilController extends Controller
 
     public function store(FunilRequest $request): JsonResponse
     {
+        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite(app(\App\Support\Tenancy\CurrentTenant::class)->id(), 'funis');
         $funil = $this->funis->criar($request->validated());
 
         return response()->json(self::serializar($funil->load('estagios')), 201);

@@ -15,7 +15,7 @@
                     <li class="flex items-start gap-2"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>{{ $item }}</li>
                 @endforeach
             </ul>
-            <a href="{{ $url('/register') }}?plano={{ $plano['chave'] }}" class="mt-6 inline-flex h-10 items-center justify-center rounded text-md font-semibold {{ $plano['destaque'] ? 'bg-primary text-primary-fg hover:bg-primary-hover' : 'border border-line bg-bg-1 text-fg-0 hover:bg-bg-2' }}">Começar grátis</a>
+            <a href="/register?plano={{ $plano['chave'] }}" class="mt-6 inline-flex h-10 items-center justify-center rounded text-md font-semibold {{ $plano['destaque'] ? 'bg-primary text-primary-fg hover:bg-primary-hover' : 'border border-line bg-bg-1 text-fg-0 hover:bg-bg-2' }}">Começar grátis</a>
         </article>
     @endforeach
 </div>

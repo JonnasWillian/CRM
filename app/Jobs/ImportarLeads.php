@@ -178,6 +178,11 @@ class ImportarLeads implements ShouldQueue
                 $this->avancar();
             } catch (ValidationException $e) {
                 $this->erro($n, $e->validator->errors()->has('motivo_perda_id') ? 'O estágio escolhido é de perda e exige motivo; importe em outro estágio.' : $e->getMessage(), $linha);
+            } catch (\App\Exceptions\LimiteDoPlanoException $e) {
+                // O plano encheu no meio: para aqui, com o que já entrou.
+                $this->erro($n, $e->getMessage(), $linha);
+                $this->imp->mensagem_falha = $e->getMessage();
+                break;
             }
         }
 

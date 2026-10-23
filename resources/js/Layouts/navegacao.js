@@ -2,6 +2,7 @@ import {
     BarChart3,
     CheckSquare,
     CircleX,
+    CreditCard,
     GitBranch,
     LayoutDashboard,
     LayoutTemplate,
@@ -46,6 +47,7 @@ export function gruposDeNavegacao({ pode, existe }) {
                 { rota: 'configuracoes.motivosPerda', rotulo: 'Motivos de perda', icone: CircleX, permissao: 'configuracoes.manage' },
                 { rota: 'configuracoes.modelosTarefa', rotulo: 'Modelos de tarefa', icone: LayoutTemplate },
                 { rota: 'configuracoes.equipe', rotulo: 'Equipe', icone: UserCog, permissao: 'agentes.manage' },
+                { rota: 'configuracoes.assinatura', rotulo: 'Assinatura', icone: CreditCard, permissao: 'configuracoes.manage' },
             ],
         },
         {

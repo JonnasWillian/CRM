@@ -9,6 +9,7 @@ import { ehErroDeValidacao, mensagemDeErro } from './erros';
  * no campo. 422 sem campos é regra de domínio com frase pronta do backend.
  */
 export const MENSAGENS = {
+    402: 'Sua assinatura não permite alterações no momento. Escolha um plano em Configurações › Assinatura.',
     403: 'Você não tem permissão para esta ação.',
     404: 'Registro não encontrado. Pode ter sido removido por outra pessoa.',
     419: 'Sua sessão expirou.',
@@ -17,7 +18,8 @@ export const MENSAGENS = {
 };
 
 export function tratarErroHttp(erro, { toast, aoDeslogar } = {}) {
-    if (erro?.config?.silencioso) return false;
+    // Assinatura bloqueada (402) é global, como 401: vale mesmo quando o chamador pediu silêncio.
+    if (erro?.config?.silencioso && erro?.response?.status !== 402) return false;
     if (typeof axios !== 'undefined' && axios.isCancel?.(erro)) return false;
     if (erro?.code === 'ERR_CANCELED' || erro?.name === 'CanceledError') return false;
 
@@ -26,6 +28,9 @@ export function tratarErroHttp(erro, { toast, aoDeslogar } = {}) {
     switch (status) {
         case 401:
             aoDeslogar?.();
+            return true;
+        case 402:
+            toast?.erro(erro?.response?.data?.message || MENSAGENS[402], { acao: { rotulo: 'Ver planos', onClick: () => { window.location.href = '/configuracoes/assinatura'; } } });
             return true;
         case 403:
         case 404:

@@ -35,6 +35,8 @@ class CadastrarLead
             $dados['estagio_id'] = Estagio::where('funil_id', $dados['funil_id'])->aberto()->orderBy('ordem')->orderBy('id')->value('id');
         }
 
+        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($autor->tenant_id, 'leads');
+
         $lead = new Usuario;
         ($this->transicao)($lead, $dados, $perda);
 

@@ -6,7 +6,7 @@ import AppInput from '@/Components/ui/AppInput.vue';
 import FormField from '@/Components/ui/FormField.vue';
 
 /** Criar a conta da empresa: quem cadastra é o admin. Membros entram por convite (Equipe). */
-const form = useForm({ empresa: '', name: '', email: '', password: '', password_confirmation: '' });
+const form = useForm({ empresa: '', name: '', email: '', password: '', password_confirmation: '', plano: new URLSearchParams(window.location.search).get('plano') });
 const enviar = () => form.post(route('register'), { onFinish: () => form.reset('password', 'password_confirmation') });
 </script>
 

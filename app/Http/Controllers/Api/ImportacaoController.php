@@ -61,6 +61,9 @@ class ImportacaoController extends Controller
             'opcoes.estagio_id.exists' => 'Escolha um estágio do funil selecionado.',
         ]);
 
+        // Capacidade do plano antes de enfileirar: melhor recusar agora do que parar na linha 1.500.
+        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($tenant, 'leads', (int) $importacao->total_linhas);
+
         $mapa = array_intersect_key(array_filter($dados['mapeamento'], fn ($v) => $v !== null), CamposDeImportacao::CAMPOS);
         $importacao->forceFill(['mapeamento' => array_map('intval', $mapa), 'opcoes' => $dados['opcoes'] ?? [], 'status' => Importacao::NA_FILA])->save();
         ImportarLeads::dispatch($importacao->id);

@@ -25,6 +25,16 @@ import { gruposDeNavegacao } from './navegacao';
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const nomeDoProduto = computed(() => page.props.app?.nome ?? 'CRM');
+const faixaAssinatura = computed(() => {
+    const a = page.props.assinatura;
+    if (!a) return null;
+    if (a.status === 'teste_expirado') return { tom: 'danger', texto: 'Seu período de teste terminou: a equipe só consulta até um plano ser ativado.', acao: 'Escolher plano' };
+    if (a.status === 'vencida') return { tom: 'danger', texto: `O plano ${a.plano_nome} venceu.`, acao: 'Renovar' };
+    if (a.status === 'cancelada') return { tom: 'danger', texto: 'A assinatura foi cancelada.', acao: 'Reativar' };
+    if (a.status === 'teste' && a.dias_restantes <= 7) return { tom: 'warn', texto: `Seu teste termina em ${a.dias_restantes} dia${a.dias_restantes === 1 ? '' : 's'}.`, acao: 'Ver planos' };
+    if (a.status === 'ativa' && a.dias_restantes <= 5) return { tom: 'warn', texto: `Seu plano vence em ${a.dias_restantes} dia${a.dias_restantes === 1 ? '' : 's'}.`, acao: 'Renovar' };
+    return null;
+});
 
 const pode = (permissao) => page.props.auth.permissions?.[permissao] === true;
 const existe = (rota) => typeof route === 'function' && route().has(rota);
@@ -172,6 +182,12 @@ watch(
         </dialog>
 
         <main class="min-w-0 flex-1 pt-14 transition-[margin] duration-3 ease-ui md:pt-0" :class="colapsada ? 'md:ml-14' : 'md:ml-[232px]'">
+            <!-- Faixa da assinatura: teste acabando, teste encerrado, plano vencido/cancelado -->
+            <div v-if="faixaAssinatura" class="border-b px-4 py-2 text-sm md:px-6" :class="faixaAssinatura.tom === 'danger' ? 'border-danger-line bg-danger-subtle text-danger' : 'border-warn-line bg-warn-subtle text-warn'" role="status">
+                <span>{{ faixaAssinatura.texto }}</span>
+                <Link v-if="pode('configuracoes.manage')" :href="route('configuracoes.assinatura')" class="ml-2 font-semibold underline underline-offset-2">{{ faixaAssinatura.acao }}</Link>
+                <span v-else class="ml-2 text-fg-1">Peça ao administrador da empresa.</span>
+            </div>
             <slot />
         </main>
 

@@ -64,7 +64,7 @@ Regras: por usuário **ativo** (desativado não conta — o sistema já tem o co
 
 **Conta de padaria:** 10 clientes com 4 usuários no Profissional anual = R$ 2.760/mês. 50 clientes nesse perfil = R$ 13.800/mês. Com ticket de ~R$ 280/cliente/mês, um CAC de até R$ 600 por cliente pago se paga em pouco mais de 2 meses; acima de R$ 1.000 começa a apertar, salvo churn abaixo de 3% ao mês.
 
-**Importante:** o app ainda não aplica limites nem cobra. Todo cadastro entra grátis e ilimitado. Isso está documentado no `config/comercial.php` e na seção 9.
+**Estado atual:** teste de 14 dias, bloqueio ao expirar e limites por plano já estão no app (seção 9, B2). A escolha do plano ainda não cobra: a cobrança é o item B1.
 
 ## 6. Funil e metas
 
@@ -127,8 +127,8 @@ Cadastro no B2B Stack, Capterra Brasil e GetApp; página no LinkedIn; pedido de 
 
 | # | Item | Por quê |
 |---|---|---|
-| B1 | Cobrança (Stripe, Asaas ou Pagar.me): assinatura por usuário ativo, mensal e anual, nota fiscal | Sem isso não há receita |
-| B2 | Limites de plano e fim do teste: contar dias desde o cadastro, bloquear escrita após 14 dias sem plano, aplicar os limites do Inicial | O site promete limites que o app não aplica |
+| B1 | Cobrança (Stripe, Asaas ou Pagar.me): assinatura por usuário ativo, mensal e anual, nota fiscal. Hoje a escolha do plano ativa na hora, sem pagamento; até o gateway existir, cobre por Pix/boleto e renove com `php artisan assinatura:ativar {empresa} {plano} --ciclo=anual` | Sem isso não há receita |
+| B2 | ~~Limites de plano e fim do teste~~ **Feito em 22/10/2026:** toda empresa nasce em teste de 14 dias; teste expirado, plano vencido ou cancelado bloqueia escrita (402) e mantém leitura; limites do plano (usuários ativos, funis, leads) valem fora do teste; página Configurações › Assinatura escolhe o plano; `assinatura:ativar` renova à mão. Falta só ligar o gateway em `Assinaturas::ativar()` | — |
 | B3 | Domínio, HTTPS e `APP_URL` | SEO, OG e e-mails apontam para o domínio |
 | B4 | E-mail transacional real (SMTP ou API): convites, redefinição de senha, avisos de teste | Hoje `MAIL_MAILER=log` |
 | B5 | Revisão jurídica dos Termos e da Política de privacidade; CNPJ e razão social em `COMERCIAL_*` | Os textos são um rascunho razoável, não um parecer |

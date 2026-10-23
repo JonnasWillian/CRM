@@ -50,16 +50,16 @@
 
         <header class="sticky top-0 z-40 border-b border-line bg-bg-1/90 backdrop-blur-sm">
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
-                <a href="{{ $url('/') }}" class="font-display text-xl font-bold tracking-tight text-fg-0" aria-label="{{ $nome }}, página inicial">{{ $nome }}<span class="text-primary">.</span></a>
+                <a href="/" class="font-display text-xl font-bold tracking-tight text-fg-0" aria-label="{{ $nome }}, página inicial">{{ $nome }}<span class="text-primary">.</span></a>
                 <nav aria-label="Site" class="hidden items-center gap-6 text-sm font-medium text-fg-1 md:flex">
-                    <a href="{{ $url('/') }}#funcionalidades" class="hover:text-fg-0">Funcionalidades</a>
-                    <a href="{{ $url('/') }}#recorrencia" class="hover:text-fg-0">Receita recorrente</a>
-                    <a href="{{ $url('/precos') }}" class="hover:text-fg-0 @if ($caminho === '/precos') text-fg-0 @endif">Preços</a>
-                    <a href="{{ $url('/') }}#perguntas" class="hover:text-fg-0">Perguntas</a>
+                    <a href="/#funcionalidades" class="hover:text-fg-0">Funcionalidades</a>
+                    <a href="/#recorrencia" class="hover:text-fg-0">Receita recorrente</a>
+                    <a href="/precos" class="hover:text-fg-0 @if ($caminho === '/precos') text-fg-0 @endif">Preços</a>
+                    <a href="/#perguntas" class="hover:text-fg-0">Perguntas</a>
                 </nav>
                 <div class="flex items-center gap-2">
-                    <a href="{{ $url('/login') }}" class="hidden h-9 items-center rounded px-3 text-sm font-medium text-fg-1 hover:bg-bg-2 hover:text-fg-0 sm:inline-flex">Entrar</a>
-                    <a href="{{ $url('/register') }}" class="inline-flex h-9 items-center rounded bg-primary px-3.5 text-sm font-semibold text-primary-fg shadow-1 hover:bg-primary-hover">Começar grátis</a>
+                    <a href="/login" class="hidden h-9 items-center rounded px-3 text-sm font-medium text-fg-1 hover:bg-bg-2 hover:text-fg-0 sm:inline-flex">Entrar</a>
+                    <a href="/register" class="inline-flex h-9 items-center rounded bg-primary px-3.5 text-sm font-semibold text-primary-fg shadow-1 hover:bg-primary-hover">Começar grátis</a>
                 </div>
             </div>
         </header>
@@ -78,10 +78,10 @@
                 <nav aria-label="Produto" class="text-sm">
                     <p class="mb-2 font-semibold text-fg-0">Produto</p>
                     <ul class="space-y-1.5 text-fg-1">
-                        <li><a href="{{ $url('/') }}#funcionalidades" class="hover:text-fg-0">Funcionalidades</a></li>
-                        <li><a href="{{ $url('/precos') }}" class="hover:text-fg-0">Preços</a></li>
-                        <li><a href="{{ $url('/register') }}" class="hover:text-fg-0">Criar conta</a></li>
-                        <li><a href="{{ $url('/login') }}" class="hover:text-fg-0">Entrar</a></li>
+                        <li><a href="/#funcionalidades" class="hover:text-fg-0">Funcionalidades</a></li>
+                        <li><a href="/precos" class="hover:text-fg-0">Preços</a></li>
+                        <li><a href="/register" class="hover:text-fg-0">Criar conta</a></li>
+                        <li><a href="/login" class="hover:text-fg-0">Entrar</a></li>
                     </ul>
                 </nav>
                 <nav aria-label="Empresa" class="text-sm">
@@ -91,8 +91,8 @@
                         @if ($contato['whatsapp'])
                             <li><a href="https://wa.me/{{ $contato['whatsapp'] }}" rel="noopener" class="hover:text-fg-0">WhatsApp comercial</a></li>
                         @endif
-                        <li><a href="{{ $url('/termos') }}" class="hover:text-fg-0">Termos de uso</a></li>
-                        <li><a href="{{ $url('/privacidade') }}" class="hover:text-fg-0">Política de privacidade</a></li>
+                        <li><a href="/termos" class="hover:text-fg-0">Termos de uso</a></li>
+                        <li><a href="/privacidade" class="hover:text-fg-0">Política de privacidade</a></li>
                     </ul>
                 </nav>
             </div>

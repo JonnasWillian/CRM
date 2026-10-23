@@ -15,8 +15,8 @@
                     Pipeline, tarefas e equipe num só lugar, em português. E uma conta que os outros CRMs não fazem: contratos mensais com renovações, faturamento até o mês atual e a projeção do que falta.
                 </p>
                 <div class="mt-8 flex flex-wrap items-center gap-3">
-                    <a href="{{ $url('/register') }}" class="inline-flex h-11 items-center rounded bg-primary px-5 text-md font-semibold text-primary-fg shadow-1 hover:bg-primary-hover">Começar grátis por {{ $diasDeTeste }} dias</a>
-                    <a href="{{ $url('/precos') }}" class="inline-flex h-11 items-center rounded border border-line bg-bg-1 px-5 text-md font-medium text-fg-0 hover:bg-bg-2">Ver preços</a>
+                    <a href="/register" class="inline-flex h-11 items-center rounded bg-primary px-5 text-md font-semibold text-primary-fg shadow-1 hover:bg-primary-hover">Começar grátis por {{ $diasDeTeste }} dias</a>
+                    <a href="/precos" class="inline-flex h-11 items-center rounded border border-line bg-bg-1 px-5 text-md font-medium text-fg-0 hover:bg-bg-2">Ver preços</a>
                 </div>
                 <p class="mt-3 text-sm text-fg-2">Sem cartão. Importe sua planilha em cinco minutos.</p>
             </div>
@@ -135,7 +135,7 @@
         <div class="mx-auto max-w-6xl px-4 py-16 md:px-6">
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div><p class="text-sm font-semibold uppercase tracking-wider text-primary">Preços</p><h2 class="mt-2 font-display text-3xl font-bold tracking-tight">Por usuário, em reais, sem surpresa.</h2></div>
-                <a href="{{ $url('/precos') }}" class="text-md font-medium text-primary hover:underline">Comparar os planos →</a>
+                <a href="/precos" class="text-md font-medium text-primary hover:underline">Comparar os planos →</a>
             </div>
             @include('site._planos', ['compacto' => true])
         </div>
@@ -161,7 +161,7 @@
                 <h2 class="font-display text-3xl font-bold tracking-tight text-primary-fg">Comece hoje com a sua planilha.</h2>
                 <p class="mt-2 text-md text-primary-fg/85">{{ $diasDeTeste }} dias grátis, sem cartão. Importe os leads, convide a equipe e veja o pipeline funcionando ainda hoje.</p>
             </div>
-            <a href="{{ $url('/register') }}" class="inline-flex h-11 items-center rounded bg-bg-1 px-5 text-md font-semibold text-primary shadow-2 hover:bg-bg-2">Criar conta grátis</a>
+            <a href="/register" class="inline-flex h-11 items-center rounded bg-bg-1 px-5 text-md font-semibold text-primary shadow-2 hover:bg-bg-2">Criar conta grátis</a>
         </div>
     </section>
 @endsection

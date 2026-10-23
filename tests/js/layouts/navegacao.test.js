@@ -8,7 +8,7 @@ describe('gruposDeNavegacao', () => {
         const grupos = gruposDeNavegacao({ pode: todas, existe: todas });
         expect(grupos.map((g) => g.titulo ?? null)).toEqual([null, 'Análise', 'Configurações', 'Sistema']);
         expect(grupos[0].itens.map((i) => i.rotulo)).toEqual(['Dashboard', 'Leads', 'Pipeline', 'Tarefas']);
-        expect(grupos[2].itens.map((i) => i.rotulo)).toEqual(['Funis', 'Motivos de perda', 'Modelos de tarefa', 'Equipe']);
+        expect(grupos[2].itens.map((i) => i.rotulo)).toEqual(['Funis', 'Motivos de perda', 'Modelos de tarefa', 'Equipe', 'Assinatura']);
         expect(grupos[3].itens.map((i) => i.rotulo)).toEqual(['Lixeira']);
     });
 

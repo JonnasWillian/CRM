@@ -48,6 +48,13 @@ describe('tratarErroHttp', () => {
         expect(toast.erro.mock.calls[0][0]).toBe('Não foi possível concluir. Tente novamente.');
     });
 
+    it('402 (assinatura bloqueada) avisa mesmo em chamada silenciosa e oferece ver os planos', () => {
+        tratarErroHttp(resposta(402, { message: 'Seu período de teste terminou.' }, { silencioso: true }), { toast, aoDeslogar });
+        expect(toast.erro).toHaveBeenCalledOnce();
+        expect(toast.erro.mock.calls[0][0]).toBe('Seu período de teste terminou.');
+        expect(toast.erro.mock.calls[0][1].acao.rotulo).toBe('Ver planos');
+    });
+
     it('config.silencioso desliga o tratamento', () => {
         tratarErroHttp(resposta(500, {}, { silencioso: true }), { toast, aoDeslogar });
         expect(toast.erro).not.toHaveBeenCalled();

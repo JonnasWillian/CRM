@@ -72,6 +72,8 @@ Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configurac
     Route::get('/funis', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'funis'])->middleware('can:configuracoes.manage')->name('funis');
     Route::get('/motivos-perda', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'motivosPerda'])->middleware('can:configuracoes.manage')->name('motivosPerda');
     Route::get('/equipe', [\App\Http\Controllers\Web\EquipeController::class, 'index'])->middleware('can:agentes.manage')->name('equipe');
+    Route::get('/assinatura', [\App\Http\Controllers\Web\AssinaturaController::class, 'index'])->middleware('can:configuracoes.manage')->name('assinatura');
+    Route::post('/assinatura', [\App\Http\Controllers\Web\AssinaturaController::class, 'escolher'])->middleware('can:configuracoes.manage')->name('assinatura.escolher');
     // Do próprio agente, sem permissão extra.
     Route::get('/modelos-tarefa', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'modelosTarefa'])->name('modelosTarefa');
 });

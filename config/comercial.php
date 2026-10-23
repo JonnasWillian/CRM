@@ -6,9 +6,8 @@
  * os termos. Mudar o preço ou o nome é editar aqui — nenhuma página tem
  * número cravado.
  *
- * ATENÇÃO: os limites dos planos são a oferta pública. O app ainda não os
- * aplica nem cobra (ver docs/comercial/analise-comercial-e-seo.md, seção
- * "O que falta para cobrar"). Enquanto isso, todo cadastro entra grátis.
+ * Os limites (`limites`) são aplicados por Services\Assinaturas\Assinaturas.
+ * A cobrança em si ainda não existe: ver docs/comercial/analise-comercial-e-seo.md.
  */
 return [
     'slogan' => 'O CRM de vendas que mostra o que você já fatura e o que ainda vai entrar.',
@@ -19,6 +18,9 @@ return [
     'publico' => 'agências, consultorias, estúdios e prestadores de serviço com equipes de 2 a 30 vendedores',
 
     'dias_de_teste' => 14,
+
+    // Desligue para não bloquear escrita nem aplicar limites (ex.: na migração de clientes). A suíte de testes roda desligada.
+    'exigir_assinatura' => (bool) env('COMERCIAL_EXIGIR_ASSINATURA', true),
 
     'contato' => [
         'email' => env('COMERCIAL_EMAIL', env('MAIL_FROM_ADDRESS', 'contato@example.com')),
@@ -46,6 +48,7 @@ return [
             'preco_anual' => 39,
             'descricao' => 'Para quem está tirando a carteira da planilha.',
             'limite' => 'Até 3 usuários · 1 funil · 2.000 leads',
+            'limites' => ['usuarios' => 3, 'funis' => 1, 'leads' => 2000], // null = sem limite
             'inclui' => [
                 'Pipeline com arrastar e soltar',
                 'Leads com valor, probabilidade e previsão',
@@ -62,6 +65,7 @@ return [
             'preco_anual' => 69,
             'descricao' => 'Para equipes que precisam de previsão e controle.',
             'limite' => 'Usuários, funis e leads ilimitados',
+            'limites' => ['usuarios' => null, 'funis' => null, 'leads' => null],
             'inclui' => [
                 'Tudo do Inicial',
                 'Equipe com papéis, convites e transferência de carteira',
@@ -78,6 +82,7 @@ return [
             'preco_anual' => 109,
             'descricao' => 'Para operações com várias equipes e exigências de conformidade.',
             'limite' => 'A partir de 5 usuários',
+            'limites' => ['usuarios' => null, 'funis' => null, 'leads' => null],
             'inclui' => [
                 'Tudo do Profissional',
                 'Importação assistida da base atual',
