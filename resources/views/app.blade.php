@@ -4,6 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="color-scheme" content="light dark">
+        {{-- Telas do app não vão para o índice: o site público (Blade) é a porta de entrada. --}}
+        <meta name="robots" content="noindex, nofollow">
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         {{-- Tema antes da primeira pintura (mesma regra de useTema.js): sem piscar claro no tema escuro. --}}
         <script>
             (function () {

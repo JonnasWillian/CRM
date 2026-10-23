@@ -14,7 +14,7 @@ class ExampleTest extends TestCase
 
     public function test_raiz_redireciona_conforme_a_sessao(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/')->assertOk(); // site público (ver Site\SiteComercialTest)
 
         $user = User::factory()->create(['tenant_id' => Tenant::factory()->create()->id]);
         $this->actingAs($user)->get('/')->assertRedirect('/dashboard');

@@ -4,8 +4,14 @@ use App\Http\Controllers\DownloadDeArquivoController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// Sem página inicial de marketing: a raiz leva ao login ou ao dashboard.
-Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'));
+// Site público (Blade, indexável). Logado, a raiz leva ao dashboard.
+Route::get('/', [\App\Http\Controllers\Web\SiteController::class, 'inicio'])->name('site.inicio');
+Route::get('/precos', [\App\Http\Controllers\Web\SiteController::class, 'precos'])->name('site.precos');
+Route::get('/termos', [\App\Http\Controllers\Web\SiteController::class, 'termos'])->name('site.termos');
+Route::get('/privacidade', [\App\Http\Controllers\Web\SiteController::class, 'privacidade'])->name('site.privacidade');
+Route::get('/og-card', [\App\Http\Controllers\Web\SiteController::class, 'og'])->name('site.og');
+Route::get('/robots.txt', [\App\Http\Controllers\Web\SiteController::class, 'robots']);
+Route::get('/sitemap.xml', [\App\Http\Controllers\Web\SiteController::class, 'sitemap']);
 
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Web\DashboardController::class, 'index'])->name('dashboard');

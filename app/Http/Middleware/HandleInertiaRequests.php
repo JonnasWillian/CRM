@@ -33,6 +33,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            // Nome do produto: logo e títulos leem daqui (APP_NAME), nunca de texto cravado.
+            'app' => ['nome' => config('app.name')],
             'auth' => [
                 'user' => $request->user(),
                 // Closures, não arrays prontos: Inertia::share() é chamado por

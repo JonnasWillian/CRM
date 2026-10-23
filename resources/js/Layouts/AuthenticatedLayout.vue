@@ -24,6 +24,7 @@ import { gruposDeNavegacao } from './navegacao';
  */
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const nomeDoProduto = computed(() => page.props.app?.nome ?? 'CRM');
 
 const pode = (permissao) => page.props.auth.permissions?.[permissao] === true;
 const existe = (rota) => typeof route === 'function' && route().has(rota);
@@ -82,7 +83,7 @@ watch(
         >
             <div class="flex h-14 items-center border-b border-line" :class="colapsada ? 'justify-center' : 'justify-between pl-4 pr-2'">
                 <Link v-if="!colapsada" :href="route('dashboard')" class="font-display text-lg font-bold tracking-tight text-fg-0">
-                    UserFlow<span class="text-primary">.</span>
+                    {{ nomeDoProduto }}<span class="text-primary">.</span>
                 </Link>
                 <IconButton
                     :icone="colapsada ? PanelLeftOpen : PanelLeftClose"
@@ -130,7 +131,7 @@ watch(
 
         <!-- Topo mobile -->
         <header class="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-bg-1 px-3 md:hidden">
-            <Link :href="route('dashboard')" class="font-display text-lg font-bold tracking-tight text-fg-0">UserFlow<span class="text-primary">.</span></Link>
+            <Link :href="route('dashboard')" class="font-display text-lg font-bold tracking-tight text-fg-0">{{ nomeDoProduto }}<span class="text-primary">.</span></Link>
             <IconButton ref="burger" :icone="Menu" rotulo="Abrir menu" :aria-expanded="gavetaAberta" @click="abrirGaveta" />
         </header>
 
@@ -145,7 +146,7 @@ watch(
         >
             <div class="flex h-full flex-col">
                 <div class="flex h-14 items-center justify-between border-b border-line pl-4 pr-2">
-                    <span class="font-display text-lg font-bold tracking-tight">UserFlow<span class="text-primary">.</span></span>
+                    <span class="font-display text-lg font-bold tracking-tight">{{ nomeDoProduto }}<span class="text-primary">.</span></span>
                     <IconButton :icone="X" rotulo="Fechar menu" tamanho="sm" @click="fecharGaveta" />
                 </div>
                 <nav aria-label="Principal" class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3">
