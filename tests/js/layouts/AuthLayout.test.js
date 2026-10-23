@@ -77,6 +77,15 @@ describe("PainelDeEntrada", () => {
         expect(w.text()).toContain("exemplo");
     });
 
+    it("texto e miniatura ficam juntos, centrados na altura (nada empurrado para o rodapé)", () => {
+        const w = mount(PainelDeEntrada, {
+            props: { titulo: "t", descricao: "d" },
+        });
+        const raiz = w.element.classList;
+        expect(raiz.contains("justify-center")).toBe(true);
+        expect(raiz.contains("justify-between")).toBe(false);
+    });
+
     it("sem passos não desenha a lista", () => {
         const w = mount(PainelDeEntrada, {
             props: { titulo: "Sua carteira", descricao: "d" },

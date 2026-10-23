@@ -39,7 +39,7 @@ const COLUNAS = [
 </script>
 
 <template>
-    <div class="flex w-full flex-col justify-between gap-10">
+    <div class="flex w-full flex-col justify-center gap-9">
         <div class="max-w-md">
             <h2
                 class="font-display text-[28px] font-bold leading-[1.15] tracking-tight text-painel-fg xl:text-[32px]"
