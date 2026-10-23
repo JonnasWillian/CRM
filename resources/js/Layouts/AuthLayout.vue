@@ -5,7 +5,7 @@ import { usePage } from "@inertiajs/vue3";
  * Telas sem sessão. Dois arranjos:
  *  - cartão centrado (recuperar senha, confirmar, verificar e-mail, convite);
  *  - duas colunas quando a página passa o slot `painel` (login e cadastro):
- *    formulário à esquerda e a metade comercial (PainelDeEntrada) à direita,
+ *    metade comercial (PainelDeEntrada) à esquerda e formulário à direita,
  *    só a partir de `lg`. Abaixo disso o painel vira uma faixa da marca.
  */
 const nome = usePage().props.app?.nome ?? "CRM";
@@ -21,7 +21,7 @@ defineProps({
     <!-- Duas colunas -->
     <div
         v-if="$slots.painel"
-        class="flex min-h-dvh flex-col bg-bg-1 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] xl:grid-cols-2"
+        class="flex min-h-dvh flex-col bg-bg-1 lg:grid lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] xl:grid-cols-2"
     >
         <div
             data-faixa-mobile
@@ -34,6 +34,13 @@ defineProps({
                 {{ lema }}
             </p>
         </div>
+
+        <aside
+            data-painel
+            class="hidden bg-painel-bg px-10 py-12 text-painel-fg lg:flex lg:min-h-dvh lg:items-stretch xl:px-16"
+        >
+            <slot name="painel" />
+        </aside>
 
         <main
             class="flex flex-1 flex-col px-4 py-8 sm:px-10 sm:py-12 lg:min-h-dvh"
@@ -65,13 +72,6 @@ defineProps({
                 </div>
             </div>
         </main>
-
-        <aside
-            data-painel
-            class="hidden bg-painel-bg px-10 py-12 text-painel-fg lg:flex lg:min-h-dvh lg:items-stretch xl:px-16"
-        >
-            <slot name="painel" />
-        </aside>
     </div>
 
     <!-- Cartão centrado -->

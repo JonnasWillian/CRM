@@ -40,6 +40,21 @@ describe("AuthLayout", () => {
         expect(w.find("[data-conteudo-painel]").exists()).toBe(true);
         expect(w.find("[data-faixa-mobile]").classes()).toContain("lg:hidden");
     });
+
+    it("com painel: o painel vem antes do formulário (banner à esquerda, login à direita)", () => {
+        const w = mount(AuthLayout, {
+            props: { titulo: "Entrar" },
+            slots: { default: '<form id="f" />', painel: "<p>Painel</p>" },
+        });
+        const painel = w.find("[data-painel]").element;
+        const formulario = w.find("main").element;
+        expect(
+            Boolean(
+                painel.compareDocumentPosition(formulario) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+            ),
+        ).toBe(true);
+    });
 });
 
 describe("PainelDeEntrada", () => {
