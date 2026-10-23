@@ -37,7 +37,7 @@ defineProps({
 
         <aside
             data-painel
-            class="hidden bg-painel-bg px-10 py-12 text-painel-fg lg:flex lg:min-h-dvh lg:items-stretch xl:px-16"
+            class="hidden bg-painel-bg px-10 py-12 text-painel-fg lg:flex lg:min-h-dvh lg:items-stretch lg:justify-center xl:px-16"
         >
             <slot name="painel" />
         </aside>
@@ -45,7 +45,9 @@ defineProps({
         <main
             class="flex flex-1 flex-col px-4 py-8 sm:px-10 sm:py-12 lg:min-h-dvh"
         >
-            <div class="mx-auto flex w-full max-w-[400px] flex-1 flex-col">
+            <div
+                class="mx-auto flex w-full max-w-[400px] flex-1 flex-col 2xl:max-w-[440px]"
+            >
                 <a
                     href="/"
                     class="hidden self-start font-display text-2xl font-bold tracking-tight text-fg-0 lg:inline-block"

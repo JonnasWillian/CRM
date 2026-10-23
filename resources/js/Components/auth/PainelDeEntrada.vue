@@ -39,16 +39,18 @@ const COLUNAS = [
 </script>
 
 <template>
-    <div class="flex w-full flex-col justify-center gap-9">
-        <div class="max-w-md">
+    <div
+        class="mx-auto flex w-full max-w-[560px] flex-col justify-center gap-9 2xl:max-w-[720px] 2xl:gap-12"
+    >
+        <div>
             <h2
-                class="font-display text-[28px] font-bold leading-[1.15] tracking-tight text-painel-fg xl:text-[32px]"
+                class="font-display text-[28px] font-bold leading-[1.15] tracking-tight text-painel-fg xl:text-[32px] 2xl:text-[40px]"
             >
                 {{ titulo }}
             </h2>
             <p
                 v-if="descricao"
-                class="mt-4 text-[15px] leading-relaxed text-painel-fg-2"
+                class="mt-4 max-w-[60ch] text-[15px] leading-relaxed text-painel-fg-2 2xl:text-[17px]"
             >
                 {{ descricao }}
             </p>
@@ -70,7 +72,7 @@ const COLUNAS = [
         </div>
 
         <!-- Miniatura do produto: dados fictícios, rotulados como exemplo. -->
-        <figure data-miniatura class="max-w-[520px]">
+        <figure data-miniatura class="w-full">
             <div
                 class="rounded-xl bg-bg-1 p-3 shadow-3 ring-1 ring-painel-line"
                 aria-hidden="true"

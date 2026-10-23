@@ -17,7 +17,7 @@ export default {
     ],
 
     theme: {
-        screens: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px' },
+        screens: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px', '2xl': '1600px' },
         extend: {
             colors: {
                 bg: { 0: 'var(--bg-0)', 1: 'var(--bg-1)', 2: 'var(--bg-2)' },

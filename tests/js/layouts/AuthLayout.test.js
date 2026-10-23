@@ -39,6 +39,7 @@ describe("AuthLayout", () => {
         expect(painel.classes()).toContain("lg:flex");
         expect(w.find("[data-conteudo-painel]").exists()).toBe(true);
         expect(w.find("[data-faixa-mobile]").classes()).toContain("lg:hidden");
+        expect(painel.classes()).toContain("lg:justify-center");
     });
 
     it("com painel: o painel vem antes do formulário (banner à esquerda, login à direita)", () => {
@@ -84,6 +85,20 @@ describe("PainelDeEntrada", () => {
         const raiz = w.element.classList;
         expect(raiz.contains("justify-center")).toBe(true);
         expect(raiz.contains("justify-between")).toBe(false);
+    });
+
+    it("em telas largas o bloco fica centrado na coluna e a miniatura ocupa a largura do bloco", () => {
+        const w = mount(PainelDeEntrada, {
+            props: { titulo: "t", descricao: "d" },
+        });
+        const raiz = [...w.element.classList];
+        expect(raiz).toContain("mx-auto");
+        expect(raiz.some((c) => c.startsWith("max-w-"))).toBe(true);
+        expect(
+            [...w.find("[data-miniatura]").element.classList].some((c) =>
+                c.startsWith("max-w-"),
+            ),
+        ).toBe(false);
     });
 
     it("sem passos não desenha a lista", () => {
