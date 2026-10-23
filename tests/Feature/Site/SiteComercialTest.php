@@ -85,7 +85,9 @@ class SiteComercialTest extends TestCase
 
         $this->get('/login')->assertOk()->assertSee('<meta name="robots" content="noindex', false);
 
+        // Visitante também recebe os planos (o cadastro mostra o plano escolhido no site).
+        $this->get('/register')->assertInertia(fn ($page) => $page->has('app.planos', 3));
         $user = User::factory()->create(['tenant_id' => Tenant::factory()->create()->id]);
-        $this->actingAs($user)->get('/dashboard')->assertInertia(fn ($page) => $page->where('app.nome', 'MeuCRM'));
+        $this->actingAs($user)->get('/dashboard')->assertInertia(fn ($page) => $page->where('app.nome', 'MeuCRM')->where('app.dias_de_teste', 14)->has('app.planos', 3)->has('app.planos.0', fn ($p) => $p->hasAll(['chave', 'nome', 'preco_mensal', 'preco_anual'])->etc()));
     }
 }

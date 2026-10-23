@@ -88,4 +88,12 @@ class RegistrationTest extends TestCase
         $this->post('/register', ['name' => 'Ana Souza', 'empresa' => 'Acme Vendas', 'email' => 'ana@ex.test', 'password' => 'password', 'password_confirmation' => 'password']);
         $this->assertSame('Acme Vendas', \App\Models\User::firstWhere('email', 'ana@ex.test')->tenant->nome);
     }
+
+    public function test_cadastro_nao_exige_confirmacao_de_senha(): void
+    {
+        // O formulário tem um campo de senha com mostrar/ocultar; a confirmação saiu.
+        $this->post('/register', ['name' => 'Ana Souza', 'empresa' => 'Acme Vendas', 'email' => 'ana@ex.test', 'password' => 'password'])
+            ->assertRedirect(route('dashboard', absolute: false));
+        $this->assertAuthenticated();
+    }
 }

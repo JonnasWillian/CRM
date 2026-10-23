@@ -118,6 +118,15 @@
     --d-2: 180ms;   /* entrada e saída de elemento */
     --d-3: 260ms;   /* mudança de layout */
 
+    /* ── Painel de entrada (login/cadastro) ─────────────────────
+       Azul profundo com tipo branco nos DOIS temas: é a única superfície
+       que não muda com data-theme, por isso tem tokens próprios. */
+    --painel-bg:   #11324c;
+    --painel-bg-2: #1b4f72;
+    --painel-fg:   #ffffff;
+    --painel-fg-2: rgb(255 255 255 / .74);
+    --painel-line: rgb(255 255 255 / .16);
+
     /* ── Layout ──────────────────────────────────────────────── */
     --page-x: 12px;
     --sidebar-w: 232px;

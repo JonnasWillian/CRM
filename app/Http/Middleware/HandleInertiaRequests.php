@@ -34,7 +34,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             // Nome do produto: logo e títulos leem daqui (APP_NAME), nunca de texto cravado.
-            'app' => ['nome' => config('app.name')],
+            'app' => [
+                'nome' => config('app.name'),
+                // Planos e teste: o cadastro mostra qual plano a pessoa escolheu no site e por quantos dias é grátis.
+                'dias_de_teste' => (int) config('comercial.dias_de_teste', 14),
+                'planos' => array_map(fn (array $p) => ['chave' => $p['chave'], 'nome' => $p['nome'], 'preco_mensal' => $p['preco_mensal'], 'preco_anual' => $p['preco_anual'], 'limite' => $p['limite'] ?? null, 'destaque' => (bool) ($p['destaque'] ?? false)], config('comercial.planos', [])),
+            ],
             // Situação da assinatura (teste, plano, limites, uso) para a faixa do layout e a página de planos.
             'assinatura' => fn () => $request->user()?->tenant_id ? app(\App\Services\Assinaturas\Assinaturas::class)->resumo($request->user()->tenant_id) : null,
             'auth' => [

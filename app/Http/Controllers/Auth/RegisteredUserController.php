@@ -39,7 +39,8 @@ class RegisteredUserController extends Controller
             'empresa' => 'required|string|min:2|max:255',
             'plano' => ['nullable', \Illuminate\Validation\Rule::in(array_column(config('comercial.planos', []), 'chave'))],
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            // Sem `confirmed`: o formulário tem um campo só, com mostrar/ocultar.
+            'password' => ['required', Rules\Password::defaults()],
         ], ['empresa.required' => 'Informe o nome da empresa.']);
 
         // Todo o registro (tenant + seed de estágios/status + user) roda numa única

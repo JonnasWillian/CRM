@@ -36,6 +36,7 @@ export default {
                 danger: { DEFAULT: 'var(--danger)', hover: 'var(--danger-hover)', subtle: 'var(--danger-subtle)', line: 'var(--danger-line)' },
                 info: { DEFAULT: 'var(--info)', subtle: 'var(--info-subtle)', line: 'var(--info-line)' },
                 cat: { 1: 'var(--cat-1)', 2: 'var(--cat-2)', 3: 'var(--cat-3)', 4: 'var(--cat-4)', neutral: 'var(--cat-neutral)' },
+                painel: { bg: 'var(--painel-bg)', 'bg-2': 'var(--painel-bg-2)', fg: 'var(--painel-fg)', 'fg-2': 'var(--painel-fg-2)', line: 'var(--painel-line)' },
             },
             fontFamily: {
                 sans: 'var(--font-body)',
