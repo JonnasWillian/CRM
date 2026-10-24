@@ -16,7 +16,7 @@ use InvalidArgumentException;
  */
 class Faturamento
 {
-    public function __construct(private readonly Assinaturas $assinaturas) {}
+    public function __construct(private readonly Assinaturas $assinaturas, private readonly AvisosDeAssinatura $avisos) {}
 
     /**
      * Valor do ciclo para os usuários ativos de hoje (mínimo 1).
@@ -45,7 +45,7 @@ class Faturamento
         $cotacao = $this->cotar($id, $plano, $ciclo);
         $venceEm ??= $this->vencimentoPadrao($id);
 
-        return DB::transaction(function () use ($id, $plano, $ciclo, $motivo, $cotacao, $venceEm) {
+        $fatura = DB::transaction(function () use ($id, $plano, $ciclo, $motivo, $cotacao, $venceEm) {
             Fatura::where('tenant_id', $id)->where('status', 'pendente')->lockForUpdate()
                 ->update(['status' => 'cancelada', 'cancelada_em' => Carbon::now()]);
 
@@ -58,6 +58,13 @@ class Faturamento
                 'vence_em' => $venceEm->toDateString(),
             ]);
         });
+
+        // Ativação manual (assinatura:ativar) já nasce paga: não há o que cobrar.
+        if ($motivo !== 'manual') {
+            $this->avisos->faturaGerada($fatura);
+        }
+
+        return $fatura;
     }
 
     /**
@@ -68,7 +75,8 @@ class Faturamento
      */
     public function pagar(Fatura $fatura, ?string $referencia = null, string $gateway = 'manual'): Fatura
     {
-        return DB::transaction(function () use ($fatura, $referencia, $gateway) {
+        $pagaAgora = false;
+        $f = DB::transaction(function () use ($fatura, $referencia, $gateway, &$pagaAgora) {
             $f = Fatura::whereKey($fatura->id)->lockForUpdate()->firstOrFail();
             if ($f->status === 'paga') {
                 return $f;
@@ -79,9 +87,16 @@ class Faturamento
 
             $this->assinaturas->ativar($f->tenant_id, $f->plano, $f->ciclo);
             $f->fill(['status' => 'paga', 'paga_em' => Carbon::now(), 'gateway' => $gateway, 'referencia_gateway' => $referencia])->save();
+            $pagaAgora = true;
 
             return $f;
         });
+
+        if ($pagaAgora) {
+            $this->avisos->pagamentoConfirmado($f);
+        }
+
+        return $f;
     }
 
     public function pendente(Tenant|int $tenant): ?Fatura
