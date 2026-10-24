@@ -98,7 +98,7 @@ class AssinaturaTest extends TestCase
         $tenant = $this->novoTenant();
         $admin = $this->agente($tenant, 'admin');
         $lead = $this->lead($tenant, $admin);
-        $a = Assinatura::create(['tenant_id' => $tenant->id, 'status' => 'ativa', 'plano' => 'profissional', 'ciclo' => 'mensal', 'teste_termina_em' => now()->subMonths(2), 'vigente_ate' => now()->subDay()]);
+        $a = Assinatura::create(['tenant_id' => $tenant->id, 'status' => 'ativa', 'plano' => 'profissional', 'ciclo' => 'mensal', 'teste_termina_em' => now()->subMonths(2), 'vigente_ate' => now()->subDays(4)]); // depois dos 3 dias de carência
 
         $this->assertSame('vencida', $a->fresh()->situacao());
         $this->actingAs($admin)->postJson("/api/leads/{$lead->id}/tarefas", ['titulo' => 'x', 'data_limite' => today()->toDateString()])->assertStatus(402);

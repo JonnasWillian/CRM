@@ -68,6 +68,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
 Route::get('/kanban', [\App\Http\Controllers\Web\KanbanController::class, 'index'])->middleware(['auth', 'tenant'])->name('kanban');
 
+// Acesso suspenso por falta de pagamento (ExigirAssinatura manda para cá). Todos os papéis.
+Route::get('/assinatura/suspensa', [\App\Http\Controllers\Web\AssinaturaController::class, 'suspensa'])->middleware(['auth', 'tenant'])->name('assinatura.suspensa');
+
 Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configuracoes.')->group(function () {
     Route::get('/funis', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'funis'])->middleware('can:configuracoes.manage')->name('funis');
     Route::get('/motivos-perda', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'motivosPerda'])->middleware('can:configuracoes.manage')->name('motivosPerda');

@@ -26,30 +26,69 @@ class Assinatura extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    /** teste · teste_expirado · ativa · vencida · cancelada — calculado na hora, sem cron. */
+    /**
+     * teste · teste_expirado · ativa · carencia · vencida · cancelada —
+     * calculado na hora, sem cron. Carência: plano pago vencido há menos de
+     * `comercial.carencia_dias`; ainda grava. O teste não tem carência.
+     */
     public function situacao(): string
     {
         if ($this->status === 'cancelada') {
             return 'cancelada';
         }
         if ($this->status === 'ativa') {
-            return $this->vigente_ate !== null && $this->vigente_ate->isFuture() ? 'ativa' : 'vencida';
+            if ($this->vigente_ate !== null && $this->vigente_ate->isFuture()) {
+                return 'ativa';
+            }
+
+            return $this->fimDaCarencia()?->isFuture() ? 'carencia' : 'vencida';
         }
 
         return $this->teste_termina_em !== null && $this->teste_termina_em->isFuture() ? 'teste' : 'teste_expirado';
     }
 
+    /** Não grava: teste encerrado, vencida (depois da carência) ou cancelada. */
     public function bloqueada(): bool
     {
         return in_array($this->situacao(), self::SITUACOES_BLOQUEADAS, true);
     }
 
-    /** Dias até o fim do teste ou do ciclo pago (0 quando já passou). */
+    /** Fim da carência de um plano pago (vencimento + N dias). */
+    public function fimDaCarencia(): ?Carbon
+    {
+        return $this->vigente_ate?->copy()->addDays((int) config('comercial.carencia_dias', 3));
+    }
+
+    /** Desde quando a empresa não grava; null enquanto grava. */
+    public function somenteLeituraDesde(): ?Carbon
+    {
+        return match ($this->situacao()) {
+            'teste_expirado' => $this->teste_termina_em->copy(),
+            'vencida' => $this->fimDaCarencia(),
+            'cancelada' => ($this->cancelada_em ?? $this->vigente_ate ?? Carbon::now())->copy(),
+            default => null,
+        };
+    }
+
+    /** Quando a leitura também é cortada: N dias depois do início do só leitura. */
+    public function suspendeEm(): ?Carbon
+    {
+        return $this->somenteLeituraDesde()?->addDays((int) config('comercial.suspender_apos_dias', 30));
+    }
+
+    /** Acesso suspenso: só planos, faturas, exportação, perfil e sair. */
+    public function suspensa(): bool
+    {
+        return $this->suspendeEm()?->isPast() ?? false;
+    }
+
+    /** Dias até o fim do teste, do ciclo pago ou da carência (0 quando já passou). */
     public function diasRestantes(): int
     {
         $fim = match ($this->situacao()) {
             'teste' => $this->teste_termina_em,
             'ativa' => $this->vigente_ate,
+            'carencia' => $this->fimDaCarencia(),
             default => null,
         };
 

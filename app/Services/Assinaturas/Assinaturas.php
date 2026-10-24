@@ -44,8 +44,9 @@ class Assinaturas
 
     /**
      * Ativa ou renova. Chamado só pelo pagamento confirmado (Faturamento::pagar).
-     * Renovar antes do vencimento soma ao vencimento atual; pagar durante o
-     * teste começa a contar no fim do teste; depois disso, a partir de hoje.
+     * Renovar antes do vencimento ou na carência soma ao vencimento atual;
+     * pagar durante o teste começa a contar no fim do teste; depois disso,
+     * a partir de hoje.
      */
     public function ativar(Tenant|int $tenant, string $plano, string $ciclo): Assinatura
     {
@@ -58,7 +59,9 @@ class Assinaturas
 
         $a = $this->da($tenant);
         $base = match ($a->situacao()) {
-            'ativa' => $a->vigente_ate->copy(),
+            // Renovar antes do fim ou na carência continua do vencimento: os
+            // dias de carência foram usados, não são bônus.
+            'ativa', 'carencia' => $a->vigente_ate->copy(),
             'teste' => $a->teste_termina_em->copy(),
             default => Carbon::now(),
         };
@@ -184,6 +187,10 @@ class Assinaturas
             'teste_termina_em' => $a->teste_termina_em?->toDateString(),
             'vigente_ate' => $a->vigente_ate?->toDateString(),
             'bloqueada' => $a->bloqueada(),
+            'carencia_ate' => $a->situacao() === 'carencia' ? $a->fimDaCarencia()->toDateString() : null,
+            'somente_leitura_desde' => $a->somenteLeituraDesde()?->toDateString(),
+            'suspende_em' => $a->suspendeEm()?->toDateString(),
+            'suspensa' => $a->suspensa(),
             'limites' => $a->limites(),
             'uso' => $this->uso($tenant),
             'fatura_pendente' => \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),

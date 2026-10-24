@@ -43,6 +43,22 @@ class AssinaturaController extends Controller
         ]);
     }
 
+    /** Acesso suspenso: o que houve e o caminho para cada papel. Fora da suspensão, volta ao dashboard. */
+    public function suspensa(Request $request, Assinaturas $assinaturas, CurrentTenant $tenant): Response|RedirectResponse
+    {
+        $resumo = $assinaturas->resumo($tenant->get());
+        if (! $resumo['suspensa']) {
+            return redirect()->route('dashboard');
+        }
+
+        return Inertia::render('Assinatura/Suspensa', [
+            'assinatura' => $resumo,
+            'empresa' => $tenant->get()->nome,
+            'podeGerenciar' => $request->user()->can('configuracoes.manage'),
+            'contato' => ['email' => config('comercial.contato.email'), 'whatsapp' => config('comercial.contato.whatsapp')],
+        ]);
+    }
+
     public function escolher(Request $request, Assinaturas $assinaturas, Faturamento $faturamento, CurrentTenant $tenant): RedirectResponse
     {
         $dados = $request->validate([
