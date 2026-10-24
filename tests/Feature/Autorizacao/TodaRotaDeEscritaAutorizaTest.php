@@ -118,6 +118,8 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         // ($request->user()), nunca num id vindo do corpo ou da URL — não há
         // recurso de terceiro para proteger. Conferido lendo cada método:
         'POST configuracoes/assinatura', // AssinaturaController::escolher -> assinatura da própria empresa (CurrentTenant), sob can:configuracoes.manage
+        'POST configuracoes/assinatura/cancelar-renovacao', // AssinaturaController::cancelarRenovacao -> idem (CurrentTenant), sob can:configuracoes.manage
+        'POST configuracoes/assinatura/retomar-renovacao', // AssinaturaController::retomarRenovacao -> idem (CurrentTenant), sob can:configuracoes.manage
         'PATCH profile/empresa', // ProfileController::empresa -> $request->user()->tenant (a própria empresa), sob can:agentes.manage
         'PATCH profile',   // ProfileController::update  -> $request->user()->fill(...)->save()
         'DELETE profile',  // ProfileController::destroy -> ExclusaoDeConta::excluir($request->user()): só o próprio usuário, com impedimentos de carteira e último admin

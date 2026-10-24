@@ -75,4 +75,26 @@ class AssinaturaController extends Controller
 
         return redirect()->route('configuracoes.assinatura')->with('sucesso', 'Fatura de '.Fatura::emReais($fatura->valor)." gerada. O plano {$fatura->planoNome()} é ativado assim que o pagamento for confirmado.");
     }
+
+    public function cancelarRenovacao(Assinaturas $assinaturas, CurrentTenant $tenant): RedirectResponse
+    {
+        try {
+            $a = $assinaturas->cancelarRenovacao($tenant->get());
+        } catch (\DomainException $e) {
+            return back()->with('erro', $e->getMessage());
+        }
+
+        return redirect()->route('configuracoes.assinatura')->with('sucesso', "Renovação cancelada. O plano {$a->planoConfig()['nome']} continua ativo até {$a->vigente_ate->format('d/m/Y')}.");
+    }
+
+    public function retomarRenovacao(Assinaturas $assinaturas, CurrentTenant $tenant): RedirectResponse
+    {
+        try {
+            $a = $assinaturas->retomarRenovacao($tenant->get());
+        } catch (\DomainException $e) {
+            return back()->with('erro', $e->getMessage());
+        }
+
+        return redirect()->route('configuracoes.assinatura')->with('sucesso', "Renovação retomada. A fatura do próximo ciclo chega antes de {$a->vigente_ate->format('d/m/Y')}.");
+    }
 }

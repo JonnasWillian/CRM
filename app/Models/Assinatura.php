@@ -14,11 +14,11 @@ class Assinatura extends Model
 {
     public const SITUACOES_BLOQUEADAS = ['teste_expirado', 'vencida', 'cancelada'];
 
-    protected $fillable = ['tenant_id', 'plano', 'ciclo', 'status', 'teste_termina_em', 'vigente_ate', 'ativada_em', 'cancelada_em', 'gateway', 'referencia_gateway'];
+    protected $fillable = ['tenant_id', 'plano', 'ciclo', 'status', 'teste_termina_em', 'vigente_ate', 'ativada_em', 'cancelada_em', 'renovacao_cancelada_em', 'gateway', 'referencia_gateway'];
 
     protected function casts(): array
     {
-        return ['teste_termina_em' => 'datetime', 'vigente_ate' => 'datetime', 'ativada_em' => 'datetime', 'cancelada_em' => 'datetime'];
+        return ['teste_termina_em' => 'datetime', 'vigente_ate' => 'datetime', 'ativada_em' => 'datetime', 'cancelada_em' => 'datetime', 'renovacao_cancelada_em' => 'datetime'];
     }
 
     public function tenant()
@@ -39,6 +39,10 @@ class Assinatura extends Model
         if ($this->status === 'ativa') {
             if ($this->vigente_ate !== null && $this->vigente_ate->isFuture()) {
                 return 'ativa';
+            }
+            // Quem cancelou a renovação não deve nada: sem carência, sem cobrança.
+            if ($this->renovacao_cancelada_em !== null) {
+                return 'cancelada';
             }
 
             return $this->fimDaCarencia()?->isFuture() ? 'carencia' : 'vencida';
@@ -65,7 +69,7 @@ class Assinatura extends Model
         return match ($this->situacao()) {
             'teste_expirado' => $this->teste_termina_em->copy(),
             'vencida' => $this->fimDaCarencia(),
-            'cancelada' => ($this->cancelada_em ?? $this->vigente_ate ?? Carbon::now())->copy(),
+            'cancelada' => ($this->status === 'cancelada' ? $this->cancelada_em : $this->vigente_ate)?->copy() ?? Carbon::now(),
             default => null,
         };
     }

@@ -77,6 +77,8 @@ Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configurac
     Route::get('/equipe', [\App\Http\Controllers\Web\EquipeController::class, 'index'])->middleware('can:agentes.manage')->name('equipe');
     Route::get('/assinatura', [\App\Http\Controllers\Web\AssinaturaController::class, 'index'])->middleware('can:configuracoes.manage')->name('assinatura');
     Route::post('/assinatura', [\App\Http\Controllers\Web\AssinaturaController::class, 'escolher'])->middleware('can:configuracoes.manage')->name('assinatura.escolher');
+    Route::post('/assinatura/cancelar-renovacao', [\App\Http\Controllers\Web\AssinaturaController::class, 'cancelarRenovacao'])->middleware('can:configuracoes.manage')->name('assinatura.cancelar-renovacao');
+    Route::post('/assinatura/retomar-renovacao', [\App\Http\Controllers\Web\AssinaturaController::class, 'retomarRenovacao'])->middleware('can:configuracoes.manage')->name('assinatura.retomar-renovacao');
     // Do próprio agente, sem permissão extra.
     Route::get('/modelos-tarefa', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'modelosTarefa'])->name('modelosTarefa');
 });

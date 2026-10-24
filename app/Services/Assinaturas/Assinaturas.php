@@ -73,11 +73,47 @@ class Assinaturas
             'vigente_ate' => $ciclo === 'anual' ? $base->addYear() : $base->addMonthNoOverflow(),
             'ativada_em' => $a->ativada_em ?? Carbon::now(),
             'cancelada_em' => null,
+            'renovacao_cancelada_em' => null, // pagou de novo: volta a renovar
         ])->save();
 
         return $a;
     }
 
+    /**
+     * Cancela a renovação: o ciclo pago continua até o fim, a fatura pendente
+     * é cancelada e a rotina não gera outra.
+     *
+     * @throws \DomainException sem plano pago em vigor
+     */
+    public function cancelarRenovacao(Tenant|int $tenant): Assinatura
+    {
+        $a = $this->da($tenant);
+        if ($a->situacao() !== 'ativa') {
+            throw new \DomainException('Não há plano pago em vigor para cancelar.');
+        }
+
+        DB::transaction(function () use ($a) {
+            $a->forceFill(['renovacao_cancelada_em' => Carbon::now()])->save();
+            \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')
+                ->update(['status' => 'cancelada', 'cancelada_em' => Carbon::now()]);
+        });
+
+        return $a;
+    }
+
+    /** @throws \DomainException nada para retomar */
+    public function retomarRenovacao(Tenant|int $tenant): Assinatura
+    {
+        $a = $this->da($tenant);
+        if ($a->situacao() !== 'ativa' || $a->renovacao_cancelada_em === null) {
+            throw new \DomainException('Não há cancelamento agendado para desfazer.');
+        }
+        $a->forceFill(['renovacao_cancelada_em' => null])->save();
+
+        return $a;
+    }
+
+    /** Cancelamento imediato (uso da equipe comercial, ex.: fraude). Cliente usa cancelarRenovacao(). */
     public function cancelar(Tenant|int $tenant): Assinatura
     {
         $a = $this->da($tenant);
@@ -191,6 +227,7 @@ class Assinaturas
             'somente_leitura_desde' => $a->somenteLeituraDesde()?->toDateString(),
             'suspende_em' => $a->suspendeEm()?->toDateString(),
             'suspensa' => $a->suspensa(),
+            'renovacao_cancelada' => $a->renovacao_cancelada_em !== null,
             'limites' => $a->limites(),
             'uso' => $this->uso($tenant),
             'fatura_pendente' => \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),
