@@ -66,6 +66,18 @@ class FaturamentoTest extends TestCase
         $this->assertSame(['3312.00', 12, '69.00'], [$f->valor, $f->meses, $f->preco_unitario]);
     }
 
+    public function test_plano_com_minimo_de_usuarios_cobra_o_minimo(): void
+    {
+        [$tenant, $admin] = $this->empresaComUsuarios(2);
+
+        $f = app(Faturamento::class)->gerar($tenant, 'empresa', 'mensal', 'contratacao');
+        $this->assertSame([5, '695.00'], [$f->usuarios, $f->valor]);
+
+        $this->actingAs($admin)->get('/configuracoes/assinatura')->assertInertia(fn (Assert $page) => $page
+            ->where('planos.2.usuarios', 5)
+            ->where('planos.1.usuarios', 2));
+    }
+
     public function test_escolher_outro_plano_cancela_a_fatura_pendente_anterior(): void
     {
         [$tenant, $admin] = $this->empresaComUsuarios(2);

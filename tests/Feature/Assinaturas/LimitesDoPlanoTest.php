@@ -69,6 +69,15 @@ class LimitesDoPlanoTest extends TestCase
             ->assertJsonPath('message', fn (string $m) => str_contains($m, '1 convite pendente'));
     }
 
+    public function test_resumo_mostra_os_convites_pendentes_que_ocupam_vaga(): void
+    {
+        [$tenant, $admin] = $this->empresaNoInicial();
+        $this->convite($tenant, $admin, 'p@conv.test', str_repeat('f', 40));
+        $this->convite($tenant, $admin, 'e@conv.test', str_repeat('g', 40), now()->subDay()); // expirado não conta
+
+        $this->actingAs($admin)->get('/dashboard')->assertInertia(fn ($page) => $page->where('assinatura.convites_pendentes', 1));
+    }
+
     public function test_reativar_membro_conta_os_convites_pendentes(): void
     {
         [$tenant, $admin] = $this->empresaNoInicial();

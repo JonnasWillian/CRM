@@ -55,6 +55,16 @@ describe('tratarErroHttp', () => {
         expect(toast.erro.mock.calls[0][1].acao.rotulo).toBe('Ver planos');
     });
 
+    it('402 de acesso suspenso leva à página de acesso suspenso, sem toast', () => {
+        const antes = window.location;
+        delete window.location;
+        window.location = { href: '/leads' };
+        tratarErroHttp(resposta(402, { message: 'Suspenso.', assinatura: 'suspensa' }), { toast, aoDeslogar });
+        expect(window.location.href).toBe('/assinatura/suspensa');
+        expect(toast.erro).not.toHaveBeenCalled();
+        window.location = antes;
+    });
+
     it('config.silencioso desliga o tratamento', () => {
         tratarErroHttp(resposta(500, {}, { silencioso: true }), { toast, aoDeslogar });
         expect(toast.erro).not.toHaveBeenCalled();

@@ -19,7 +19,8 @@ class Faturamento
     public function __construct(private readonly Assinaturas $assinaturas, private readonly AvisosDeAssinatura $avisos) {}
 
     /**
-     * Valor do ciclo para os usuários ativos de hoje (mínimo 1).
+     * Valor do ciclo para os usuários ativos de hoje, respeitando o mínimo
+     * do plano (`usuarios_minimos`, padrão 1).
      *
      * @return array{usuarios:int, meses:int, preco_unitario:float, valor:float}
      */
@@ -31,7 +32,7 @@ class Faturamento
             throw new InvalidArgumentException("Ciclo desconhecido: {$ciclo}");
         }
 
-        $usuarios = max(1, $this->assinaturas->uso($tenant)['usuarios']);
+        $usuarios = max((int) ($config['usuarios_minimos'] ?? 1), $this->assinaturas->uso($tenant)['usuarios']);
         $meses = $ciclo === 'anual' ? 12 : 1;
         $preco = (float) ($ciclo === 'anual' ? $config['preco_anual'] : $config['preco_mensal']);
 

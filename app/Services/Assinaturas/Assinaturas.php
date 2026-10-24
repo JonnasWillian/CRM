@@ -230,6 +230,7 @@ class Assinaturas
             'renovacao_cancelada' => $a->renovacao_cancelada_em !== null,
             'limites' => $a->limites(),
             'uso' => $this->uso($tenant),
+            'convites_pendentes' => $this->convitesPendentes($tenant),
             'fatura_pendente' => \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),
         ];
     }

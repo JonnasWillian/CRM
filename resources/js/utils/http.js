@@ -30,6 +30,11 @@ export function tratarErroHttp(erro, { toast, aoDeslogar } = {}) {
             aoDeslogar?.();
             return true;
         case 402:
+            // Acesso suspenso: nenhuma tela além da de suspensão funciona; levar a ela.
+            if (erro?.response?.data?.assinatura === 'suspensa') {
+                window.location.href = '/assinatura/suspensa';
+                return true;
+            }
             toast?.erro(erro?.response?.data?.message || MENSAGENS[402], { acao: { rotulo: 'Ver planos', onClick: () => { window.location.href = '/configuracoes/assinatura'; } } });
             return true;
         case 403:

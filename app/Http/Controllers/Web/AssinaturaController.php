@@ -26,6 +26,7 @@ class AssinaturaController extends Controller
             // o plano tem) e quanto custaria hoje, por ciclo.
             'planos' => array_map(fn (array $p) => $p + [
                 'excessos' => $assinaturas->excessos($empresa, $p['chave']),
+                'usuarios' => $faturamento->cotar($empresa, $p['chave'], 'mensal')['usuarios'], // cobrados neste plano
                 'valor' => [
                     'mensal' => $faturamento->cotar($empresa, $p['chave'], 'mensal')['valor'],
                     'anual' => $faturamento->cotar($empresa, $p['chave'], 'anual')['valor'],

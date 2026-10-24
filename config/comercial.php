@@ -93,6 +93,7 @@ return [
             'preco_anual' => 109,
             'descricao' => 'Para operações com várias equipes e exigências de conformidade.',
             'limite' => 'A partir de 5 usuários',
+            'usuarios_minimos' => 5, // a fatura cobra pelo menos isto, mesmo com menos usuários ativos
             'limites' => ['usuarios' => null, 'funis' => null, 'leads' => null],
             'inclui' => [
                 'Tudo do Profissional',

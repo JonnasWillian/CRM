@@ -15,6 +15,7 @@ import { usePrefsLocais } from '@/Composables/usePrefsLocais';
 import { useToast } from '@/Composables/useToast';
 import NavItens from './NavItens.vue';
 import { gruposDeNavegacao } from './navegacao';
+import { faixaDaAssinatura } from '@/utils/faixaDaAssinatura';
 
 /**
  * Casca autenticada: barra lateral (232px; 56px recolhida, preferência
@@ -25,16 +26,7 @@ import { gruposDeNavegacao } from './navegacao';
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const nomeDoProduto = computed(() => page.props.app?.nome ?? 'CRM');
-const faixaAssinatura = computed(() => {
-    const a = page.props.assinatura;
-    if (!a) return null;
-    if (a.status === 'teste_expirado') return { tom: 'danger', texto: 'Seu período de teste terminou: a equipe só consulta até um plano ser ativado.', acao: 'Escolher plano' };
-    if (a.status === 'vencida') return { tom: 'danger', texto: `O plano ${a.plano_nome} venceu.`, acao: 'Renovar' };
-    if (a.status === 'cancelada') return { tom: 'danger', texto: 'A assinatura foi cancelada.', acao: 'Reativar' };
-    if (a.status === 'teste' && a.dias_restantes <= 7) return { tom: 'warn', texto: `Seu teste termina em ${a.dias_restantes} dia${a.dias_restantes === 1 ? '' : 's'}.`, acao: 'Ver planos' };
-    if (a.status === 'ativa' && a.dias_restantes <= 5) return { tom: 'warn', texto: `Seu plano vence em ${a.dias_restantes} dia${a.dias_restantes === 1 ? '' : 's'}.`, acao: 'Renovar' };
-    return null;
-});
+const faixaAssinatura = computed(() => faixaDaAssinatura(page.props.assinatura));
 
 const pode = (permissao) => page.props.auth.permissions?.[permissao] === true;
 const existe = (rota) => typeof route === 'function' && route().has(rota);
