@@ -81,7 +81,11 @@ class AssinaturaTest extends TestCase
         $this->actingAs($admin)->post('/leads', ['nome' => 'Novo Lead', 'email' => 'n@ex.test'])->assertRedirect()->assertSessionHas('erro');
         $this->actingAs($admin)->patch('/profile', ['name' => 'Admin Novo', 'email' => $admin->email])->assertRedirect('/profile');
 
+        // Escolher o plano é liberado, mas só gera a fatura: continua bloqueada até o pagamento.
         $this->actingAs($admin)->post('/configuracoes/assinatura', ['plano' => 'profissional', 'ciclo' => 'anual'])->assertRedirect('/configuracoes/assinatura');
+        $this->actingAs($admin)->postJson("/api/leads/{$lead->id}/tarefas", ['titulo' => 'x', 'data_limite' => today()->toDateString()])->assertStatus(402);
+
+        $this->artisan('fatura:pagar', ['fatura' => \App\Models\Fatura::where('tenant_id', $tenant->id)->value('id')])->assertSuccessful();
         $a = Assinatura::where('tenant_id', $tenant->id)->first();
         $this->assertSame('ativa', $a->status);
         $this->assertSame('anual', $a->ciclo);
@@ -153,10 +157,13 @@ class AssinaturaTest extends TestCase
         $this->artisan('assinatura:ativar', ['tenant' => $tenant->id, 'plano' => 'empresa', '--ciclo' => 'anual'])->assertSuccessful();
         $a = Assinatura::where('tenant_id', $tenant->id)->first();
         $this->assertSame('empresa', $a->plano);
-        $this->assertSame(now()->addYear()->toDateString(), $a->vigente_ate->toDateString());
+        // A empresa estava no teste: o ano pago começa quando o teste termina.
+        $this->assertSame($a->teste_termina_em->copy()->addYear()->toDateString(), $a->vigente_ate->toDateString());
+        // E fica registrada como fatura paga, para o histórico.
+        $this->assertSame(['status' => 'paga', 'motivo' => 'manual'], \App\Models\Fatura::where('tenant_id', $tenant->id)->sole()->only(['status', 'motivo']));
 
         // Renovar antes do fim soma ao vencimento atual, não a hoje.
         $this->artisan('assinatura:ativar', ['tenant' => $tenant->id, 'plano' => 'empresa', '--ciclo' => 'mensal'])->assertSuccessful();
-        $this->assertSame(now()->addYear()->addMonthNoOverflow()->toDateString(), $a->fresh()->vigente_ate->toDateString());
+        $this->assertSame($a->teste_termina_em->copy()->addYear()->addMonthNoOverflow()->toDateString(), $a->fresh()->vigente_ate->toDateString());
     }
 }

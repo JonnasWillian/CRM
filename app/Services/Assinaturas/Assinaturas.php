@@ -43,8 +43,9 @@ class Assinaturas
     }
 
     /**
-     * Ativa ou renova. Renovar antes do vencimento soma ao vencimento atual;
-     * depois dele (ou no teste), conta a partir de hoje.
+     * Ativa ou renova. Chamado só pelo pagamento confirmado (Faturamento::pagar).
+     * Renovar antes do vencimento soma ao vencimento atual; pagar durante o
+     * teste começa a contar no fim do teste; depois disso, a partir de hoje.
      */
     public function ativar(Tenant|int $tenant, string $plano, string $ciclo): Assinatura
     {
@@ -56,7 +57,11 @@ class Assinaturas
         }
 
         $a = $this->da($tenant);
-        $base = $a->situacao() === 'ativa' ? $a->vigente_ate->copy() : Carbon::now();
+        $base = match ($a->situacao()) {
+            'ativa' => $a->vigente_ate->copy(),
+            'teste' => $a->teste_termina_em->copy(),
+            default => Carbon::now(),
+        };
 
         $a->fill([
             'plano' => $plano,
@@ -181,6 +186,7 @@ class Assinaturas
             'bloqueada' => $a->bloqueada(),
             'limites' => $a->limites(),
             'uso' => $this->uso($tenant),
+            'fatura_pendente' => \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),
         ];
     }
 

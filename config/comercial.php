@@ -19,6 +19,17 @@ return [
 
     'dias_de_teste' => 14,
 
+    // Ciclo de cobrança (ver docs/comercial/plano-de-cobranca-e-assinaturas.md).
+    'prazo_de_pagamento_dias' => 3,      // fatura de contratação fora do teste vence em N dias
+    'renovacao_antecedencia_dias' => 7,  // a fatura de renovação é gerada N dias antes do vencimento
+    'carencia_dias' => 3,                // plano pago vencido ainda grava por N dias
+    'suspender_apos_dias' => 30,         // N dias em só leitura e o acesso é suspenso
+
+    'pagamento' => [
+        // Enquanto não há gateway: como pagar (chave Pix, dados bancários, para onde mandar o comprovante).
+        'instrucoes' => env('COMERCIAL_PAGAMENTO_INSTRUCOES'),
+    ],
+
     // Desligue para não bloquear escrita nem aplicar limites (ex.: na migração de clientes). A suíte de testes roda desligada.
     'exigir_assinatura' => (bool) env('COMERCIAL_EXIGIR_ASSINATURA', true),
 
