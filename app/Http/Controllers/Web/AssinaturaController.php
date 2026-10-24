@@ -18,7 +18,8 @@ class AssinaturaController extends Controller
     {
         return Inertia::render('Configuracoes/Assinatura', [
             'assinatura' => $assinaturas->resumo($tenant->get()),
-            'planos' => config('comercial.planos'),
+            // Cada plano diz se o uso atual cabe nele (o teste não tem limite; o plano tem).
+            'planos' => array_map(fn (array $p) => $p + ['excessos' => $assinaturas->excessos($tenant->get(), $p['chave'])], config('comercial.planos')),
             'diasDeTeste' => config('comercial.dias_de_teste'),
         ]);
     }
@@ -29,6 +30,10 @@ class AssinaturaController extends Controller
             'plano' => ['required', Rule::in(array_column(config('comercial.planos'), 'chave'))],
             'ciclo' => ['required', Rule::in(Assinaturas::CICLOS)],
         ], ['plano.in' => 'Escolha um dos planos disponíveis.']);
+
+        if ($excessos = $assinaturas->excessos($tenant->get(), $dados['plano'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['plano' => implode(' ', $excessos)]);
+        }
 
         $a = $assinaturas->ativar($tenant->get(), $dados['plano'], $dados['ciclo']);
 

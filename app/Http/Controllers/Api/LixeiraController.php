@@ -37,6 +37,9 @@ class LixeiraController extends Controller
             ? ListagemDaLixeira::leadsVisiveis($request->user())->whereIn('usuarios.id', $ids)->get()
             : ListagemDaLixeira::projetosVisiveis($request->user())->whereIn('projetos.id', $ids)->whereHas('usuario')->get();
 
+        if ($dados['tipo'] === 'leads' && $itens->isNotEmpty()) {
+            app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($request->user()->tenant_id, 'leads', $itens->count());
+        }
         $itens->each->restore();
         $afetados = $itens->count();
         $palavra = $dados['tipo'] === 'leads' ? ($afetados === 1 ? 'lead restaurado' : 'leads restaurados') : ($afetados === 1 ? 'projeto restaurado' : 'projetos restaurados');

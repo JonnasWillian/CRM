@@ -202,6 +202,7 @@ class LeadController extends Controller
             return response()->json(['message' => 'Este lead não está na lixeira.'], 409);
         }
 
+        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($usuario->tenant_id, 'leads');
         $usuario->restore();
 
         // O estágio pode ter sido arquivado enquanto o lead estava na lixeira:

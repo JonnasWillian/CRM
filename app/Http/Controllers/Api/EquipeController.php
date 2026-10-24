@@ -73,6 +73,10 @@ class EquipeController extends Controller
 
     public function reenviar(Request $request, Convites $convites, Convite $convite): JsonResponse
     {
+        // Pendente já ocupa vaga; expirado volta a ocupar ao ser reenviado.
+        if (Convites::estado($convite) === 'expirado') {
+            app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($convite->tenant_id, 'usuarios');
+        }
         $convites->reenviar($convite, $request->user());
 
         return response()->json(['message' => "Convite reenviado para {$convite->email}.", 'data' => self::convite($convite)]);

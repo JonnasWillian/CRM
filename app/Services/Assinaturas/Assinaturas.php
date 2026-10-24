@@ -90,8 +90,18 @@ class Assinaturas
         ];
     }
 
+    /** Convites ainda válidos: cada um reserva uma vaga no limite de usuários. */
+    public function convitesPendentes(Tenant|int $tenant): int
+    {
+        $id = $tenant instanceof Tenant ? $tenant->id : $tenant;
+
+        return DB::table('convites')->where('tenant_id', $id)->whereNull('aceito_em')->whereNull('cancelado_em')->where('expira_em', '>', Carbon::now())->count();
+    }
+
     /**
      * Recusa quando o plano não comporta mais `$acrescimo` do recurso.
+     * Usuários: ativos + convites pendentes. Aceitar um convite passa
+     * `$acrescimo = 0`, porque a vaga dele já está na conta.
      *
      * @param  'usuarios'|'funis'|'leads'  $recurso
      *
@@ -110,14 +120,48 @@ class Assinaturas
         }
 
         $uso = $this->uso($tenant)[$recurso];
-        if ($uso + $acrescimo <= $limite) {
+        $convites = $recurso === 'usuarios' ? $this->convitesPendentes($tenant) : 0;
+        if ($uso + $convites + $acrescimo <= $limite) {
             return;
         }
 
         $nome = $a->planoConfig()['nome'] ?? $a->plano;
         $rotulo = ['usuarios' => 'usuários ativos', 'funis' => 'funis', 'leads' => 'leads'][$recurso];
+        $tem = $convites > 0 ? "{$uso} e {$convites} ".($convites === 1 ? 'convite pendente' : 'convites pendentes') : (string) $uso;
 
-        throw new LimiteDoPlanoException($recurso, "O plano {$nome} permite até {$limite} {$rotulo} e você já tem {$uso}. Troque de plano em Configurações › Assinatura para continuar.");
+        throw new LimiteDoPlanoException($recurso, "O plano {$nome} permite até {$limite} {$rotulo} e você já tem {$tem}. Troque de plano em Configurações › Assinatura para continuar.");
+    }
+
+    /**
+     * O que impede a empresa de contratar `$plano` hoje: uma frase por
+     * recurso acima do limite. Vazio = cabe.
+     *
+     * @return list<string>
+     */
+    public function excessos(Tenant|int $tenant, string $plano): array
+    {
+        $config = collect(config('comercial.planos', []))->firstWhere('chave', $plano);
+        if ($config === null) {
+            return [];
+        }
+
+        $uso = $this->uso($tenant);
+        $uso['usuarios'] += $this->convitesPendentes($tenant);
+        $ondeReduzir = [
+            'usuarios' => ['usuários ativos', 'Desative %d em Configurações › Equipe'],
+            'funis' => ['funis', 'Arquive %d em Configurações › Funis'],
+            'leads' => ['leads', 'Mova %d para a Lixeira'],
+        ];
+
+        $frases = [];
+        foreach ($ondeReduzir as $recurso => [$rotulo, $acao]) {
+            $limite = $config['limites'][$recurso] ?? null;
+            if ($limite !== null && $uso[$recurso] > $limite) {
+                $frases[] = "O plano {$config['nome']} permite até {$limite} {$rotulo} e a empresa tem {$uso[$recurso]}. ".sprintf($acao, $uso[$recurso] - $limite).' ou escolha outro plano.';
+            }
+        }
+
+        return $frases;
     }
 
     /** O que o front recebe (props compartilhadas e página de assinatura). */

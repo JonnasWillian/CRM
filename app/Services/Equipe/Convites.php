@@ -66,6 +66,18 @@ class Convites
             throw ValidationException::withMessages(['email' => 'Este e-mail já tem uma conta. Entre com ela ou peça um convite para outro endereço.']);
         }
 
+        // O convite foi enviado quando havia vaga e a assinatura permitia;
+        // até o aceite, as duas coisas podem ter mudado.
+        $assinaturas = app(\App\Services\Assinaturas\Assinaturas::class);
+        if (config('comercial.exigir_assinatura') && $assinaturas->da($convite->tenant_id)->bloqueada()) {
+            throw ValidationException::withMessages(['email' => 'A assinatura desta empresa não permite novos acessos agora. Peça ao administrador para regularizar o plano.']);
+        }
+        try {
+            $assinaturas->verificarLimite($convite->tenant_id, 'usuarios', 0);
+        } catch (\App\Exceptions\LimiteDoPlanoException) {
+            throw ValidationException::withMessages(['email' => 'A empresa atingiu o limite de usuários do plano. Peça ao administrador para liberar uma vaga.']);
+        }
+
         return DB::transaction(function () use ($convite, $nome, $senha) {
             $user = User::create([
                 'name' => $nome,

@@ -82,6 +82,9 @@ class FunilController extends Controller
 
     public function restaurar(Funil $funil): JsonResponse
     {
+        if ($funil->trashed()) {
+            app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($funil->tenant_id, 'funis');
+        }
         $this->funis->restaurar($funil);
 
         return response()->json(self::serializar(
