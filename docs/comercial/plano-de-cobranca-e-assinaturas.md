@@ -2,6 +2,8 @@
 
 Data: 24/10/2026. Complementa a [análise comercial](analise-comercial-e-seo.md), bloqueador B1 (cobrança).
 
+**Situação:** a Fase 1 está implementada e testada. Falta a Fase 2, que depende da escolha do gateway de pagamento.
+
 ## Por que este plano existe
 
 A auditoria de 24/10/2026 mostrou que os planos funcionavam como vitrine, não como cobrança. Oito cenários foram reproduzidos em teste automatizado, todos com falha:
@@ -22,9 +24,10 @@ Além disso, o preço é por usuário, mas nada calculava o valor devido.
 ## Decisões
 
 - **Contratar gera uma fatura, não ativa o plano.** Só o pagamento confirmado ativa ou renova. Sem gateway, quem confirma é a equipe comercial, por comando. Com gateway, será o aviso de pagamento do próprio gateway.
-- **O valor é por usuário ativo.** Fatura mensal: preço mensal × usuários ativos. Fatura anual: preço anual × 12 × usuários ativos. Mínimo de 1 usuário.
+- **O valor é por usuário ativo.** Fatura mensal: preço mensal × usuários ativos. Fatura anual: preço anual × 12 × usuários ativos. Mínimo de 1 usuário, ou o mínimo do plano: o Empresa cobra pelo menos 5, como anuncia.
 - **Usuários que entram no meio do ciclo são cobrados na renovação seguinte.** A fatura de renovação usa a contagem do dia em que é gerada. Cobrança proporcional fica para a fase do gateway.
 - **Renovação paga antes do fim ou durante a carência continua do vencimento anterior.** Paga depois que o acesso foi limitado, conta a partir do pagamento.
+- **Pagar durante o teste grátis não encurta o teste.** O ciclo pago começa quando o teste termina.
 - **Troca de plano no meio do ciclo** vale a partir do pagamento e soma o novo ciclo ao vencimento atual. Sem crédito proporcional nesta fase.
 - **Carência de 3 dias** depois do vencimento de um plano pago: a equipe continua gravando, com aviso. O teste grátis não tem carência.
 - **Só leitura** depois da carência, no fim do teste ou após o cancelamento.
@@ -53,38 +56,38 @@ Tudo o que não depende de escolher o gateway.
 
 ### 1. Fechar os furos de limite
 
-- [ ] Convites pendentes contam no limite de usuários, ao convidar, reenviar convite expirado e reativar membro.
-- [ ] Aceitar convite confere o limite e recusa quando a assinatura não permite gravar.
-- [ ] Restaurar lead, sozinho ou em lote pela Lixeira, confere o limite de leads.
-- [ ] Restaurar funil arquivado confere o limite de funis.
-- [ ] Contratar um plano exige que usuários, funis e leads caibam nele. A tela mostra o motivo quando não cabem.
+- [x] Convites pendentes contam no limite de usuários, ao convidar, reenviar convite expirado e reativar membro.
+- [x] Aceitar convite confere o limite e recusa quando a assinatura não permite gravar.
+- [x] Restaurar lead, sozinho ou em lote pela Lixeira, confere o limite de leads.
+- [x] Restaurar funil arquivado confere o limite de funis.
+- [x] Contratar um plano exige que usuários, funis e leads caibam nele. A tela mostra o motivo quando não cabem.
 
 ### 2. Faturas por usuário
 
-- [ ] Tabela `faturas`: empresa, plano, ciclo, usuários cobrados, preço por usuário, meses, valor, situação, vencimento, pagamento e referência do gateway.
-- [ ] Escolher um plano gera fatura pendente e cancela a anterior que estiver pendente.
-- [ ] Confirmar pagamento é idempotente: uma fatura paga não ativa o plano duas vezes.
-- [ ] Comandos da equipe comercial: `faturas:pendentes` lista o que cobrar; `fatura:pagar {id} --referencia=` confirma o pagamento recebido fora do sistema.
-- [ ] `assinatura:ativar` passa a registrar uma fatura paga, para manter o histórico.
-- [ ] A tela de assinatura mostra a fatura pendente com o valor, o vencimento e como pagar, o histórico de faturas e o valor de cada plano para a quantidade atual de usuários.
+- [x] Tabela `faturas`: empresa, plano, ciclo, usuários cobrados, preço por usuário, meses, valor, situação, vencimento, pagamento e referência do gateway.
+- [x] Escolher um plano gera fatura pendente e cancela a anterior que estiver pendente.
+- [x] Confirmar pagamento é idempotente: uma fatura paga não ativa o plano duas vezes.
+- [x] Comandos da equipe comercial: `faturas:pendentes` lista o que cobrar; `fatura:pagar {id} --referencia=` confirma o pagamento recebido fora do sistema.
+- [x] `assinatura:ativar` passa a registrar uma fatura paga, para manter o histórico.
+- [x] A tela de assinatura mostra a fatura pendente com o valor, o vencimento e como pagar, o histórico de faturas e o valor de cada plano para a quantidade atual de usuários.
 
 ### 3. Carência, só leitura e suspensão
 
-- [ ] Situações novas no modelo: carência e suspensa, com datas de início do só leitura e da suspensão.
-- [ ] O bloqueio de gravação considera a carência.
-- [ ] A suspensão bloqueia também a leitura, com página própria que explica o que houve e, para o admin, leva aos planos e faturas.
-- [ ] A faixa do topo do app avisa carência, só leitura com a data da suspensão e fatura pendente.
+- [x] Situações novas no modelo: carência e suspensa, com datas de início do só leitura e da suspensão.
+- [x] O bloqueio de gravação considera a carência.
+- [x] A suspensão bloqueia também a leitura, com página própria que explica o que houve e, para o admin, leva aos planos e faturas.
+- [x] A faixa do topo do app avisa carência, só leitura com a data da suspensão e fatura pendente.
 
 ### 4. Cancelar e retomar a renovação
 
-- [ ] Botões na tela de assinatura, só para quem gerencia a empresa.
-- [ ] Cancelar também cancela a fatura de renovação pendente.
+- [x] Botões na tela de assinatura, só para quem gerencia a empresa.
+- [x] Cancelar também cancela a fatura de renovação pendente.
 
 ### 5. Rotina diária e e-mails
 
-- [ ] Comando `assinaturas:rotina` agendado todo dia. Ele gera a fatura de renovação 7 dias antes do vencimento e envia os avisos devidos.
-- [ ] Cada aviso é enviado uma vez só por empresa e por prazo, mesmo se a rotina rodar duas vezes ou atrasar um dia.
-- [ ] Avisos aos admins da empresa:
+- [x] Comando `assinaturas:rotina` agendado todo dia. Ele gera a fatura de renovação 7 dias antes do vencimento e envia os avisos devidos.
+- [x] Cada aviso é enviado uma vez só por empresa e por prazo, mesmo se a rotina rodar duas vezes ou atrasar um dia.
+- [x] Avisos aos admins da empresa:
 
 | Aviso | Quando |
 |---|---|
@@ -99,8 +102,23 @@ Tudo o que não depende de escolher o gateway.
 | Acesso suspenso | No dia da suspensão |
 | Pagamento confirmado | Quando a fatura é paga |
 
-- [ ] A equipe comercial recebe um e-mail a cada fatura gerada, no endereço de `COMERCIAL_EMAIL`, com o comando para confirmar o pagamento.
-- [ ] Instruções de pagamento configuráveis em `COMERCIAL_PAGAMENTO_INSTRUCOES`, exibidas na tela e nos e-mails.
+- [x] A equipe comercial recebe um e-mail a cada fatura gerada, no endereço de `COMERCIAL_EMAIL`, com o comando para confirmar o pagamento.
+- [x] Instruções de pagamento configuráveis em `COMERCIAL_PAGAMENTO_INSTRUCOES`, exibidas na tela e nos e-mails.
+
+### Onde está no código
+
+| Parte | Arquivo |
+|---|---|
+| Situações, carência e suspensão | `app/Models/Assinatura.php` |
+| Limites, ativação, cancelamento | `app/Services/Assinaturas/Assinaturas.php` |
+| Faturas: cotar, gerar, pagar | `app/Services/Assinaturas/Faturamento.php` |
+| Avisos e destinatários | `app/Services/Assinaturas/AvisosDeAssinatura.php` |
+| Textos dos e-mails | `app/Mail/AvisoDeAssinaturaMail.php` |
+| Bloqueio e suspensão por requisição | `app/Http/Middleware/ExigirAssinatura.php` |
+| Rotina diária | `app/Console/Commands/RotinaDeAssinaturas.php` |
+| Comandos da equipe comercial | `fatura:pagar`, `faturas:pendentes`, `assinatura:ativar` |
+| Telas | `Configuracoes/Assinatura.vue`, `Assinatura/Suspensa.vue`, faixa em `utils/faixaDaAssinatura.js` |
+| Testes | `tests/Feature/Assinaturas/*`, `tests/js/pages/configuracoes/Assinatura.test.js`, `tests/js/utils/faixaDaAssinatura.test.js` |
 
 ## Fase 2: gateway de pagamento
 
@@ -124,7 +142,7 @@ O que muda no código quando o gateway entrar:
 
 ## Operação enquanto não há gateway
 
-1. O agendador precisa rodar todo minuto no servidor: `* * * * * php artisan schedule:run`.
+1. O agendador precisa rodar todo minuto no servidor: `* * * * * php artisan schedule:run`. A rotina `assinaturas:rotina` roda às 08:00 de Brasília.
 2. Os e-mails saem pela fila: `php artisan queue:work` precisa estar no ar, e `MAIL_MAILER` configurado.
 3. Preencher no `.env`: `COMERCIAL_EMAIL`, `COMERCIAL_WHATSAPP` e `COMERCIAL_PAGAMENTO_INSTRUCOES`, por exemplo com a chave Pix e para onde enviar o comprovante.
 4. Ao receber um pagamento, rodar `php artisan faturas:pendentes`, achar a fatura e rodar `php artisan fatura:pagar <id> --referencia="pix 24/10"`.

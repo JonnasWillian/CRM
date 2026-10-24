@@ -64,7 +64,7 @@ Regras: por usuário **ativo** (desativado não conta — o sistema já tem o co
 
 **Conta de padaria:** 10 clientes com 4 usuários no Profissional anual = R$ 2.760/mês. 50 clientes nesse perfil = R$ 13.800/mês. Com ticket de ~R$ 280/cliente/mês, um CAC de até R$ 600 por cliente pago se paga em pouco mais de 2 meses; acima de R$ 1.000 começa a apertar, salvo churn abaixo de 3% ao mês.
 
-**Estado atual:** teste de 14 dias, bloqueio ao expirar e limites por plano já estão no app (seção 9, B2). A escolha do plano ainda não cobra: a cobrança é o item B1.
+**Estado atual:** teste de 14 dias, limites por plano, faturas por usuário, carência, suspensão e e-mails de cobrança já estão no app. Falta o gateway de pagamento: ver o [plano de cobrança](plano-de-cobranca-e-assinaturas.md).
 
 ## 6. Funil e metas
 
@@ -127,7 +127,7 @@ Cadastro no B2B Stack, Capterra Brasil e GetApp; página no LinkedIn; pedido de 
 
 | # | Item | Por quê |
 |---|---|---|
-| B1 | Cobrança (Stripe, Asaas ou Pagar.me): assinatura por usuário ativo, mensal e anual, nota fiscal. Hoje a escolha do plano ativa na hora, sem pagamento; até o gateway existir, cobre por Pix/boleto e renove com `php artisan assinatura:ativar {empresa} {plano} --ciclo=anual` | Sem isso não há receita |
+| B1 | Cobrança: a Fase 1 do [plano de cobrança](plano-de-cobranca-e-assinaturas.md) está feita (faturas por usuário, só o pagamento ativa, rotina e e-mails). Falta o gateway (Stripe, Asaas ou Pagar.me) com nota fiscal; até lá, confirme cada pagamento com `php artisan fatura:pagar {fatura}` | Sem isso não há receita automática |
 | B2 | ~~Limites de plano e fim do teste~~ **Feito em 22/10/2026:** toda empresa nasce em teste de 14 dias; teste expirado, plano vencido ou cancelado bloqueia escrita (402) e mantém leitura; limites do plano (usuários ativos, funis, leads) valem fora do teste; página Configurações › Assinatura escolhe o plano; `assinatura:ativar` renova à mão. Falta só ligar o gateway em `Assinaturas::ativar()` | — |
 | B3 | Domínio, HTTPS e `APP_URL` | SEO, OG e e-mails apontam para o domínio |
 | B4 | E-mail transacional real (SMTP ou API): convites, redefinição de senha, avisos de teste | Hoje `MAIL_MAILER=log` |
