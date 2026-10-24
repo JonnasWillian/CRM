@@ -7,6 +7,7 @@ use App\Models\Fatura;
 use App\Services\Assinaturas\Assinaturas;
 use App\Services\Assinaturas\Faturamento;
 use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,6 +34,8 @@ class AssinaturaController extends Controller
                 ],
             ], config('comercial.planos')),
             'usuariosCobrados' => $faturamento->cotar($empresa, config('comercial.planos.0.chave'), 'mensal')['usuarios'],
+            // Mínimo de assentos que a empresa pode escolher: ativos + convites pendentes.
+            'ocupados' => $faturamento->ocupados($empresa),
             'faturaPendente' => $faturamento->pendente($empresa)?->paraOFront(),
             'faturas' => Fatura::where('tenant_id', $empresa->id)->latest('id')->limit(12)->get()->map->paraOFront()->values(),
             'pagamento' => [
@@ -60,21 +63,39 @@ class AssinaturaController extends Controller
         ]);
     }
 
-    public function escolher(Request $request, Assinaturas $assinaturas, Faturamento $faturamento, CurrentTenant $tenant): RedirectResponse
+    public function escolher(Request $request, Faturamento $faturamento, CurrentTenant $tenant): RedirectResponse
     {
-        $dados = $request->validate([
-            'plano' => ['required', Rule::in(array_column(config('comercial.planos'), 'chave'))],
-            'ciclo' => ['required', Rule::in(Assinaturas::CICLOS)],
-        ], ['plano.in' => 'Escolha um dos planos disponíveis.']);
-
-        if ($excessos = $assinaturas->excessos($tenant->get(), $dados['plano'])) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['plano' => implode(' ', $excessos)]);
-        }
+        $dados = $this->validarEscolha($request);
 
         // Contratar não ativa: gera a fatura. Só o pagamento confirmado ativa.
-        $fatura = $faturamento->gerar($tenant->get(), $dados['plano'], $dados['ciclo'], 'contratacao');
+        $fatura = $faturamento->contratar($tenant->get(), $dados['plano'], $dados['ciclo'], $dados['assentos'] ?? null);
+        $valor = Fatura::emReais($fatura->valor);
+        $mensagem = match ($fatura->motivo) {
+            'troca' => "Fatura de {$valor} gerada, já com ".Fatura::emReais($fatura->credito)." de crédito do plano atual. A troca para o plano {$fatura->planoNome()} vale assim que o pagamento for confirmado.",
+            'renovacao' => "Fatura de {$valor} gerada. O plano {$fatura->planoNome()} é renovado assim que o pagamento for confirmado.",
+            default => "Fatura de {$valor} gerada. O plano {$fatura->planoNome()} é ativado assim que o pagamento for confirmado.",
+        };
 
-        return redirect()->route('configuracoes.assinatura')->with('sucesso', 'Fatura de '.Fatura::emReais($fatura->valor)." gerada. O plano {$fatura->planoNome()} é ativado assim que o pagamento for confirmado.");
+        return redirect()->route('configuracoes.assinatura')->with('sucesso', $mensagem);
+    }
+
+    /** O que a escolha geraria (tipo, crédito, valor), para a tela confirmar com os números do servidor. */
+    public function previa(Request $request, Faturamento $faturamento, CurrentTenant $tenant): JsonResponse
+    {
+        $dados = $this->validarEscolha($request);
+        $s = $faturamento->simular($tenant->get(), $dados['plano'], $dados['ciclo'], $dados['assentos'] ?? null);
+
+        return response()->json(['vence_em' => $s['vence_em']->toDateString()] + $s);
+    }
+
+    /** @return array{plano:string, ciclo:string, assentos:?int} */
+    private function validarEscolha(Request $request): array
+    {
+        return $request->validate([
+            'plano' => ['required', Rule::in(array_column(config('comercial.planos'), 'chave'))],
+            'ciclo' => ['required', Rule::in(Assinaturas::CICLOS)],
+            'assentos' => ['nullable', 'integer', 'min:1', 'max:10000'],
+        ], ['plano.in' => 'Escolha um dos planos disponíveis.', 'assentos.integer' => 'Informe o número de usuários.']);
     }
 
     public function cancelarRenovacao(Assinaturas $assinaturas, CurrentTenant $tenant): RedirectResponse
@@ -88,7 +109,7 @@ class AssinaturaController extends Controller
         return redirect()->route('configuracoes.assinatura')->with('sucesso', "Renovação cancelada. O plano {$a->planoConfig()['nome']} continua ativo até {$a->vigente_ate->format('d/m/Y')}.");
     }
 
-    public function retomarRenovacao(Assinaturas $assinaturas, CurrentTenant $tenant): RedirectResponse
+    public function retomarRenovacao(Assinaturas $assinaturas, Faturamento $faturamento, CurrentTenant $tenant): RedirectResponse
     {
         try {
             $a = $assinaturas->retomarRenovacao($tenant->get());
@@ -96,6 +117,12 @@ class AssinaturaController extends Controller
             return back()->with('erro', $e->getMessage());
         }
 
-        return redirect()->route('configuracoes.assinatura')->with('sucesso', "Renovação retomada. A fatura do próximo ciclo chega antes de {$a->vigente_ate->format('d/m/Y')}.");
+        // Dentro da janela de renovação, a fatura sai agora (a anterior foi cancelada junto com a renovação).
+        $fatura = $faturamento->garantirRenovacao($a);
+        $mensagem = $fatura !== null
+            ? 'Renovação retomada. Fatura de '.Fatura::emReais($fatura->valor)." gerada, vence em {$fatura->vence_em->format('d/m/Y')}."
+            : 'Renovação retomada. A fatura do próximo ciclo é gerada '.config('comercial.renovacao_antecedencia_dias', 7)." dias antes de {$a->vigente_ate->format('d/m/Y')}.";
+
+        return redirect()->route('configuracoes.assinatura')->with('sucesso', $mensagem);
     }
 }

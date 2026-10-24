@@ -188,6 +188,26 @@ class RotinaDeAssinaturasTest extends TestCase
         $this->assertSame(1, $this->enviados('pagamento_confirmado'));
     }
 
+    public function test_falha_ao_enviar_nao_marca_o_aviso_e_a_rotina_tenta_de_novo(): void
+    {
+        Assinatura::create(['tenant_id' => $this->tenant->id, 'status' => 'teste', 'plano' => 'inicial', 'teste_termina_em' => now()->subHours(3)]);
+        Mail::swap(new class
+        {
+            public function to(...$destinatarios)
+            {
+                throw new \RuntimeException('servidor de e-mail fora do ar');
+            }
+        });
+
+        $this->artisan('assinaturas:rotina')->assertFailed();
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('avisos_de_assinatura')->count());
+
+        Mail::swap(new \Illuminate\Mail\MailManager(app()));
+        Mail::fake();
+        $this->rodar();
+        $this->assertSame(1, $this->enviados('teste_encerrado'));
+    }
+
     public function test_rotina_esta_agendada_todo_dia(): void
     {
         Artisan::call('schedule:list');

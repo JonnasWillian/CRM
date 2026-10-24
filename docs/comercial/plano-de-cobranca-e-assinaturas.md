@@ -25,10 +25,14 @@ Além disso, o preço é por usuário, mas nada calculava o valor devido.
 
 - **Contratar gera uma fatura, não ativa o plano.** Só o pagamento confirmado ativa ou renova. Sem gateway, quem confirma é a equipe comercial, por comando. Com gateway, será o aviso de pagamento do próprio gateway.
 - **O valor é por usuário ativo.** Fatura mensal: preço mensal × usuários ativos. Fatura anual: preço anual × 12 × usuários ativos. Mínimo de 1 usuário, ou o mínimo do plano: o Empresa cobra pelo menos 5, como anuncia.
-- **Usuários que entram no meio do ciclo são cobrados na renovação seguinte.** A fatura de renovação usa a contagem do dia em que é gerada. Cobrança proporcional fica para a fase do gateway.
+- **Usuários são assentos comprados.** A fatura cobra N usuários e o plano pago passa a cobrir N, mesmo nos planos sem limite de usuários. Para ter mais no meio do ciclo, compra-se os assentos: é uma troca, com crédito do que sobra. Desativar gente antes da renovação reduz a fatura, mas reativar depois exige comprar o assento de novo.
+- **A renovação cobra os usuários em uso** no dia em que é gerada: ativos mais convites pendentes, respeitando o mínimo do plano.
+- **Enquanto houver fatura pendente, a empresa não cresce além do que ela cobre.** No teste, gerar uma fatura do Inicial para 2 usuários já limita a empresa a 2 usuários e 1 funil até ela gerar outra.
 - **Renovação paga antes do fim ou durante a carência continua do vencimento anterior.** Paga depois que o acesso foi limitado, conta a partir do pagamento.
 - **Pagar durante o teste grátis não encurta o teste.** O ciclo pago começa quando o teste termina.
-- **Troca de plano no meio do ciclo** vale a partir do pagamento e soma o novo ciclo ao vencimento atual. Sem crédito proporcional nesta fase.
+- **Upgrade vale no pagamento, com crédito.** Upgrade é ficar mais caro por mês, com ciclo igual ou mais longo: plano maior, mais usuários ou mensal para anual. O novo ciclo começa no pagamento e a fatura desconta o valor proporcional do que sobra do ciclo atual.
+- **O resto espera a janela de renovação.** Plano menor, menos usuários ou ciclo mais curto só podem ser escolhidos a partir de 7 dias antes do vencimento, e substituem a fatura de renovação.
+- **Fatura de upgrade não paga vence em 3 dias** e, vencida, é cancelada para a renovação do plano atual sair.
 - **Carência de 3 dias** depois do vencimento de um plano pago: a equipe continua gravando, com aviso. O teste grátis não tem carência.
 - **Só leitura** depois da carência, no fim do teste ou após o cancelamento.
 - **Suspensão total 30 dias depois** do início do só leitura. Ficam liberados apenas a tela de planos e faturas, a exportação de leads, o perfil e sair. A exportação continua liberada para a empresa sempre poder levar os próprios dados.
@@ -77,6 +81,17 @@ Tudo o que não depende de escolher o gateway.
 - [x] O bloqueio de gravação considera a carência.
 - [x] A suspensão bloqueia também a leitura, com página própria que explica o que houve e, para o admin, leva aos planos e faturas.
 - [x] A faixa do topo do app avisa carência, só leitura com a data da suspensão e fatura pendente.
+
+### 1b. Assentos e troca de plano (após a revisão de 24/10/2026)
+
+- [x] Plano pago cobre os assentos da fatura; adicionar usuário acima disso pede compra de assentos.
+- [x] Fatura pendente limita usuários, funis e leads ao que ela cobre.
+- [x] Upgrade imediato com crédito proporcional; plano menor, menos usuários ou ciclo mais curto só na janela de renovação.
+- [x] A tela escolhe a quantidade de usuários e confirma com a prévia do servidor: tipo, crédito e valor final.
+- [x] Retomar a renovação dentro da janela gera a fatura na hora.
+- [x] Fatura de upgrade vencida não impede a renovação.
+- [x] Fatura do teste vence no fim do teste.
+- [x] Aviso que falha ao enviar não conta como enviado e é tentado de novo.
 
 ### 4. Cancelar e retomar a renovação
 
@@ -146,6 +161,17 @@ O que muda no código quando o gateway entrar:
 2. Os e-mails saem pela fila: `php artisan queue:work` precisa estar no ar, e `MAIL_MAILER` configurado.
 3. Preencher no `.env`: `COMERCIAL_EMAIL`, `COMERCIAL_WHATSAPP` e `COMERCIAL_PAGAMENTO_INSTRUCOES`, por exemplo com a chave Pix e para onde enviar o comprovante.
 4. Ao receber um pagamento, rodar `php artisan faturas:pendentes`, achar a fatura e rodar `php artisan fatura:pagar <id> --referencia="pix 24/10"`.
+
+## Pendências conhecidas
+
+Achados menores da revisão, deixados para depois de propósito:
+
+- Dois cliques simultâneos em contratar podem gerar duas faturas pendentes ou um erro em um deles. Não dá acesso sem pagar.
+- O vencimento mensal escorrega: um ciclo que vence no dia 31 passa para o dia 28 depois de fevereiro e fica nele.
+- As datas são calculadas em UTC. O teste que começa entre 21h e meia-noite de Brasília termina 3 horas antes do dia mostrado.
+- A faixa do topo e o assunto do e-mail de fatura vencendo contam os dias até o fim do plano, não até o vencimento da fatura. Só difere em fatura de upgrade.
+- Na janela de renovação, uma troca paga antes do vencimento passa a valer no pagamento, até 7 dias antes do fim do ciclo atual.
+- Assinaturas ativadas antes desta versão não guardam o valor do ciclo, então não geram crédito numa troca.
 
 ## Fora deste plano
 

@@ -37,9 +37,16 @@ class AvisosDeAssinatura
             return false;
         }
 
-        $admins = $this->adminsDe($a->tenant_id);
-        if ($admins->isNotEmpty()) {
-            Mail::to($admins)->send(new AvisoDeAssinaturaMail($tipo, $this->dados($a) + $extra));
+        try {
+            $admins = $this->adminsDe($a->tenant_id);
+            if ($admins->isNotEmpty()) {
+                Mail::to($admins)->send(new AvisoDeAssinaturaMail($tipo, $this->dados($a) + $extra));
+            }
+        } catch (\Throwable $e) {
+            // Não enviado não conta como enviado: a próxima rodada tenta de novo.
+            DB::table('avisos_de_assinatura')->where(['tenant_id' => $a->tenant_id, 'tipo' => $tipo, 'referencia' => $referencia])->delete();
+
+            throw $e;
         }
 
         return true;

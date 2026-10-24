@@ -14,7 +14,7 @@ class Fatura extends Model
 {
     protected $table = 'faturas';
 
-    protected $fillable = ['tenant_id', 'plano', 'ciclo', 'motivo', 'usuarios', 'preco_unitario', 'meses', 'valor', 'status', 'vence_em', 'paga_em', 'cancelada_em', 'gateway', 'referencia_gateway'];
+    protected $fillable = ['tenant_id', 'plano', 'ciclo', 'motivo', 'usuarios', 'preco_unitario', 'meses', 'credito', 'valor', 'status', 'vence_em', 'paga_em', 'cancelada_em', 'gateway', 'referencia_gateway'];
 
     protected function casts(): array
     {
@@ -22,6 +22,7 @@ class Fatura extends Model
             'usuarios' => 'integer',
             'meses' => 'integer',
             'preco_unitario' => 'decimal:2',
+            'credito' => 'decimal:2',
             'valor' => 'decimal:2',
             'vence_em' => 'date',
             'paga_em' => 'datetime',
@@ -61,6 +62,7 @@ class Fatura extends Model
             'usuarios' => $this->usuarios,
             'preco_unitario' => (float) $this->preco_unitario,
             'meses' => $this->meses,
+            'credito' => (float) $this->credito,
             'valor' => (float) $this->valor,
             'status' => $this->status,
             'atrasada' => $this->atrasada(),

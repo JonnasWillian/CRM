@@ -11,9 +11,9 @@ use Throwable;
 
 /**
  * Rotina diária de cobrança: gera a fatura de renovação N dias antes do
- * vencimento e envia os avisos devidos. Cada ação é registrada em
- * avisos_de_assinatura, então rodar duas vezes no mesmo dia não repete nada
- * e um dia perdido é recuperado no seguinte.
+ * vencimento (Faturamento::garantirRenovacao) e envia os avisos devidos.
+ * Cada aviso é registrado em avisos_de_assinatura, então rodar duas vezes
+ * no mesmo dia não repete nada e um dia perdido é recuperado no seguinte.
  */
 class RotinaDeAssinaturas extends Command
 {
@@ -64,9 +64,7 @@ class RotinaDeAssinaturas extends Command
                     }
                     break;
                 }
-                if ($dias <= (int) config('comercial.renovacao_antecedencia_dias', 7)) {
-                    $this->garantirRenovacao($a, $faturamento, $avisos);
-                }
+                $faturamento->garantirRenovacao($a);
                 $pendente = $faturamento->pendente($a->tenant_id);
                 if ($pendente && ($marco = self::marco($dias, [3, 1]))) {
                     $avisos->avisar($a, 'fatura_vencendo', "{$marco}d:".$data($a->vigente_ate), ['dias' => $dias, 'fatura' => $avisos->fatura($pendente)]);
@@ -74,7 +72,7 @@ class RotinaDeAssinaturas extends Command
                 break;
 
             case 'carencia':
-                $this->garantirRenovacao($a, $faturamento, $avisos);
+                $faturamento->garantirRenovacao($a);
                 $avisos->avisar($a, 'pagamento_atrasado', $data($a->vigente_ate));
                 break;
 
@@ -88,17 +86,6 @@ class RotinaDeAssinaturas extends Command
                 } else {
                     $avisos->avisar($a, $a->situacao() === 'teste_expirado' ? 'teste_encerrado' : 'acesso_limitado', $data($a->somenteLeituraDesde()));
                 }
-        }
-    }
-
-    /** Uma fatura de renovação por ciclo, a menos que já haja uma pendente (ex.: troca de plano). */
-    private function garantirRenovacao(Assinatura $a, Faturamento $faturamento, AvisosDeAssinatura $avisos): void
-    {
-        if ($faturamento->pendente($a->tenant_id) !== null) {
-            return;
-        }
-        if ($avisos->registrar($a->tenant_id, 'fatura_de_renovacao', $a->vigente_ate->toDateString())) {
-            $faturamento->gerar($a->tenant_id, $a->plano, $a->ciclo ?? 'mensal', 'renovacao', $a->vigente_ate->copy()->startOfDay());
         }
     }
 

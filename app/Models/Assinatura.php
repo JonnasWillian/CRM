@@ -14,11 +14,11 @@ class Assinatura extends Model
 {
     public const SITUACOES_BLOQUEADAS = ['teste_expirado', 'vencida', 'cancelada'];
 
-    protected $fillable = ['tenant_id', 'plano', 'ciclo', 'status', 'teste_termina_em', 'vigente_ate', 'ativada_em', 'cancelada_em', 'renovacao_cancelada_em', 'gateway', 'referencia_gateway'];
+    protected $fillable = ['tenant_id', 'plano', 'ciclo', 'assentos', 'inicio_do_ciclo', 'valor_do_ciclo', 'status', 'teste_termina_em', 'vigente_ate', 'ativada_em', 'cancelada_em', 'renovacao_cancelada_em', 'gateway', 'referencia_gateway'];
 
     protected function casts(): array
     {
-        return ['teste_termina_em' => 'datetime', 'vigente_ate' => 'datetime', 'ativada_em' => 'datetime', 'cancelada_em' => 'datetime', 'renovacao_cancelada_em' => 'datetime'];
+        return ['assentos' => 'integer', 'inicio_do_ciclo' => 'datetime', 'valor_do_ciclo' => 'decimal:2', 'teste_termina_em' => 'datetime', 'vigente_ate' => 'datetime', 'ativada_em' => 'datetime', 'cancelada_em' => 'datetime', 'renovacao_cancelada_em' => 'datetime'];
     }
 
     public function tenant()
@@ -109,13 +109,5 @@ class Assinatura extends Model
         }
 
         return null;
-    }
-
-    /** @return array{usuarios:?int, funis:?int, leads:?int} null = sem limite. No teste tudo é liberado. */
-    public function limites(): array
-    {
-        $l = $this->situacao() === 'teste' ? [] : ($this->planoConfig()['limites'] ?? []);
-
-        return ['usuarios' => $l['usuarios'] ?? null, 'funis' => $l['funis'] ?? null, 'leads' => $l['leads'] ?? null];
     }
 }

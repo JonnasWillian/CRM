@@ -48,7 +48,7 @@ class Assinaturas
      * pagar durante o teste começa a contar no fim do teste; depois disso,
      * a partir de hoje.
      */
-    public function ativar(Tenant|int $tenant, string $plano, string $ciclo): Assinatura
+    public function ativar(Tenant|int $tenant, string $plano, string $ciclo, ?Carbon $inicio = null, ?int $assentos = null, ?float $valorDoCiclo = null): Assinatura
     {
         if (! $this->planoExiste($plano)) {
             throw new InvalidArgumentException("Plano desconhecido: {$plano}");
@@ -58,7 +58,7 @@ class Assinaturas
         }
 
         $a = $this->da($tenant);
-        $base = match ($a->situacao()) {
+        $base = $inicio?->copy() ?? match ($a->situacao()) {
             // Renovar antes do fim ou na carência continua do vencimento: os
             // dias de carência foram usados, não são bônus.
             'ativa', 'carencia' => $a->vigente_ate->copy(),
@@ -69,6 +69,9 @@ class Assinaturas
         $a->fill([
             'plano' => $plano,
             'ciclo' => $ciclo,
+            'assentos' => $assentos ?? $a->assentos,
+            'inicio_do_ciclo' => $base->copy(),
+            'valor_do_ciclo' => $valorDoCiclo,
             'status' => 'ativa',
             'vigente_ate' => $ciclo === 'anual' ? $base->addYear() : $base->addMonthNoOverflow(),
             'ativada_em' => $a->ativada_em ?? Carbon::now(),
@@ -157,8 +160,8 @@ class Assinaturas
             return;
         }
 
-        $a = $this->da($tenant);
-        $limite = $a->limites()[$recurso] ?? null;
+        $efetivos = $this->limitesEfetivos($tenant);
+        $limite = $efetivos[$recurso];
         if ($limite === null) {
             return;
         }
@@ -169,11 +172,56 @@ class Assinaturas
             return;
         }
 
-        $nome = $a->planoConfig()['nome'] ?? $a->plano;
-        $rotulo = ['usuarios' => 'usuários ativos', 'funis' => 'funis', 'leads' => 'leads'][$recurso];
         $tem = $convites > 0 ? "{$uso} e {$convites} ".($convites === 1 ? 'convite pendente' : 'convites pendentes') : (string) $uso;
+        $usuarios = fn (int $n) => $n === 1 ? '1 usuário' : "{$n} usuários";
+        $mensagem = match ($efetivos['origem'][$recurso]) {
+            'fatura' => "A fatura pendente cobre {$usuarios($limite)} e você já tem {$tem}. Para ter mais, gere a fatura com mais usuários em Configurações › Assinatura.",
+            'assentos' => "Seu plano cobre {$usuarios($limite)} e você já tem {$tem}. Adicione usuários ao plano em Configurações › Assinatura para continuar.",
+            default => sprintf('O plano %s permite até %d %s e você já tem %s. Troque de plano em Configurações › Assinatura para continuar.',
+                $efetivos['plano_nome'][$recurso], $limite, ['usuarios' => 'usuários ativos', 'funis' => 'funis', 'leads' => 'leads'][$recurso], $tem),
+        };
 
-        throw new LimiteDoPlanoException($recurso, "O plano {$nome} permite até {$limite} {$rotulo} e você já tem {$tem}. Troque de plano em Configurações › Assinatura para continuar.");
+        throw new LimiteDoPlanoException($recurso, $mensagem);
+    }
+
+    /**
+     * Limites que valem agora: os do plano em vigor (usuários: no máximo os
+     * assentos pagos) e, havendo fatura pendente, também os dela — a empresa
+     * não cresce além do que está comprando. No teste sem fatura, nada.
+     *
+     * @return array{usuarios:?int, funis:?int, leads:?int, origem:array<string,string>, plano_nome:array<string,string>}
+     */
+    public function limitesEfetivos(Tenant|int $tenant): array
+    {
+        $a = $this->da($tenant);
+        $limites = ['usuarios' => null, 'funis' => null, 'leads' => null];
+        $origem = ['usuarios' => 'plano', 'funis' => 'plano', 'leads' => 'plano'];
+        $nomes = array_fill_keys(array_keys($limites), $a->planoConfig()['nome'] ?? $a->plano);
+        $menor = function (string $r, ?int $valor, string $de, string $nome) use (&$limites, &$origem, &$nomes) {
+            if ($valor !== null && ($limites[$r] === null || $valor < $limites[$r])) {
+                [$limites[$r], $origem[$r], $nomes[$r]] = [$valor, $de, $nome];
+            }
+        };
+
+        if ($a->situacao() !== 'teste') {
+            foreach ($a->planoConfig()['limites'] ?? [] as $r => $v) {
+                $menor($r, $v, 'plano', $nomes[$r]);
+            }
+            if (in_array($a->situacao(), ['ativa', 'carencia'], true)) {
+                $menor('usuarios', $a->assentos, 'assentos', $nomes['usuarios']);
+            }
+        }
+
+        $pendente = \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first();
+        if ($pendente !== null) {
+            $config = collect(config('comercial.planos', []))->firstWhere('chave', $pendente->plano) ?? [];
+            foreach ($config['limites'] ?? [] as $r => $v) {
+                $menor($r, $v, 'plano', $config['nome'] ?? $pendente->plano);
+            }
+            $menor('usuarios', $pendente->usuarios, 'fatura', $config['nome'] ?? $pendente->plano);
+        }
+
+        return $limites + ['origem' => $origem, 'plano_nome' => $nomes];
     }
 
     /**
@@ -228,7 +276,8 @@ class Assinaturas
             'suspende_em' => $a->suspendeEm()?->toDateString(),
             'suspensa' => $a->suspensa(),
             'renovacao_cancelada' => $a->renovacao_cancelada_em !== null,
-            'limites' => $a->limites(),
+            'limites' => array_intersect_key($this->limitesEfetivos($tenant), array_flip(['usuarios', 'funis', 'leads'])),
+            'assentos' => in_array($a->situacao(), ['ativa', 'carencia'], true) ? $a->assentos : null,
             'uso' => $this->uso($tenant),
             'convites_pendentes' => $this->convitesPendentes($tenant),
             'fatura_pendente' => \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),

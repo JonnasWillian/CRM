@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { Head, router, useForm } from "@inertiajs/vue3";
+import axios from "axios";
 import { Check, CreditCard } from "lucide-vue-next";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import AppAlert from "@/Components/ui/AppAlert.vue";
@@ -15,13 +16,16 @@ import { formatBRL, formatarData } from "@/utils/formatadores";
 
 /**
  * Situação da assinatura, fatura pendente e como pagar, uso × limites, os
- * planos com o valor para os usuários de hoje e o histórico de faturas.
- * Contratar gera fatura; o plano só ativa quando o pagamento é confirmado.
+ * planos com o valor para o número de usuários escolhido e o histórico de
+ * faturas. Usuários são assentos: o plano pago cobre N. Contratar pede a
+ * prévia ao servidor (tipo, crédito, valor), confirma e gera a fatura; o
+ * plano só ativa quando o pagamento é confirmado.
  */
 const props = defineProps({
     assinatura: { type: Object, required: true },
-    planos: { type: Array, required: true }, // + excessos[], valor{mensal, anual}
+    planos: { type: Array, required: true }, // + excessos[]
     usuariosCobrados: { type: Number, required: true },
+    ocupados: { type: Number, default: 1 }, // ativos + convites pendentes: mínimo de assentos
     faturaPendente: { type: Object, default: null },
     faturas: { type: Array, default: () => [] },
     pagamento: { type: Object, default: () => ({}) }, // { instrucoes, email, whatsapp }
@@ -33,6 +37,14 @@ const ciclo = ref(props.assinatura.ciclo ?? "anual");
 const a = computed(() => props.assinatura);
 const emVigor = computed(() => ["ativa", "carencia"].includes(a.value.status));
 const usuarios = (n) => `${n} ${n === 1 ? "usuário" : "usuários"}`;
+
+// Assentos: começa no maior entre o que a empresa ocupa e o que já paga.
+const minimoDeAssentos = computed(() => Math.max(1, props.ocupados));
+const assentos = ref(Math.max(minimoDeAssentos.value, props.assinatura.assentos ?? 0));
+const assentosValidos = computed(() => Math.max(minimoDeAssentos.value, Number.parseInt(assentos.value, 10) || 0));
+const assentosDo = (p) => Math.max(p.usuarios_minimos ?? 1, assentosValidos.value);
+const totalDo = (p) => (ciclo.value === "anual" ? p.preco_anual * 12 : p.preco_mensal) * assentosDo(p);
+const acimaDoLimite = (p) => p.limites?.usuarios != null && assentosDo(p) > p.limites.usuarios;
 
 const SITUACAO = {
     teste: ["Em teste", "info"],
@@ -79,30 +91,55 @@ const barra = (chave) => {
 
 const rotuloDoBotao = (p) => {
     if (p.excessos.length) return "Não cabe no uso atual";
-    if (emVigor.value && a.value.plano === p.chave) return "Renovar agora";
+    if (acimaDoLimite(p)) return `Até ${usuarios(p.limites.usuarios)}`;
+    if (emVigor.value && a.value.plano === p.chave) {
+        const mudou = ciclo.value !== (a.value.ciclo ?? "mensal") || assentosDo(p) !== (a.value.assentos ?? assentosDo(p));
+        return mudou ? "Atualizar plano" : "Renovar agora";
+    }
     if (emVigor.value) return "Trocar para este";
     return "Contratar";
 };
 
-const form = useForm({ plano: null, ciclo: "anual" });
+const form = useForm({ plano: null, ciclo: "anual", assentos: null });
+const erroDaEscolha = ref(null);
+const consultando = ref(null);
+
 async function contratar(plano) {
-    const total = plano.valor[ciclo.value];
-    const preco =
-        ciclo.value === "anual"
-            ? `${formatBRL(plano.preco_anual)} × 12 meses`
-            : formatBRL(plano.preco_mensal);
-    const ok = await confirmar({
+    erroDaEscolha.value = null;
+    const escolha = { plano: plano.chave, ciclo: ciclo.value, assentos: assentosDo(plano) };
+    let previa;
+    consultando.value = plano.chave;
+    try {
+        ({ data: previa } = await axios.get(route("configuracoes.assinatura.previa"), { params: escolha }));
+    } catch (e) {
+        const dados = e?.response?.data;
+        erroDaEscolha.value = Object.values(dados?.errors ?? {})[0]?.[0] ?? dados?.message ?? "Não foi possível consultar o valor. Tente novamente.";
+        return;
+    } finally {
+        consultando.value = null;
+    }
+
+    const preco = ciclo.value === "anual" ? `${formatBRL(plano.preco_anual)} × 12 meses` : formatBRL(plano.preco_mensal);
+    const conta = `${usuarios(previa.usuarios)} × ${preco} = ${formatBRL(previa.bruto)}`;
+    const cancelaPendente = props.faturaPendente ? " A fatura pendente atual será cancelada." : "";
+    const pedido = {
+        troca: {
+            titulo: `Trocar para o plano ${plano.nome}?`,
+            mensagem: `${previa.credito > 0 ? `${conta}, menos ${formatBRL(previa.credito)} de crédito do que sobra do plano atual: ${formatBRL(previa.valor)}` : conta}.${cancelaPendente} O novo ciclo começa no dia em que o pagamento for confirmado.`,
+        },
+        renovacao: {
+            titulo: `Gerar a fatura de renovação do plano ${plano.nome}?`,
+            mensagem: `${conta}. Vence em ${formatarData(previa.vence_em)}.${cancelaPendente} O plano é renovado assim que o pagamento for confirmado.`,
+        },
+    }[previa.motivo] ?? {
         titulo: `Gerar fatura do plano ${plano.nome}?`,
-        mensagem: `${usuarios(plano.usuarios ?? props.usuariosCobrados)} × ${preco} = ${formatBRL(total)}.${props.faturaPendente ? " A fatura pendente atual será cancelada." : ""} O plano é ativado assim que o pagamento for confirmado.`,
-        rotuloConfirmar: "Gerar fatura",
-        tom: "primary",
-    });
+        mensagem: `${conta}.${cancelaPendente} O plano é ativado assim que o pagamento for confirmado.`,
+    };
+
+    const ok = await confirmar({ ...pedido, rotuloConfirmar: "Gerar fatura", tom: "primary" });
     if (!ok) return;
-    form.plano = plano.chave;
-    form.ciclo = ciclo.value;
-    form.post(route("configuracoes.assinatura.escolher"), {
-        preserveScroll: true,
-    });
+    Object.assign(form, escolha);
+    form.post(route("configuracoes.assinatura.escolher"), { preserveScroll: true });
 }
 
 const processando = ref(false);
@@ -309,6 +346,7 @@ const whatsapp = computed(() =>
                             {{ usuarios(faturaPendente.usuarios) }}. Vence em
                             {{ formatarData(faturaPendente.vence_em) }}.
                         </p>
+                        <p v-if="faturaPendente.credito > 0" class="mt-1 text-sm text-fg-2">Inclui {{ formatBRL(faturaPendente.credito) }} de crédito do plano atual.</p>
                     </div>
                     <p class="num font-display text-2xl font-bold text-fg-0">
                         {{ formatBRL(faturaPendente.valor) }}
@@ -357,9 +395,21 @@ const whatsapp = computed(() =>
             <section class="mt-6">
                 <SectionHeader
                     titulo="Planos"
-                    descricao="Por usuário ativo, em reais. Usuários desativados não contam."
+                    :descricao="`Preço por usuário, em reais. Escolha quantos usuários o plano cobre: no mínimo ${usuarios(minimoDeAssentos)}, entre ativos e convites pendentes.`"
                 >
                     <template #acoes>
+                        <label class="flex items-center gap-2 text-sm text-fg-1">
+                            Usuários
+                            <input
+                                v-model.number="assentos"
+                                data-assentos
+                                type="number"
+                                inputmode="numeric"
+                                step="1"
+                                :min="minimoDeAssentos"
+                                class="h-8 w-20 rounded border border-line bg-bg-1 px-2 text-md text-fg-0 focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25"
+                            />
+                        </label>
                         <div
                             role="radiogroup"
                             aria-label="Ciclo"
@@ -430,8 +480,8 @@ const whatsapp = computed(() =>
                             >
                         </p>
                         <p class="num text-sm text-fg-1">
-                            {{ usuarios(p.usuarios ?? usuariosCobrados) }}:
-                            {{ formatBRL(p.valor[ciclo]) }}
+                            {{ usuarios(assentosDo(p)) }}:
+                            {{ formatBRL(totalDo(p)) }}
                             {{ ciclo === "anual" ? "por ano" : "por mês" }}
                         </p>
                         <p class="mt-3 text-sm font-medium text-fg-1">
@@ -457,6 +507,7 @@ const whatsapp = computed(() =>
                         >
                             {{ motivo }}
                         </p>
+                        <p v-if="!p.excessos.length && acimaDoLimite(p)" class="mt-4 rounded-md border border-warn-line bg-warn-subtle px-3 py-2 text-sm text-warn">O plano {{ p.nome }} permite até {{ usuarios(p.limites.usuarios) }}.</p>
                         <AppButton
                             class="mt-5"
                             :variante="
@@ -464,23 +515,15 @@ const whatsapp = computed(() =>
                                     ? 'primary'
                                     : 'secondary'
                             "
-                            :disabled="p.excessos.length > 0"
-                            :carregando="
-                                form.processing && form.plano === p.chave
-                            "
+                            :disabled="p.excessos.length > 0 || acimaDoLimite(p) || consultando !== null"
+                            :carregando="(form.processing && form.plano === p.chave) || consultando === p.chave"
                             @click="contratar(p)"
                         >
                             {{ rotuloDoBotao(p) }}
                         </AppButton>
                     </article>
                 </div>
-                <p
-                    v-if="form.errors.plano"
-                    class="mt-3 text-sm text-danger"
-                    role="alert"
-                >
-                    {{ form.errors.plano }}
-                </p>
+                <p v-if="erroDaEscolha || form.errors.plano || form.errors.assentos" class="mt-3 text-sm text-danger" role="alert">{{ erroDaEscolha || form.errors.plano || form.errors.assentos }}</p>
             </section>
 
             <section v-if="faturas.length" class="mt-8" data-faturas>
