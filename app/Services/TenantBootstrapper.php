@@ -30,6 +30,39 @@ class TenantBootstrapper
 {
     public static function bootstrap(Tenant $tenant): void
     {
+        static::criarFunilPadrao($tenant);
+        static::criarMotivosDePerda($tenant);
+        static::criarStatus($tenant);
+    }
+
+    /**
+     * Cria só o que a empresa não tem — para empresas anteriores a algum
+     * destes recursos ou que ficaram pela metade. Itens arquivados contam
+     * como "tem": quem arquivou todos os funis decidiu isso, e o seeder não
+     * desfaz. Usado pelo ConfiguracaoPadraoSeeder.
+     *
+     * @return array{funil:bool, motivos:bool, status:bool} o que foi criado
+     */
+    public static function completar(Tenant $tenant): array
+    {
+        $tem = fn (string $modelo) => $modelo::withoutGlobalScopes()->withTrashed()->where('tenant_id', $tenant->id)->exists();
+        $criado = ['funil' => ! $tem(Funil::class), 'motivos' => ! $tem(MotivoPerda::class), 'status' => ! $tem(StatusProjeto::class)];
+
+        if ($criado['funil']) {
+            static::criarFunilPadrao($tenant);
+        }
+        if ($criado['motivos']) {
+            static::criarMotivosDePerda($tenant);
+        }
+        if ($criado['status']) {
+            static::criarStatus($tenant);
+        }
+
+        return $criado;
+    }
+
+    protected static function criarFunilPadrao(Tenant $tenant): void
+    {
         $funil = new Funil;
         $funil->nome = 'Vendas';
         $funil->descricao = 'Funil padrão, criado no cadastro da empresa.';
@@ -48,7 +81,10 @@ class TenantBootstrapper
             $estagio->tenant_id = $tenant->id;
             $estagio->save();
         }
+    }
 
+    protected static function criarMotivosDePerda(Tenant $tenant): void
+    {
         foreach (static::defaultMotivosDePerda() as $posicao => $descricao) {
             $motivo = new MotivoPerda;
             $motivo->descricao = $descricao;
@@ -56,7 +92,10 @@ class TenantBootstrapper
             $motivo->tenant_id = $tenant->id;
             $motivo->save();
         }
+    }
 
+    protected static function criarStatus(Tenant $tenant): void
+    {
         foreach (static::defaultStatus() as $attributes) {
             $status = new StatusProjeto;
             $status->descricao = $attributes['descricao'];
