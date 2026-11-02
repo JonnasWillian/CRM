@@ -21,7 +21,7 @@ const classes = computed(() => TAMANHOS[props.tamanho] ?? TAMANHOS[28]);
     <span
         role="img"
         :aria-label="nome || 'Sem nome'"
-        class="inline-flex shrink-0 select-none items-center justify-center rounded-sm bg-primary-subtle font-display font-bold text-primary"
+        class="inline-flex shrink-0 select-none items-center justify-center rounded-full bg-primary-subtle font-display font-semibold text-primary"
         :class="classes"
     >
         {{ iniciais(nome) }}

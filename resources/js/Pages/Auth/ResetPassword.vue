@@ -14,14 +14,14 @@ const enviar = () => form.post(route('password.store'), { onFinish: () => form.r
     <Head title="Nova senha" />
     <AuthLayout titulo="Nova senha" descricao="Escolha a senha que você vai usar daqui para frente.">
         <form class="space-y-4" @submit.prevent="enviar">
-            <FormField rotulo="E-mail" :erro="form.errors.email">
-                <AppInput v-model="form.email" type="email" autocomplete="username" readonly />
+            <FormField flutuante rotulo="E-mail" :erro="form.errors.email">
+                <AppInput placeholder=" " v-model="form.email" type="email" autocomplete="username" readonly />
             </FormField>
-            <FormField rotulo="Nova senha" :erro="form.errors.password" dica="Mínimo de 8 caracteres.">
-                <AppInput v-model="form.password" type="password" autocomplete="new-password" autofocus />
+            <FormField flutuante rotulo="Nova senha" :erro="form.errors.password" dica="Mínimo de 8 caracteres.">
+                <AppInput placeholder=" " v-model="form.password" type="password" autocomplete="new-password" autofocus />
             </FormField>
-            <FormField rotulo="Confirmar senha" :erro="form.errors.password_confirmation">
-                <AppInput v-model="form.password_confirmation" type="password" autocomplete="new-password" />
+            <FormField flutuante rotulo="Confirmar senha" :erro="form.errors.password_confirmation">
+                <AppInput placeholder=" " v-model="form.password_confirmation" type="password" autocomplete="new-password" />
             </FormField>
             <AppButton type="submit" bloco :carregando="form.processing">Salvar senha</AppButton>
         </form>

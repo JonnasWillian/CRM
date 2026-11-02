@@ -128,6 +128,16 @@ class TodaRotaDeEscritaAutorizaTest extends TestCase
         'PUT password', // PasswordController::update -> $request->user()->update(['password' => ...])
         'POST logout', // AuthenticatedSessionController::destroy -> Auth::guard('web')->logout() da própria sessão
 
+        // Webhook do Asaas: sem usuário. Autenticado pelo token secreto do
+        // header (hash_equals); o id da cobrança no corpo só diz o que
+        // conferir: situação, valor e cliente vêm da API do Asaas, e só a
+        // fatura dona daquela cobrança muda (WebhookDoAsaasTest).
+        'POST api/webhooks/asaas', // Webhooks\AsaasController::__invoke
+
+        // Passo a passo: só grava o estado do próprio usuário autenticado
+        // ($request->user()); não recebe id de ninguém (TourTest).
+        'PATCH api/tour', // Api\TourController::update
+
         // Rotas de autenticação padrão do Laravel (guest, ninguém logado
         // ainda): não agem sobre um id de terceiro escolhido pelo requisitante
         // — o alvo é sempre resolvido por credencial que só o dono tem (senha

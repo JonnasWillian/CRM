@@ -33,7 +33,7 @@ class ExportacaoCsvTest extends TestCase
         $this->assertStringContainsString('attachment; filename=leads-', $resposta->headers->get('content-disposition'));
 
         $linhas = $this->linhas($resposta->streamedContent());
-        $this->assertSame(['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'responsavel', 'criado_em', 'ultimo_contato'], $linhas[0]);
+        $this->assertSame(['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'origem', 'responsavel', 'criado_em', 'ultimo_contato'], $linhas[0]);
         $this->assertCount(2, $linhas);
         $this->assertSame('Alfa Comercial', $linhas[1][0]);
         $this->assertSame('1500,50', $linhas[1][6]);

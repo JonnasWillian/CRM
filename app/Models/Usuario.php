@@ -26,6 +26,7 @@ class Usuario extends Model implements Perdivel
         'valor_fechado',
         'probabilidade',
         'previsao_fechamento',
+        'origem',
     ];
 
     protected function casts(): array

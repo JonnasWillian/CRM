@@ -58,6 +58,7 @@ export default {
                 DEFAULT: 'var(--r-2)',
                 md: 'var(--r-2)',
                 lg: 'var(--r-3)',
+                xl: 'var(--r-4)',
                 full: 'var(--r-full)',
             },
             boxShadow: {

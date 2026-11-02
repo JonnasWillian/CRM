@@ -68,6 +68,23 @@ describe('AuthenticatedLayout', () => {
         w.unmount();
     });
 
+    it('logado, não há botão de tema no topo: o tema fica no menu da conta', () => {
+        const w = montar({ slots: { default: '<p>conteúdo</p>' } });
+        expect(w.find('button[aria-label^="Usar tema"]').exists()).toBe(false);
+        // Nem na folha nem no topo do celular; o seletor do menu da conta só existe com o menu aberto.
+        expect(w.find('[data-folha] [aria-label="Tema"]').exists()).toBe(false);
+        expect(w.find('header [aria-label="Tema"]').exists()).toBe(false);
+        w.unmount();
+    });
+
+    it('a gaveta tem Refazer o passo a passo', async () => {
+        const w = montar();
+        await w.find('button[aria-label="Abrir menu"]').trigger('click');
+        await nextTick();
+        expect(w.find('dialog').text()).toContain('Refazer o passo a passo');
+        w.unmount();
+    });
+
     it('flash de sucesso vira toast', async () => {
         const w = montar();
         paginaProps.value = { ...paginaProps.value, flash: { sucesso: 'Lead cadastrado.', erro: null } };

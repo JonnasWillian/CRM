@@ -12,8 +12,9 @@ defineProps({
         </nav>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
-                <h1 class="truncate font-display text-2xl font-semibold text-fg-0">{{ titulo }}</h1>
-                <p v-if="subtitulo" class="mt-1 text-sm text-fg-2">{{ subtitulo }}</p>
+                <h1 class="truncate font-display text-2xl font-semibold tracking-tight text-fg-0">{{ titulo }}</h1>
+                <span class="mt-2 block h-1 w-9 rounded-full bg-primary" aria-hidden="true" />
+                <p v-if="subtitulo" class="mt-2 text-md text-fg-2">{{ subtitulo }}</p>
                 <slot name="abaixo" />
             </div>
             <div v-if="$slots.acoes" class="flex shrink-0 flex-wrap items-center gap-2"><slot name="acoes" /></div>

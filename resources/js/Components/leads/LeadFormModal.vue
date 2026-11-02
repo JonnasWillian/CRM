@@ -11,6 +11,7 @@ import AppTextarea from '@/Components/ui/AppTextarea.vue';
 import FormField from '@/Components/ui/FormField.vue';
 import { useConfirm } from '@/Composables/useConfirm';
 import { usePerda } from '@/Composables/usePerda';
+import { useTour } from '@/Composables/useTour';
 import { ehTelefoneBrasileiro, MASCARA_TELEFONE } from '@/utils/telefone';
 
 /**
@@ -29,10 +30,14 @@ const emit = defineEmits(['fechar', 'salvo']);
 
 const { confirmar } = useConfirm();
 const { pedirPerda } = usePerda();
+const tour = useTour();
 const eu = computed(() => usePage().props.auth.user);
+// O questionário de primeiro acesso decide o rótulo do nome e as opções de origem.
+const rotuloNome = computed(() => usePage().props.empresa?.rotulo_nome_lead ?? 'Nome');
+const opcoesOrigem = computed(() => (usePage().props.empresa?.origens ?? []).map((o) => ({ valor: o, rotulo: o })));
 
 const form = useForm({
-    nome: '', email: '', telefone: '', descricao: '',
+    nome: '', email: '', telefone: '', descricao: '', origem: null,
     funil_id: null, estagio_id: null, valor_estimado: null, probabilidade: null, previsao_fechamento: null,
     user_id: null, abrir: false, perda: null,
 });
@@ -48,6 +53,7 @@ const opcoesAgente = computed(() => props.agentes.map((a) => ({ valor: a.id, rot
 
 watch(() => props.aberto, (aberto) => {
     if (!aberto) return;
+    tour.avancar('lead-modal-aberto');
     form.reset();
     form.clearErrors();
     const funil = funilPadrao();
@@ -84,7 +90,7 @@ function postar(perda = null) {
     return new Promise((resolve, reject) => {
         form.transform((d) => ({ ...d, perda, probabilidade: d.probabilidade === '' ? null : d.probabilidade })).post(route('leads.store'), {
             preserveScroll: true,
-            onSuccess: () => { emit('salvo'); emit('fechar'); resolve(); },
+            onSuccess: () => { emit('salvo'); emit('fechar'); tour.avancar('lead-criado'); resolve(); },
             onError: (errors) => reject({ response: { status: 422, data: { message: Object.values(errors)[0], errors } } }),
         });
     });
@@ -105,14 +111,20 @@ async function salvar(abrir = false) {
         <form id="form-lead" class="grid gap-x-5 gap-y-4 md:grid-cols-2" @submit.prevent="salvar(false)">
             <section class="space-y-4">
                 <h3 class="text-xs font-medium uppercase tracking-wider text-fg-2">Contato</h3>
-                <FormField rotulo="Nome" obrigatorio :erro="form.errors.nome">
+                <!-- Alvo do passo a passo: nome e e-mail juntos, para o balão não cobrir nenhum dos dois -->
+                <div data-tour="lead-nome" class="space-y-4">
+                <FormField :rotulo="rotuloNome" obrigatorio :erro="form.errors.nome">
                     <AppInput v-model="form.nome" limite="nome" autofocus autocomplete="off" placeholder="Nome da pessoa ou empresa" />
                 </FormField>
                 <FormField rotulo="E-mail" obrigatorio :erro="form.errors.email">
                     <AppInput v-model="form.email" type="email" limite="email" autocomplete="off" inputmode="email" />
                 </FormField>
+                </div>
                 <FormField rotulo="Telefone" :erro="form.errors.telefone" dica="Número internacional: comece com +.">
                     <AppInput v-model="form.telefone" :mascara="ehTelefoneBrasileiro(form.telefone) ? MASCARA_TELEFONE : null" inputmode="tel" placeholder="(00) 00000-0000" />
+                </FormField>
+                <FormField v-if="opcoesOrigem.length" rotulo="Origem" :erro="form.errors.origem">
+                    <AppSelect v-model="form.origem" :opcoes="opcoesOrigem" placeholder="Selecione" />
                 </FormField>
                 <FormField rotulo="Descrição" :erro="form.errors.descricao">
                     <AppTextarea v-model="form.descricao" :rows="3" limite="descricao" placeholder="Contexto, origem, interesse…" />

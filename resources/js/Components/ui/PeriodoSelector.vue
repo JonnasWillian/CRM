@@ -25,14 +25,14 @@ const data = (campo, valor) => emit('update:modelValue', { ...props.modelValue, 
 
 <template>
     <div class="flex min-w-0 max-w-full flex-wrap items-center gap-2">
-        <div role="radiogroup" aria-label="Período" class="inline-flex min-w-0 max-w-full overflow-x-auto rounded border border-line bg-bg-1 p-0.5">
+        <div role="radiogroup" aria-label="Período" class="inline-flex min-w-0 max-w-full overflow-x-auto rounded-full border border-line bg-bg-2 p-1">
             <button
                 v-for="p in PRESETS"
                 :key="p.chave"
                 type="button"
                 :aria-pressed="modelValue.periodo === p.chave ? 'true' : 'false'"
-                class="h-8 shrink-0 whitespace-nowrap rounded-sm px-2.5 text-sm font-medium transition-colors duration-1 ease-ui"
-                :class="modelValue.periodo === p.chave ? 'bg-primary-subtle text-primary' : 'text-fg-1 hover:text-fg-0'"
+                class="h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-sm font-medium transition-colors duration-1 ease-ui"
+                :class="modelValue.periodo === p.chave ? 'bg-bg-1 text-primary shadow-1' : 'text-fg-1 hover:text-fg-0'"
                 @click="escolher(p.chave)"
             >
                 {{ p.rotulo }}

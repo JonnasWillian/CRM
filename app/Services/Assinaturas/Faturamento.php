@@ -134,8 +134,9 @@ class Faturamento
         $credito = min($credito, $cotacao['valor']);
 
         $fatura = DB::transaction(function () use ($id, $plano, $ciclo, $motivo, $cotacao, $venceEm, $credito) {
-            Fatura::where('tenant_id', $id)->where('status', 'pendente')->lockForUpdate()
-                ->update(['status' => 'cancelada', 'cancelada_em' => Carbon::now()]);
+            // Uma a uma (há no máximo uma): o FaturaObserver remove a cobrança no Asaas.
+            Fatura::where('tenant_id', $id)->where('status', 'pendente')->lockForUpdate()->get()
+                ->each(fn (Fatura $f) => $f->forceFill(['status' => 'cancelada', 'cancelada_em' => Carbon::now()])->save());
 
             return Fatura::create([
                 'tenant_id' => $id,

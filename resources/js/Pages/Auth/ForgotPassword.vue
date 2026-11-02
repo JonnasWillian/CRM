@@ -15,8 +15,8 @@ const form = useForm({ email: '' });
     <AuthLayout titulo="Esqueci a senha" descricao="Informe seu e-mail e enviaremos um link para criar uma senha nova.">
         <AppAlert v-if="status" tom="ok" class="mb-4">{{ status }}</AppAlert>
         <form class="space-y-4" @submit.prevent="form.post(route('password.email'))">
-            <FormField rotulo="E-mail" :erro="form.errors.email">
-                <AppInput v-model="form.email" type="email" autocomplete="username" autofocus />
+            <FormField flutuante rotulo="E-mail" :erro="form.errors.email">
+                <AppInput placeholder=" " v-model="form.email" type="email" autocomplete="username" autofocus />
             </FormField>
             <AppButton type="submit" bloco :carregando="form.processing">Enviar link</AppButton>
         </form>

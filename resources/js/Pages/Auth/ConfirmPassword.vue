@@ -13,8 +13,8 @@ const enviar = () => form.post(route('password.confirm'), { onFinish: () => form
     <Head title="Confirmar senha" />
     <AuthLayout titulo="Confirme sua senha" descricao="Esta é uma área protegida. Confirme a senha para continuar.">
         <form class="space-y-4" @submit.prevent="enviar">
-            <FormField rotulo="Senha" :erro="form.errors.password">
-                <AppInput v-model="form.password" type="password" autocomplete="current-password" autofocus />
+            <FormField flutuante rotulo="Senha" :erro="form.errors.password">
+                <AppInput placeholder=" " v-model="form.password" type="password" autocomplete="current-password" autofocus />
             </FormField>
             <AppButton type="submit" bloco :carregando="form.processing">Confirmar</AppButton>
         </form>

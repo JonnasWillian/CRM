@@ -7,7 +7,7 @@
  * número cravado.
  *
  * Os limites (`limites`) são aplicados por Services\Assinaturas\Assinaturas.
- * A cobrança em si ainda não existe: ver docs/comercial/analise-comercial-e-seo.md.
+ * A cobrança é pelo Asaas (config/services.php): ver docs/comercial/plano-de-cobranca-e-assinaturas.md.
  */
 return [
     'slogan' => 'O CRM de vendas que mostra o que você já fatura e o que ainda vai entrar.',
@@ -26,7 +26,7 @@ return [
     'suspender_apos_dias' => 30,         // N dias em só leitura e o acesso é suspenso
 
     'pagamento' => [
-        // Enquanto não há gateway: como pagar (chave Pix, dados bancários, para onde mandar o comprovante).
+        // Sem o Asaas ligado: como pagar (chave Pix, dados bancários, para onde mandar o comprovante).
         'instrucoes' => env('COMERCIAL_PAGAMENTO_INSTRUCOES'),
     ],
 

@@ -38,8 +38,8 @@ const TONS = {
     <span
         :data-tom="tomEfetivo"
         :style="estilo"
-        class="badge inline-flex max-w-full items-center gap-1.5 rounded-sm font-medium leading-none"
-        :class="[TONS[tomEfetivo], tamanho === 'md' ? 'px-2 py-1 text-sm' : 'px-1.5 py-[3px] text-xs']"
+        class="badge inline-flex max-w-full items-center gap-1.5 rounded-full font-medium leading-none"
+        :class="[TONS[tomEfetivo], tamanho === 'md' ? 'px-2.5 py-1 text-sm' : 'px-2 py-[3px] text-xs']"
     >
         <span v-if="ponto" class="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
         <span class="truncate"><slot /></span>

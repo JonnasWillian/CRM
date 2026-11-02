@@ -24,13 +24,13 @@ function alternar(valor) {
 
 <template>
     <div class="flex flex-wrap items-center gap-1.5" :role="multiplo ? 'group' : 'radiogroup'" :aria-label="rotulo ?? undefined">
-        <span v-if="rotulo" class="mr-1 text-xs font-medium uppercase tracking-wider text-fg-2">{{ rotulo }}</span>
+        <span v-if="rotulo" class="mr-1 text-sm font-medium text-fg-2">{{ rotulo }}</span>
         <button
             v-for="o in opcoes"
             :key="o.valor"
             type="button"
             :aria-pressed="ativa(o.valor) ? 'true' : 'false'"
-            class="inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors duration-1 ease-ui"
+            class="inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors duration-1 ease-ui"
             :class="ativa(o.valor) ? 'border-primary bg-primary-subtle text-primary' : 'border-line bg-bg-1 text-fg-1 hover:border-line-2 hover:text-fg-0'"
             @click="alternar(o.valor)"
         >

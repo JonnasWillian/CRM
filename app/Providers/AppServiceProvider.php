@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Anotacao;
 use App\Models\Arquivo;
+use App\Models\Fatura;
 use App\Models\Projeto;
 use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
@@ -12,6 +13,7 @@ use App\Models\TarefaPadrao;
 use App\Models\Usuario;
 use App\Observers\AnotacaoObserver;
 use App\Observers\ArquivoObserver;
+use App\Observers\FaturaObserver;
 use App\Observers\ProjetoAnexoObserver;
 use App\Observers\ProjetoAnotacaoObserver;
 use App\Observers\ProjetoObserver;
@@ -73,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
         // banco, removido em 2026_09_28_110002 e travado por
         // tests/Feature/DataIntegrity/SemCascataDestrutivaTest.php.
         Usuario::observe(UsuarioObserver::class);
+        Fatura::observe(FaturaObserver::class);
         Anotacao::observe(AnotacaoObserver::class);
         Arquivo::observe(ArquivoObserver::class);
         Projeto::observe(ProjetoObserver::class);
@@ -92,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Anotacao::class, AnotacaoPolicy::class);
         Gate::policy(Arquivo::class, ArquivoPolicy::class);
         Gate::policy(TarefaPadrao::class, TarefaPadraoPolicy::class);
+        Gate::policy(Fatura::class, \App\Policies\FaturaPolicy::class);
 
         // Três limites, cada um contra um abuso diferente:
         //   api      — cliente em loop ou raspagem da carteira (por agente);

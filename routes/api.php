@@ -33,6 +33,9 @@ use Illuminate\Support\Facades\Route;
  * como `{usuario}`.
  */
 Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
+    // ── Passo a passo do primeiro acesso: estado do próprio usuário ──
+    Route::patch('/tour', [\App\Http\Controllers\Api\TourController::class, 'update'])->name('tour.update');
+
     // ── Catálogos ──
     Route::get('/estagios', [EstagioController::class, 'index'])->name('estagios.index');
     Route::get('/status', [StatusProjetoController::class, 'index'])->name('status.index');
@@ -166,3 +169,6 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::get('/kanban/colunas/{estagio}', [KanbanController::class, 'coluna'])->withTrashed()->name('kanban.coluna');
     Route::patch('/kanban/settings', [KanbanController::class, 'settings'])->name('kanban.settings');
 });
+
+// Avisos de pagamento do Asaas: sem sessão, autenticados pelo token do header.
+Route::post('/webhooks/asaas', \App\Http\Controllers\Webhooks\AsaasController::class)->name('api.webhooks.asaas');

@@ -6,12 +6,13 @@ import { formatBRL } from '@/utils/formatadores';
 const post = vi.fn();
 const formPost = vi.fn();
 const get = vi.fn();
+const reload = vi.fn();
 const confirmar = vi.fn().mockResolvedValue(true);
 
 vi.mock('@inertiajs/vue3', () => ({
     usePage: () => ({ props: { auth: { permissions: {} } } }),
     useForm: (dados) => reactive({ ...dados, errors: {}, processing: false, post: (...a) => formPost(...a) }),
-    router: { post: (...args) => post(...args) },
+    router: { post: (...args) => post(...args), reload: (...a) => reload(...a) },
     Head: { template: '<div />' },
     Link: { props: ['href'], template: '<a :href="href"><slot /></a>' },
 }));
@@ -44,7 +45,7 @@ const botaoDo = (w, chave) => w.find(`[data-plano="${chave}"] button`);
 
 describe('Configurações › Assinatura', () => {
     beforeEach(() => {
-        [post, formPost, get, confirmar].forEach((f) => f.mockClear());
+        [post, formPost, get, reload, confirmar].forEach((f) => f.mockClear());
         confirmar.mockResolvedValue(true);
     });
 
@@ -73,6 +74,14 @@ describe('Configurações › Assinatura', () => {
         expect(w.find('[data-plano="profissional"]').text()).toContain(`6 usuários: ${formatBRL(4968)} por ano`);
         expect(w.find('[data-plano="inicial"]').text()).toContain('O plano Inicial permite até 3 usuários.');
         expect(botaoDo(w, 'inicial').attributes('disabled')).toBeDefined();
+    });
+
+    it('sem plano pago, começa nos usuários sugeridos pelo questionário; com plano pago, nos assentos do plano', () => {
+        const sugerido = montar({ ocupados: 1, usuariosSugeridos: 6 });
+        expect(sugerido.find('input[data-assentos]').element.value).toBe('6');
+
+        const pago = montar({ ocupados: 1, usuariosSugeridos: 6, assinatura: assinatura({ status: 'ativa', assentos: 2 }) });
+        expect(pago.find('input[data-assentos]').element.value).toBe('2');
     });
 
     it('contratar confere a prévia do servidor e confirma com crédito e valor final antes de gerar a fatura', async () => {
@@ -138,6 +147,65 @@ describe('Configurações › Assinatura', () => {
         expect(bloco.text()).toContain('Pix: financeiro@crm.test');
         expect(bloco.find('a[href="mailto:comercial@crm.test"]').exists()).toBe(true);
         expect(bloco.find('a[href="https://wa.me/5511999998888"]').exists()).toBe(true);
+    });
+
+    it('com o pagamento online ligado, oferece o Pix e mantém o contato para quem não conseguir pagar', () => {
+        const w = montar({
+            faturaPendente: { id: 7, plano_nome: 'Profissional', ciclo: 'mensal', usuarios: 1, credito: 0, valor: 89, vence_em: '2026-11-03', atrasada: false, status: 'pendente', link_pagamento: 'https://www.asaas.com/i/pay_1' },
+            pagamento: { online: true, documento: true, instrucoes: null, email: 'comercial@crm.test', whatsapp: null },
+        });
+        const bloco = w.find('[data-fatura-pendente]');
+        expect(bloco.find('[data-pagamento-online]').text()).toContain('Pagar com Pix');
+        expect(bloco.find('a[href="https://www.asaas.com/i/pay_1"]').exists()).toBe(true);
+        expect(bloco.find('a[href="mailto:comercial@crm.test"]').exists()).toBe(true);
+    });
+
+    describe('conferir o pagamento depois de fechar o Pix', () => {
+        const comCobranca = (extra = {}) => montar({
+            faturaPendente: { id: 7, plano_nome: 'Profissional', ciclo: 'mensal', usuarios: 1, credito: 0, valor: 89, vence_em: '2026-11-03', atrasada: false, status: 'pendente', link_pagamento: 'https://www.asaas.com/i/pay_1', ...extra },
+            pagamento: { online: true, documento: true, instrucoes: null, email: null, whatsapp: null },
+        });
+        const conferir = (w) => w.findAll('button').find((b) => b.text().includes('Conferir pagamento'));
+
+        it('sem cobrança gerada ainda, não oferece conferir', () => {
+            expect(conferir(comCobranca({ link_pagamento: null }))).toBeUndefined();
+        });
+
+        it('ainda não pago: diz que não chegou, quando conferiu e o que checar', async () => {
+            const conferido = '2026-11-01T21:03:15-03:00';
+            get.mockResolvedValue({ data: { status: 'pendente', conferido_em: conferido } });
+            const w = comCobranca();
+
+            await conferir(w).trigger('click');
+            await flushPromises();
+
+            expect(get).toHaveBeenCalledWith('/configuracoes.assinatura.fatura', { silencioso: true });
+            const aviso = w.find('[data-conferencia]');
+            expect(aviso.text()).toContain('Pagamento ainda não recebido');
+            expect(aviso.text()).toContain('Pix enviado para outra chave não paga a fatura');
+            expect(aviso.text()).toContain(new Date(conferido).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            expect(reload).not.toHaveBeenCalled();
+        });
+
+        it('já pago: recarrega a página com o plano ativo', async () => {
+            get.mockResolvedValue({ data: { status: 'paga', conferido_em: null } });
+            const w = comCobranca();
+
+            await conferir(w).trigger('click');
+            await flushPromises();
+
+            expect(reload).toHaveBeenCalled();
+        });
+
+        it('falha na consulta pede para tentar de novo', async () => {
+            get.mockRejectedValue(new Error('rede'));
+            const w = comCobranca();
+
+            await conferir(w).trigger('click');
+            await flushPromises();
+
+            expect(w.find('[data-conferencia]').text()).toContain('Não deu para conferir agora. Tente de novo em instantes.');
+        });
     });
 
     it('plano ativo oferece cancelar a renovação; cancelada, oferece retomar', async () => {

@@ -69,6 +69,13 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 Route::get('/kanban', [\App\Http\Controllers\Web\KanbanController::class, 'index'])->middleware(['auth', 'tenant'])->name('kanban');
 
 // Acesso suspenso por falta de pagamento (ExigirAssinatura manda para cá). Todos os papéis.
+// Questionário de primeiro acesso: quem cria a empresa responde uma vez (spec 2026-11-01-onboarding-personalizado).
+Route::middleware(['auth', 'tenant', 'can:configuracoes.manage'])->prefix('boas-vindas')->name('boas-vindas.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Web\BoasVindasController::class, 'show'])->name('show');
+    Route::post('/', [\App\Http\Controllers\Web\BoasVindasController::class, 'store'])->name('store');
+    Route::post('/pular', [\App\Http\Controllers\Web\BoasVindasController::class, 'pular'])->name('pular');
+});
+
 Route::get('/assinatura/suspensa', [\App\Http\Controllers\Web\AssinaturaController::class, 'suspensa'])->middleware(['auth', 'tenant'])->name('assinatura.suspensa');
 
 Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configuracoes.')->group(function () {
@@ -80,6 +87,9 @@ Route::middleware(['auth', 'tenant'])->prefix('configuracoes')->name('configurac
     Route::get('/assinatura/previa', [\App\Http\Controllers\Web\AssinaturaController::class, 'previa'])->middleware('can:configuracoes.manage')->name('assinatura.previa');
     Route::post('/assinatura/cancelar-renovacao', [\App\Http\Controllers\Web\AssinaturaController::class, 'cancelarRenovacao'])->middleware('can:configuracoes.manage')->name('assinatura.cancelar-renovacao');
     Route::post('/assinatura/retomar-renovacao', [\App\Http\Controllers\Web\AssinaturaController::class, 'retomarRenovacao'])->middleware('can:configuracoes.manage')->name('assinatura.retomar-renovacao');
+    // Pagamento pelo Asaas: Pix na tela e situação da fatura (a tela consulta enquanto o Pix está aberto).
+    Route::post('/assinatura/faturas/{fatura}/pagar', [\App\Http\Controllers\Web\AssinaturaController::class, 'pagar'])->middleware(['can:configuracoes.manage', 'throttle:20,1'])->name('assinatura.pagar');
+    Route::get('/assinatura/faturas/{fatura}', [\App\Http\Controllers\Web\AssinaturaController::class, 'fatura'])->middleware('can:configuracoes.manage')->name('assinatura.fatura');
     // Do próprio agente, sem permissão extra.
     Route::get('/modelos-tarefa', [\App\Http\Controllers\Web\ConfiguracoesController::class, 'modelosTarefa'])->name('modelosTarefa');
 });

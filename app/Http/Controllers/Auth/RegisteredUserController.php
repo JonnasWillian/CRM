@@ -54,6 +54,9 @@ class RegisteredUserController extends Controller
 
             TenantBootstrapper::bootstrap($tenant);
 
+            // Linha pendente: leva quem criou a empresa ao questionário de primeiro acesso.
+            \App\Models\PerfilDeEmpresa::create(['tenant_id' => $tenant->id]);
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -81,6 +84,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('boas-vindas.show', absolute: false));
     }
 }

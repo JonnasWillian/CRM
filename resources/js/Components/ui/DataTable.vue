@@ -154,7 +154,7 @@ const alturaLinha = computed(() => (compacta.value ? 'h-10' : 'h-12'));
                         <component :is="compacta ? Rows3 : Rows4" :size="16" aria-hidden="true" />
                     </button>
                     <AppDropdown v-if="ocultaveis.length" rotulo="Colunas" :icone="Columns3" alinhar="end">
-                        <p class="px-2.5 pb-1 pt-1.5 text-xs font-medium uppercase tracking-wider text-fg-2">Colunas visíveis</p>
+                        <p class="px-2.5 pb-1 pt-1.5 text-sm font-medium text-fg-2">Colunas visíveis</p>
                         <label v-for="c in ocultaveis" :key="c.key" role="menuitemcheckbox" :aria-checked="!prefs.ocultas.includes(c.key)" class="flex cursor-pointer items-center gap-2.5 rounded px-2.5 py-2 text-md text-fg-0 hover:bg-bg-2">
                             <input type="checkbox" :data-coluna="c.key" :checked="!prefs.ocultas.includes(c.key)" class="form-checkbox h-4 w-4 rounded-sm border-line-2 text-primary focus:ring-focus/25" @change="alternarColuna(c.key)" />
                             {{ c.rotulo }}
@@ -193,7 +193,7 @@ const alturaLinha = computed(() => (compacta.value ? 'h-10' : 'h-12'));
             :aria-busy="carregando ? 'true' : undefined"
         >
             <table class="w-full border-collapse text-md">
-                <thead class="bg-bg-0 text-xs uppercase tracking-wider text-fg-2" :class="cabecalhoFixo ? 'sticky top-0 z-10' : ''">
+                <thead class="bg-bg-2 text-sm text-fg-2" :class="cabecalhoFixo ? 'sticky top-0 z-10' : ''">
                     <tr>
                         <th v-if="selecionavel" scope="col" class="w-10 px-3 py-2.5">
                             <input ref="cabecalho" type="checkbox" :checked="todasSelecionadas" :indeterminate.prop="algumaSelecionada && !todasSelecionadas" aria-label="Selecionar todos desta página" class="form-checkbox h-4 w-4 rounded-sm border-line-2 text-primary focus:ring-focus/25" @change="alternarTodas" />
@@ -204,7 +204,7 @@ const alturaLinha = computed(() => (compacta.value ? 'h-10' : 'h-12'));
                             scope="col"
                             :aria-sort="ariaSort(c)"
                             class="whitespace-nowrap px-3 py-2.5 font-medium"
-                            :class="[classesDaColuna(c), c === colunaPrimaria ? 'sticky left-0 z-10 bg-bg-0' : '']"
+                            :class="[classesDaColuna(c), c === colunaPrimaria ? 'sticky left-0 z-10 bg-bg-2' : '']"
                             :style="c.largura ? { width: c.largura } : undefined"
                         >
                             <button v-if="c.ordenavel" type="button" :data-ordenar="c.key" class="inline-flex items-center gap-1 rounded hover:text-fg-0" :class="ordenacao?.por === c.key ? 'text-fg-0' : ''" @click="ordenar(c)">
@@ -224,7 +224,7 @@ const alturaLinha = computed(() => (compacta.value ? 'h-10' : 'h-12'));
                         :key="chaveDe(linha)"
                         :tabindex="linhasClicaveis ? 0 : undefined"
                         :aria-selected="selecionavel ? selecionadas.includes(chaveDe(linha)) : undefined"
-                        class="group transition-colors duration-1 ease-ui hover:bg-bg-2/60 focus:outline-none focus-visible:bg-primary-subtle/60"
+                        class="group transition-colors duration-1 ease-ui hover:bg-bg-2 focus:outline-none focus-visible:bg-primary-subtle/60"
                         :class="[alturaLinha, linhasClicaveis ? 'cursor-pointer' : '', selecionadas.includes(chaveDe(linha)) ? 'bg-primary-subtle/50' : '']"
                         @click="aoClicarLinha($event, linha)"
                         @keydown="aoTeclarLinha($event, linha, i)"

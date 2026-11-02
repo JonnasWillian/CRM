@@ -81,6 +81,41 @@ time {
     }
 }
 
+/*
+ * Rótulo flutuante (FormField flutuante, telas de entrada): o rótulo faz
+ * as vezes de placeholder enquanto o campo está vazio e sobe para dentro da
+ * borda ao focar ou preencher. O placeholder real só aparece com o foco.
+ * Depende de :placeholder-shown, por isso o campo precisa de placeholder.
+ */
+.campo-flutuante input {
+    height: 56px;
+    padding-top: 22px;
+    padding-bottom: 6px;
+    padding-left: 16px;
+    font-size: 14px;
+}
+.campo-flutuante input::placeholder { color: transparent; transition: color var(--d-1) var(--e); }
+.campo-flutuante input:focus::placeholder { color: var(--fg-disabled); }
+.rotulo-flutuante {
+    position: absolute;
+    left: 17px;
+    top: 28px;
+    transform: translateY(-50%);
+    color: var(--fg-2);
+    font-size: 14px;
+    pointer-events: none;
+    transition: top var(--d-1) var(--e), font-size var(--d-1) var(--e), color var(--d-1) var(--e);
+}
+.campo-flutuante:has(input:focus) .rotulo-flutuante,
+.campo-flutuante:has(input:not(:placeholder-shown)) .rotulo-flutuante,
+.campo-flutuante:has(input:autofill) .rotulo-flutuante {
+    top: 16px;
+    font-size: 11.5px;
+    font-weight: 500;
+}
+.campo-flutuante:has(input:focus) .rotulo-flutuante { color: var(--primary); }
+.campo-flutuante[data-invalido] .rotulo-flutuante { color: var(--danger); }
+
 /* Caixas de seleção do plugin de formulários: o plugin pinta o fundo de
    branco fixo. Pelos tokens, ficam certas nos dois temas. */
 .form-checkbox:not(:checked):not(:indeterminate),

@@ -26,7 +26,7 @@ const ROTULOS = { '7d': '7 dias', '30d': '30 dias' };
 
 <template>
     <div class="flex flex-wrap items-center gap-2">
-        <span v-if="rotulo" class="mr-1 text-xs font-medium uppercase tracking-wider text-fg-2">{{ rotulo }}</span>
+        <span v-if="rotulo" class="mr-1 text-sm font-medium text-fg-2">{{ rotulo }}</span>
         <span class="w-36"><AppDateInput :model-value="de" tamanho="sm" :aria-label="rotulo ? `${rotulo}: de` : 'De'" @update:model-value="emit('update:de', $event)" /></span>
         <span class="text-sm text-fg-2">a</span>
         <span class="w-36"><AppDateInput :model-value="ate" tamanho="sm" :min="de ?? undefined" :aria-label="rotulo ? `${rotulo}: até` : 'Até'" @update:model-value="emit('update:ate', $event)" /></span>

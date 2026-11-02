@@ -80,6 +80,7 @@ const colunas = computed(() => [
     { key: 'estagio', rotulo: 'Estágio', ordenavel: true },
     { key: 'valor_estimado', rotulo: 'Valor estimado', ordenavel: true, alinhar: 'direita', ocultarAbaixo: 'md' },
     { key: 'previsao_fechamento', rotulo: 'Previsão', ordenavel: true, ocultarAbaixo: 'lg' },
+    { key: 'origem', rotulo: 'Origem', ocultarAbaixo: 'xl' },
     ...(veTodos.value ? [{ key: 'responsavel', rotulo: 'Responsável', ordenavel: true, ocultarAbaixo: 'lg' }] : []),
     { key: 'ultimo_contato', rotulo: 'Último contato', ordenavel: true, ocultarAbaixo: 'md' },
     { key: 'created_at', rotulo: 'Criado em', ordenavel: true, ocultarAbaixo: 'xl', formatar: (v) => formatarData(v) },
@@ -226,7 +227,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', atalho));
         <PageContainer>
             <PageHeader titulo="Leads" :subtitulo="`${Number(leads.meta.total).toLocaleString('pt-BR')} ${leads.meta.total === 1 ? 'lead' : 'leads'}`">
                 <template #acoes>
-                    <AppButton v-if="veTodos" variante="secondary" as="Link" :href="route('leads.importar')"><template #icone><FileUp /></template>Importar</AppButton>
+                    <AppButton v-if="veTodos" variante="secondary" as="Link" :href="route('leads.importar')" data-tour="importar"><template #icone><FileUp /></template>Importar</AppButton>
                     <AppButton variante="secondary" :disabled="!leads.meta.total" @click="exportar()"><template #icone><Download /></template>Exportar CSV</AppButton>
                     <AppButton v-if="pode('leads.manage')" @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
                 </template>

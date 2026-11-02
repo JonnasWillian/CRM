@@ -13,7 +13,7 @@ const OPCOES = [
 </script>
 
 <template>
-    <div role="radiogroup" aria-label="Tema" class="flex w-full rounded border border-line bg-bg-1 p-0.5">
+    <div role="radiogroup" aria-label="Tema" class="flex w-full rounded-full border border-line bg-bg-2 p-1">
         <button
             v-for="o in OPCOES"
             :key="o.valor"
@@ -22,8 +22,8 @@ const OPCOES = [
             :aria-checked="preferencia === o.valor ? 'true' : 'false'"
             :aria-label="compacto ? `Tema ${o.rotulo.toLowerCase()}` : undefined"
             :title="compacto ? o.rotulo : undefined"
-            class="flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-sm px-2 text-sm font-medium transition-colors duration-1 ease-ui"
-            :class="preferencia === o.valor ? 'bg-primary-subtle text-primary' : 'text-fg-1 hover:text-fg-0'"
+            class="flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors duration-1 ease-ui"
+            :class="preferencia === o.valor ? 'bg-bg-1 text-primary shadow-1' : 'text-fg-1 hover:text-fg-0'"
             @click.stop="escolher(o.valor)"
         >
             <component :is="o.icone" :size="14" aria-hidden="true" />

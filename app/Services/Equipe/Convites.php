@@ -85,7 +85,8 @@ class Convites
                 'password' => Hash::make($senha),
                 'tenant_id' => $convite->tenant_id,
             ]);
-            $user->forceFill(['ativo' => true, 'email_verified_at' => now()])->save();
+            // Chega a uma empresa já em uso: passo a passo curto, só apontando os lugares.
+            $user->forceFill(['ativo' => true, 'email_verified_at' => now(), 'tour_estado' => 'pendente', 'tour_versao' => 'curta'])->save();
 
             setPermissionsTeamId($convite->tenant_id);
             $user->assignRole($convite->papel);

@@ -39,6 +39,8 @@ final class RegrasDeLead
             'valor_fechado' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'probabilidade' => ['nullable', 'integer', 'between:0,100'],
             'previsao_fechamento' => ['nullable', 'date'],
+            // Texto livre: as opções vêm do questionário, mas a importação traz origens de fora da lista.
+            'origem' => ['nullable', 'string', 'max:60'],
         ];
     }
 
@@ -66,6 +68,7 @@ final class RegrasDeLead
             'probabilidade.integer' => 'A probabilidade é um número inteiro de 0 a 100.',
             'probabilidade.between' => 'A probabilidade vai de 0 a 100.',
             'previsao_fechamento.date' => 'Informe uma data válida para a previsão de fechamento.',
+            'origem.max' => 'A origem pode ter até 60 caracteres.',
         ];
     }
 }

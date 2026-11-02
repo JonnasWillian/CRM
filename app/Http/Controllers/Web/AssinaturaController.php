@@ -4,12 +4,18 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Fatura;
+use App\Rules\CpfOuCnpj;
 use App\Services\Assinaturas\Assinaturas;
 use App\Services\Assinaturas\Faturamento;
+use App\Services\Pagamentos\Asaas\CobrancasDoAsaas;
+use App\Services\Pagamentos\Asaas\FalhaNoAsaas;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,7 +23,7 @@ use Inertia\Response;
 /** Configurações › Assinatura: situação, uso × limites, faturas e a contratação do plano. */
 class AssinaturaController extends Controller
 {
-    public function index(Assinaturas $assinaturas, Faturamento $faturamento, CurrentTenant $tenant): Response
+    public function index(Assinaturas $assinaturas, Faturamento $faturamento, CobrancasDoAsaas $cobrancas, CurrentTenant $tenant): Response
     {
         $empresa = $tenant->get();
 
@@ -36,9 +42,14 @@ class AssinaturaController extends Controller
             'usuariosCobrados' => $faturamento->cotar($empresa, config('comercial.planos.0.chave'), 'mensal')['usuarios'],
             // Mínimo de assentos que a empresa pode escolher: ativos + convites pendentes.
             'ocupados' => $faturamento->ocupados($empresa),
+            // Do questionário de primeiro acesso: quantas pessoas vão usar (null sem resposta).
+            'usuariosSugeridos' => \App\Services\Onboarding\PreferenciasDaEmpresa::usuariosSugeridos($empresa->id),
             'faturaPendente' => $faturamento->pendente($empresa)?->paraOFront(),
             'faturas' => Fatura::where('tenant_id', $empresa->id)->latest('id')->limit(12)->get()->map->paraOFront()->values(),
             'pagamento' => [
+                // Com o Asaas ligado, a fatura é paga na própria tela; sem ele, valem as instruções.
+                'online' => $cobrancas->ativo(),
+                'documento' => filled($empresa->documento),
                 'instrucoes' => config('comercial.pagamento.instrucoes'),
                 'email' => config('comercial.contato.email'),
                 'whatsapp' => config('comercial.contato.whatsapp'),
@@ -86,6 +97,63 @@ class AssinaturaController extends Controller
         $s = $faturamento->simular($tenant->get(), $dados['plano'], $dados['ciclo'], $dados['assentos'] ?? null);
 
         return response()->json(['vence_em' => $s['vence_em']->toDateString()] + $s);
+    }
+
+    /**
+     * Pix da fatura pendente (e o link da página do Asaas, para boleto e
+     * cartão). Na primeira vez, pede o CPF/CNPJ de quem paga: o Asaas exige.
+     */
+    public function pagar(Request $request, Fatura $fatura, CobrancasDoAsaas $cobrancas, CurrentTenant $tenant): JsonResponse
+    {
+        $this->authorize('pagar', $fatura); // de outra empresa: 404
+        abort_unless($cobrancas->ativo(), 404);
+        $empresa = $tenant->get();
+
+        if (blank($empresa->documento)) {
+            $dados = $request->validate(
+                ['documento' => ['required', 'string', 'max:20', new CpfOuCnpj]],
+                ['documento.required' => 'Informe o CPF ou CNPJ de quem paga a fatura.'],
+            );
+            $empresa->forceFill(['documento' => CpfOuCnpj::digitos($dados['documento'])])->save();
+        }
+
+        if ($fatura->status !== 'pendente') {
+            return response()->json(['message' => 'Esta fatura não está mais aberta para pagamento.'], 422);
+        }
+
+        try {
+            $f = $cobrancas->garantir($fatura, $request->user()->email);
+            $pix = $cobrancas->pix($f);
+        } catch (FalhaNoAsaas $e) {
+            Log::warning("Asaas: cobrança da fatura #{$fatura->id} não gerada.", ['erro' => $e->getMessage()]);
+
+            return response()->json(['message' => $e->paraOCliente()], $e->temporaria ? 503 : 422);
+        }
+
+        return response()->json(['link' => $f->link_pagamento, 'pix' => $pix]);
+    }
+
+    /**
+     * Situação da fatura, para a tela saber quando o pagamento caiu. Além do
+     * webhook, confere no Asaas no máximo a cada 15 segundos por fatura:
+     * cobre aviso atrasado e o ambiente local, que o webhook não alcança.
+     */
+    public function fatura(Fatura $fatura, CobrancasDoAsaas $cobrancas): JsonResponse
+    {
+        $this->authorize('pagar', $fatura); // de outra empresa: 404
+        // Quando o Asaas respondeu pela última vez: a tela mostra que está conferindo de verdade.
+        $conferida = "asaas:conferida:{$fatura->id}";
+        if ($fatura->status === 'pendente' && $fatura->cobranca_id !== null && $cobrancas->ativo() && Cache::add("asaas:consulta:{$fatura->id}", true, 15)) {
+            try {
+                $cobrancas->confirmarSePaga($fatura);
+                $fatura->refresh();
+                Cache::put($conferida, Carbon::now()->toIso8601String(), 3600);
+            } catch (FalhaNoAsaas $e) {
+                Log::info("Asaas: consulta da fatura #{$fatura->id} falhou; a próxima tenta de novo.", ['erro' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json(['status' => $fatura->status, 'conferido_em' => Cache::get($conferida)]);
     }
 
     /** @return array{plano:string, ciclo:string, assentos:?int} */

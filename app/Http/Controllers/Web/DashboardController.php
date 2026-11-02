@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MetricasRequest;
 use App\Models\Funil;
 use App\Queries\Tarefas\ResumoDeTarefas;
+use App\Services\Onboarding\VisaoDoDashboard;
 use App\Services\Reports\LeadMetricsService;
 use App\Services\Reports\Periodo;
 use App\Support\Tenancy\CurrentTenant;
@@ -23,7 +24,7 @@ class DashboardController extends Controller
     public function index(MetricasRequest $request, CurrentTenant $tenant, LeadMetricsService $metricas, ResumoDeTarefas $tarefas): Response
     {
         $periodo = $request->periodo();
-        $agente = $request->agente();
+        $agente = VisaoDoDashboard::agente($request);
         $funilId = $request->funilId();
 
         return Inertia::render('Dashboard', [

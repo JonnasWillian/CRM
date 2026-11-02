@@ -20,6 +20,7 @@ final class CamposDeImportacao
         'valor_estimado' => ['valorestimado', 'valor', 'valordonegocio'],
         'probabilidade' => ['probabilidade', 'chance'],
         'previsao_fechamento' => ['previsaofechamento', 'previsao', 'previsaodefechamento'],
+        'origem' => ['origem', 'fonte', 'canal', 'comoconheceu'],
         'responsavel' => ['responsavel', 'vendedor', 'dono', 'owner'],
     ];
 

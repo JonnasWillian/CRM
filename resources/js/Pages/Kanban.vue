@@ -361,7 +361,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
                         <AppDropdownItem rotulo="Coluna padrão para novos leads…" :icone="Settings2" @click="abrirConfiguracao" />
                         <AppDropdownItem v-if="pode('configuracoes.manage')" rotulo="Configurar funis" :icone="GitBranch" as="Link" :href="route('configuracoes.funis')" />
                     </AppDropdown>
-                    <AppButton v-if="pode('leads.manage')" @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
+                    <AppButton v-if="pode('leads.manage')" data-tour="novo-lead" @click="modal = true"><template #icone><Plus /></template>Novo lead</AppButton>
                 </template>
                 <template #abaixo>
                     <div class="mt-3 flex flex-wrap items-center gap-2">
@@ -438,6 +438,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
                     >
                         <template #item="{ element: lead }">
                             <article
+                                data-tour="card-lead"
                                 tabindex="0"
                                 class="rounded-md border border-line bg-bg-1 p-2.5 shadow-1 transition-shadow duration-1 ease-ui hover:shadow-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
                                 :class="pode('leads.manage') && !coluna.arquivada ? 'cursor-grab active:cursor-grabbing' : ''"
@@ -496,7 +497,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
 
                     <footer v-if="pode('leads.manage') && !coluna.arquivada" class="kb-nao-arrastar border-t border-line p-2">
                         <form v-if="quickAdd.estagioId === coluna.id" class="space-y-2" @submit.prevent="salvarQuickAdd(coluna)">
-                            <FormField rotulo="Nome" obrigatorio :erro="quickAdd.erros.nome"><AppInput v-model="quickAdd.nome" tamanho="sm" limite="nome" autofocus /></FormField>
+                            <FormField :rotulo="usePage().props.empresa?.rotulo_nome_lead ?? 'Nome'" obrigatorio :erro="quickAdd.erros.nome"><AppInput v-model="quickAdd.nome" tamanho="sm" limite="nome" autofocus /></FormField>
                             <FormField rotulo="E-mail" obrigatorio :erro="quickAdd.erros.email"><AppInput v-model="quickAdd.email" type="email" tamanho="sm" limite="email" /></FormField>
                             <FormField rotulo="Telefone" :erro="quickAdd.erros.telefone"><AppInput v-model="quickAdd.telefone" tamanho="sm" inputmode="tel" :mascara="ehTelefoneBrasileiro(quickAdd.telefone) ? MASCARA_TELEFONE : null" /></FormField>
                             <div class="flex justify-end gap-2">

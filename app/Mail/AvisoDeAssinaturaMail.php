@@ -47,7 +47,11 @@ class AvisoDeAssinaturaMail extends Mailable implements ShouldQueue
         $dias = (int) ($d['dias'] ?? 0);
         $emDias = $dias <= 0 ? 'hoje' : ($dias === 1 ? 'amanhã' : "em {$dias} dias");
         $verPlanos = ['rotulo' => 'Ver planos e faturas', 'url' => $d['url'] ?? url('/')];
-        $comoPagar = ! empty($d['instrucoes']) ? "Como pagar: {$d['instrucoes']}" : 'Responda este e-mail para receber os dados de pagamento.';
+        $comoPagar = match (true) {
+            ! empty($d['pagamento_online']) => 'Pague por Pix, boleto ou cartão na tela de assinatura. A confirmação é automática.',
+            ! empty($d['instrucoes']) => "Como pagar: {$d['instrucoes']}",
+            default => 'Responda este e-mail para receber os dados de pagamento.',
+        };
         $suspensao = ! empty($d['suspende_em']) ? "Em {$d['suspende_em']}, o acesso será suspenso: só a tela de planos e a exportação de leads continuam disponíveis." : null;
 
         $c = match ($this->tipo) {
@@ -114,7 +118,21 @@ class AvisoDeAssinaturaMail extends Mailable implements ShouldQueue
             'comercial_fatura_gerada' => [
                 "Nova fatura #{$f['id']}: {$empresa}, {$f['valor']}",
                 "Fatura #{$f['id']} para cobrar",
-                ["{$empresa}: plano {$f['plano']} ({$f['ciclo']}), {$f['usuarios']} usuários, {$f['valor']}, vence em {$f['vence_em']}. Motivo: {$f['motivo']}.", "Quando o pagamento chegar, confirme no servidor: php artisan fatura:pagar {$f['id']} --referencia=\"...\""],
+                ["{$empresa}: plano {$f['plano']} ({$f['ciclo']}), {$f['usuarios']} usuários, {$f['valor']}, vence em {$f['vence_em']}. Motivo: {$f['motivo']}.", ! empty($d['pagamento_online'])
+                    ? 'O pagamento pelo Asaas é confirmado sozinho. Pago por fora (transferência, dinheiro)? Confirme no servidor: php artisan fatura:pagar '.$f['id'].' --referencia="..."'
+                    : "Quando o pagamento chegar, confirme no servidor: php artisan fatura:pagar {$f['id']} --referencia=\"...\""],
+                null,
+            ],
+            'comercial_perfil' => [
+                "Novo cadastro: {$empresa}",
+                'Questionário de boas-vindas respondido',
+                ["{$empresa} respondeu o questionário de primeiro acesso".($plano !== '' ? ", plano {$plano} em teste." : '.'), ...($d['linhas'] ?? [])],
+                null,
+            ],
+            'comercial_alerta' => [
+                "{$d['titulo']}: {$empresa}, fatura #{$f['id']}",
+                $d['titulo'],
+                ["{$empresa}: plano {$f['plano']} ({$f['ciclo']}), {$f['valor']}.", $d['mensagem']],
                 null,
             ],
         };

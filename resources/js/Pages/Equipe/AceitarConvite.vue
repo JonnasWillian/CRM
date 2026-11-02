@@ -29,17 +29,17 @@ const enviar = () => form.post(route('convites.store', props.token), { onFinish:
     <AuthLayout :titulo="pendente ? `Entrar na ${convite.empresa}` : 'Convite indisponível'" :descricao="pendente ? `${convite.convidado_por ?? 'Alguém'} convidou você para a ${convite.empresa} como ${PAPEIS[convite.papel] ?? convite.papel}.` : null">
         <AppAlert v-if="!pendente" tom="warn">{{ MENSAGENS[convite.estado] }}</AppAlert>
         <form v-else class="space-y-4" @submit.prevent="enviar">
-            <FormField rotulo="E-mail">
-                <AppInput :model-value="convite.email" readonly />
+            <FormField flutuante rotulo="E-mail">
+                <AppInput placeholder=" " :model-value="convite.email" readonly />
             </FormField>
-            <FormField rotulo="Seu nome" obrigatorio :erro="form.errors.name">
-                <AppInput v-model="form.name" autocomplete="name" autofocus />
+            <FormField flutuante rotulo="Seu nome" obrigatorio :erro="form.errors.name">
+                <AppInput placeholder=" " v-model="form.name" autocomplete="name" autofocus />
             </FormField>
-            <FormField rotulo="Senha" obrigatorio :erro="form.errors.password || form.errors.email" dica="Mínimo de 8 caracteres.">
-                <AppInput v-model="form.password" type="password" autocomplete="new-password" />
+            <FormField flutuante rotulo="Senha" obrigatorio :erro="form.errors.password || form.errors.email" dica="Mínimo de 8 caracteres.">
+                <AppInput placeholder=" " v-model="form.password" type="password" autocomplete="new-password" />
             </FormField>
-            <FormField rotulo="Confirmar senha" obrigatorio :erro="form.errors.password_confirmation">
-                <AppInput v-model="form.password_confirmation" type="password" autocomplete="new-password" />
+            <FormField flutuante rotulo="Confirmar senha" obrigatorio :erro="form.errors.password_confirmation">
+                <AppInput placeholder=" " v-model="form.password_confirmation" type="password" autocomplete="new-password" />
             </FormField>
             <AppButton type="submit" bloco :carregando="form.processing" :disabled="!form.name || !form.password">Criar acesso e entrar</AppButton>
         </form>

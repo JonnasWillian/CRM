@@ -2,17 +2,19 @@
 import { computed, ref } from "vue";
 import { Head, router, useForm } from "@inertiajs/vue3";
 import axios from "axios";
-import { Check, CreditCard } from "lucide-vue-next";
+import { Check, CreditCard, ExternalLink, QrCode, RefreshCw } from "lucide-vue-next";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import AppAlert from "@/Components/ui/AppAlert.vue";
 import AppBadge from "@/Components/ui/AppBadge.vue";
 import AppButton from "@/Components/ui/AppButton.vue";
 import AppCard from "@/Components/ui/AppCard.vue";
+import PagarFatura from "@/Components/assinatura/PagarFatura.vue";
 import PageContainer from "@/Components/ui/PageContainer.vue";
 import PageHeader from "@/Components/ui/PageHeader.vue";
 import SectionHeader from "@/Components/ui/SectionHeader.vue";
 import { useConfirm } from "@/Composables/useConfirm";
-import { formatBRL, formatarData } from "@/utils/formatadores";
+import { useToast } from "@/Composables/useToast";
+import { formatBRL, formatarData, formatarHora } from "@/utils/formatadores";
 
 /**
  * Situação da assinatura, fatura pendente e como pagar, uso × limites, os
@@ -26,9 +28,10 @@ const props = defineProps({
     planos: { type: Array, required: true }, // + excessos[]
     usuariosCobrados: { type: Number, required: true },
     ocupados: { type: Number, default: 1 }, // ativos + convites pendentes: mínimo de assentos
+    usuariosSugeridos: { type: Number, default: null }, // do questionário de primeiro acesso
     faturaPendente: { type: Object, default: null },
     faturas: { type: Array, default: () => [] },
-    pagamento: { type: Object, default: () => ({}) }, // { instrucoes, email, whatsapp }
+    pagamento: { type: Object, default: () => ({}) }, // { online, documento, instrucoes, email, whatsapp }
     diasDeTeste: { type: Number, required: true },
 });
 
@@ -40,7 +43,8 @@ const usuarios = (n) => `${n} ${n === 1 ? "usuário" : "usuários"}`;
 
 // Assentos: começa no maior entre o que a empresa ocupa e o que já paga.
 const minimoDeAssentos = computed(() => Math.max(1, props.ocupados));
-const assentos = ref(Math.max(minimoDeAssentos.value, props.assinatura.assentos ?? 0));
+// Sem plano pago, começa no tamanho de equipe informado no questionário.
+const assentos = ref(Math.max(minimoDeAssentos.value, props.assinatura.assentos ?? props.usuariosSugeridos ?? 0));
 const assentosValidos = computed(() => Math.max(minimoDeAssentos.value, Number.parseInt(assentos.value, 10) || 0));
 const assentosDo = (p) => Math.max(p.usuarios_minimos ?? 1, assentosValidos.value);
 const totalDo = (p) => (ciclo.value === "anual" ? p.preco_anual * 12 : p.preco_mensal) * assentosDo(p);
@@ -181,6 +185,45 @@ const situacaoDaFatura = (f) => {
         ? { rotulo: "Atrasada", tom: "danger" }
         : { rotulo: "Pendente", tom: "warn" };
 };
+// Pagamento pelo Asaas: o modal do Pix avisa quando cai, e a página recarrega com o plano ativo.
+const toast = useToast();
+const pagando = ref(false);
+function pagamentoConfirmado() {
+    pagando.value = false;
+    toast.sucesso("Pagamento confirmado. O plano já está ativo.");
+    router.reload();
+}
+
+// Fechou o Pix (ou pagou pelo boleto/cartão) e quer saber se caiu: confere na hora.
+const conferindo = ref(false);
+const conferencia = ref(null); // { tom, titulo, texto, hora }
+async function conferirPagamento() {
+    conferindo.value = true;
+    conferencia.value = null;
+    try {
+        const { data } = await axios.get(
+            route("configuracoes.assinatura.fatura", props.faturaPendente.id),
+            { silencioso: true },
+        );
+        if (data.status === "paga") {
+            pagamentoConfirmado();
+            return;
+        }
+        conferencia.value = data.status === "cancelada"
+            ? { tom: "warn", titulo: "Esta fatura foi cancelada", texto: "Recarregue a página para ver a fatura atual.", hora: null }
+            : {
+                tom: "info",
+                titulo: "Pagamento ainda não recebido",
+                texto: "O Pix costuma cair em segundos e o boleto, em até 3 dias úteis. Se você já pagou, confira no comprovante se usou o QR Code ou o código desta fatura: Pix enviado para outra chave não paga a fatura.",
+                hora: data.conferido_em,
+            };
+    } catch (e) {
+        conferencia.value = { tom: "warn", titulo: null, texto: "Não deu para conferir agora. Tente de novo em instantes.", hora: null };
+    } finally {
+        conferindo.value = false;
+    }
+}
+
 const whatsapp = computed(() =>
     props.pagamento?.whatsapp
         ? `https://wa.me/${props.pagamento.whatsapp}`
@@ -353,6 +396,76 @@ const whatsapp = computed(() =>
                     </p>
                 </div>
                 <div
+                    v-if="pagamento.online"
+                    class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-bg-2 px-4 py-3 text-md"
+                    data-pagamento-online
+                >
+                    <p class="text-fg-1">
+                        Pague por Pix, boleto ou cartão. A confirmação é
+                        automática, sem enviar comprovante.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <AppButton
+                            v-if="faturaPendente.link_pagamento"
+                            variante="ghost"
+                            :carregando="conferindo"
+                            @click="conferirPagamento"
+                        >
+                            <template #icone><RefreshCw /></template>
+                            Conferir pagamento
+                        </AppButton>
+                        <AppButton
+                            v-if="faturaPendente.link_pagamento"
+                            as="a"
+                            :href="faturaPendente.link_pagamento"
+                            target="_blank"
+                            rel="noopener"
+                            variante="ghost"
+                        >
+                            Boleto ou cartão
+                            <template #iconeDireita><ExternalLink /></template>
+                        </AppButton>
+                        <AppButton @click="pagando = true">
+                            <template #icone><QrCode /></template>
+                            Pagar com Pix
+                        </AppButton>
+                    </div>
+                </div>
+                <AppAlert
+                    v-if="pagamento.online && conferencia"
+                    :tom="conferencia.tom"
+                    :titulo="conferencia.titulo"
+                    class="mt-3"
+                    data-conferencia
+                >
+                    {{ conferencia.texto }}
+                    <template v-if="conferencia.hora">
+                        Conferido às {{ formatarHora(conferencia.hora) }}.</template
+                    >
+                </AppAlert>
+                <p
+                    v-if="pagamento.online && (pagamento.email || whatsapp)"
+                    class="mt-2 text-sm text-fg-2"
+                >
+                    Não conseguiu pagar?
+                    <a
+                        v-if="pagamento.email"
+                        :href="`mailto:${pagamento.email}`"
+                        class="font-medium text-primary hover:underline"
+                        >{{ pagamento.email }}</a
+                    >
+                    <template v-if="pagamento.email && whatsapp"> ou </template>
+                    <a
+                        v-if="whatsapp"
+                        :href="whatsapp"
+                        target="_blank"
+                        rel="noopener"
+                        class="font-medium text-primary hover:underline"
+                        >WhatsApp</a
+                    >
+                </p>
+                <div
+                    v-else-if="!pagamento.online"
                     class="mt-4 rounded-md border border-line bg-bg-2 px-4 py-3 text-md"
                 >
                     <p class="font-medium text-fg-0">Como pagar</p>
@@ -390,6 +503,14 @@ const whatsapp = computed(() =>
                     O plano é ativado assim que o pagamento for confirmado. A
                     confirmação chega por e-mail.
                 </p>
+                <PagarFatura
+                    v-if="pagamento.online"
+                    :aberto="pagando"
+                    :fatura="faturaPendente"
+                    :precisa-documento="!pagamento.documento"
+                    @fechar="pagando = false"
+                    @paga="pagamentoConfirmado"
+                />
             </AppCard>
 
             <section class="mt-6">
@@ -413,7 +534,7 @@ const whatsapp = computed(() =>
                         <div
                             role="radiogroup"
                             aria-label="Ciclo"
-                            class="inline-flex rounded border border-line bg-bg-1 p-0.5"
+                            class="inline-flex rounded-full border border-line bg-bg-2 p-1"
                         >
                             <button
                                 v-for="c in [
@@ -424,10 +545,10 @@ const whatsapp = computed(() =>
                                 type="button"
                                 role="radio"
                                 :aria-checked="ciclo === c.v ? 'true' : 'false'"
-                                class="h-8 rounded-sm px-3 text-sm font-medium transition-colors duration-1 ease-ui"
+                                class="h-8 rounded-full px-3.5 text-sm font-medium transition-colors duration-1 ease-ui"
                                 :class="
                                     ciclo === c.v
-                                        ? 'bg-primary-subtle text-primary'
+                                        ? 'bg-bg-1 text-primary shadow-1'
                                         : 'text-fg-1 hover:text-fg-0'
                                 "
                                 @click="ciclo = c.v"

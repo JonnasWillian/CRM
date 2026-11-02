@@ -68,6 +68,7 @@ class Fatura extends Model
             'atrasada' => $this->atrasada(),
             'vence_em' => $this->vence_em->toDateString(),
             'paga_em' => $this->paga_em?->toDateString(),
+            'link_pagamento' => $this->link_pagamento,
         ];
     }
 }

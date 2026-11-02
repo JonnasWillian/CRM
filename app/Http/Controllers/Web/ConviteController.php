@@ -44,6 +44,7 @@ class ConviteController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard')->with('sucesso', "Bem-vindo à {$convite->tenant->nome}. Comece pelo Pipeline.");
+        // As boas-vindas agora são o modal do passo a passo (BoasVindasModal), não um toast.
+        return redirect()->route('dashboard');
     }
 }

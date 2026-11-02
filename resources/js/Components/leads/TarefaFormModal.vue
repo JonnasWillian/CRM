@@ -12,6 +12,7 @@ import AppTextarea from '@/Components/ui/AppTextarea.vue';
 import FormField from '@/Components/ui/FormField.vue';
 import { useToast } from '@/Composables/useToast';
 import { errosDeValidacao } from '@/utils/erros';
+import { useTour } from '@/Composables/useTour';
 
 /** Nova tarefa ou edição. "Aplicar modelo" pré-preenche a partir de um modelo do agente. */
 const props = defineProps({
@@ -54,6 +55,7 @@ async function salvar() {
         toast.sucesso('Tarefa salva.');
         emit('salvo');
         emit('fechar');
+        if (!props.tarefa) useTour().avancar('tarefa-criada');
     } catch (e) {
         erros.value = errosDeValidacao(e);
         if (!Object.keys(erros.value).length) toast.erro('Não foi possível salvar a tarefa.');

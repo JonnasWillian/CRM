@@ -131,8 +131,8 @@ async function salvar() {
             </FormField>
             <div class="md:col-span-2">
                 <p class="mb-1.5 text-sm font-medium text-fg-1">Cobrança</p>
-                <div role="radiogroup" aria-label="Tipo de cobrança" class="inline-flex rounded border border-line bg-bg-1 p-0.5">
-                    <button v-for="t in [{ v: 'unico', r: 'Valor único' }, { v: 'recorrente', r: 'Recorrente (mensal)' }]" :key="t.v" type="button" role="radio" :aria-checked="form.tipo === t.v ? 'true' : 'false'" class="h-8 rounded-sm px-3 text-sm font-medium transition-colors duration-1 ease-ui" :class="form.tipo === t.v ? 'bg-primary-subtle text-primary' : 'text-fg-1 hover:text-fg-0'" @click="form.tipo = t.v">{{ t.r }}</button>
+                <div role="radiogroup" aria-label="Tipo de cobrança" class="inline-flex rounded-full border border-line bg-bg-2 p-1">
+                    <button v-for="t in [{ v: 'unico', r: 'Valor único' }, { v: 'recorrente', r: 'Recorrente (mensal)' }]" :key="t.v" type="button" role="radio" :aria-checked="form.tipo === t.v ? 'true' : 'false'" class="h-8 rounded-full px-3.5 text-sm font-medium transition-colors duration-1 ease-ui" :class="form.tipo === t.v ? 'bg-bg-1 text-primary shadow-1' : 'text-fg-1 hover:text-fg-0'" @click="form.tipo = t.v">{{ t.r }}</button>
                 </div>
             </div>
             <template v-if="recorrente">

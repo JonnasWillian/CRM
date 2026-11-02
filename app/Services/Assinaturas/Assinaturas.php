@@ -97,8 +97,9 @@ class Assinaturas
 
         DB::transaction(function () use ($a) {
             $a->forceFill(['renovacao_cancelada_em' => Carbon::now()])->save();
-            \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')
-                ->update(['status' => 'cancelada', 'cancelada_em' => Carbon::now()]);
+            // Uma a uma (há no máximo uma): o FaturaObserver remove a cobrança no Asaas.
+            \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->get()
+                ->each(fn ($f) => $f->forceFill(['status' => 'cancelada', 'cancelada_em' => Carbon::now()])->save());
         });
 
         return $a;

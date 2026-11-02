@@ -68,6 +68,13 @@ class HandleInertiaRequests extends Middleware
             // Fonte única de limites de texto (validação e colunas), para o
             // front aplicar o mesmo `maxlength` sem duplicar o número.
             'limites' => LimitesDeTexto::paraOFront(),
+            // O que o questionário de primeiro acesso mudou no uso: rótulo do
+            // nome do lead, opções de origem e se o passo a passo fala em equipe.
+            'empresa' => fn () => ($tenantId = $request->user()?->tenant_id) === null ? null : [
+                'rotulo_nome_lead' => \App\Services\Onboarding\PreferenciasDaEmpresa::rotuloDoNome($tenantId),
+                'origens' => \App\Services\Onboarding\PreferenciasDaEmpresa::origens($tenantId),
+                'equipe_maior_que_um' => \App\Services\Onboarding\PreferenciasDaEmpresa::equipeComMaisDeUm($tenantId),
+            ],
         ];
     }
 

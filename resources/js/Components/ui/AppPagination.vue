@@ -50,7 +50,7 @@ const ir = (p) => {
                 <span class="hidden sm:inline">Por página</span>
                 <select
                     :value="meta.per_page"
-                    class="form-select h-9 rounded border-line bg-bg-1 py-0 pl-2 pr-8 text-sm text-fg-0 focus:border-focus focus:ring-2 focus:ring-focus/25"
+                    class="form-select h-9 rounded-full border-line bg-bg-1 py-0 pl-3.5 pr-8 text-sm text-fg-0 focus:border-focus focus:ring-4 focus:ring-focus/15"
                     @change="emit('update:porPagina', Number($event.target.value))"
                 >
                     <option v-for="n in opcoesPorPagina" :key="n" :value="n">{{ n }}</option>
@@ -87,7 +87,7 @@ const ir = (p) => {
 <style scoped>
 .pg-botao {
     display: inline-flex; align-items: center; justify-content: center;
-    height: 36px; min-width: 36px; border-radius: var(--r-2);
+    height: 36px; min-width: 36px; border-radius: var(--r-full);
     border: 1px solid var(--line); background: var(--bg-1); color: var(--fg-1);
     font-size: var(--fs-sm); font-weight: 500;
     transition: background var(--d-1) var(--e), color var(--d-1) var(--e);

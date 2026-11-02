@@ -16,6 +16,9 @@ const props = defineProps({
     erro: { type: [String, Array], default: null },
     id: { type: String, default: null },
     inline: { type: Boolean, default: false }, // rótulo ao lado (checkbox, switch)
+    // Rótulo dentro do campo, que sobe ao focar ou preencher (telas de entrada).
+    // O CSS está em base.css (.campo-flutuante); o campo precisa de placeholder.
+    flutuante: { type: Boolean, default: false },
 });
 
 const idCampo = props.id ?? `campo-${useId()}`;
@@ -38,11 +41,15 @@ provide('campoFormulario', { id: idCampo, invalido, obrigatorio, describedBy });
             <slot :id="idCampo" :invalido="invalido" :described-by="describedBy" />
         </template>
         <div class="min-w-0 flex-1" :class="{ 'space-y-1.5': !inline }">
-            <label :for="idCampo" class="block text-sm font-medium text-fg-1">
+            <div v-if="flutuante && !inline" data-flutuante class="campo-flutuante relative" :data-invalido="invalido ? 'true' : undefined">
+                <slot :id="idCampo" :invalido="invalido" :described-by="describedBy" />
+                <label :for="idCampo" class="rotulo-flutuante">{{ rotulo }}<span v-if="obrigatorio" class="text-danger" aria-hidden="true"> *</span></label>
+            </div>
+            <label v-else :for="idCampo" class="block text-sm font-medium text-fg-1">
                 {{ rotulo }}
                 <span v-if="obrigatorio" class="text-danger" aria-hidden="true">*</span>
             </label>
-            <slot v-if="!inline" :id="idCampo" :invalido="invalido" :described-by="describedBy" />
+            <slot v-if="!inline && !flutuante" :id="idCampo" :invalido="invalido" :described-by="describedBy" />
             <p v-if="dica" :id="idDica" class="text-sm text-fg-2">{{ dica }}</p>
             <p v-if="invalido" :id="idErro" role="alert" class="text-sm text-danger">{{ mensagem }}</p>
         </div>

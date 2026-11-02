@@ -1,8 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
+let usuarioLogado = null;
+
 vi.mock("@inertiajs/vue3", () => ({
-    usePage: () => ({ props: { app: { nome: "MeuCRM" } } }),
+    usePage: () => ({ props: { app: { nome: "MeuCRM" }, auth: { user: usuarioLogado } } }),
     Link: { props: ["href"], template: '<a :href="href"><slot /></a>' },
 }));
 
@@ -55,6 +57,24 @@ describe("AuthLayout", () => {
                 Node.DOCUMENT_POSITION_FOLLOWING,
             ),
         ).toBe(true);
+    });
+});
+
+describe("AuthLayout: tema", () => {
+    it("sem login, o botão de tema aparece no cartão centrado e nas duas colunas", () => {
+        const centrado = mount(AuthLayout, { props: { titulo: "Esqueci a senha" }, slots: { default: "<form />" } });
+        const colunas = mount(AuthLayout, { props: { titulo: "Entrar" }, slots: { default: "<form />", painel: "<p>Painel</p>" } });
+        expect(centrado.findAll('button[aria-label^="Usar tema"]')).toHaveLength(1);
+        expect(colunas.findAll('button[aria-label^="Usar tema"]')).toHaveLength(1);
+    });
+});
+
+describe("AuthLayout: logado", () => {
+    it("logado (questionário, conta suspensa), o botão de tema não aparece", () => {
+        usuarioLogado = { name: "Ana" };
+        const w = mount(AuthLayout, { props: { titulo: "Boas-vindas" }, slots: { default: "<form />" } });
+        expect(w.find('button[aria-label^="Usar tema"]').exists()).toBe(false);
+        usuarioLogado = null;
     });
 });
 

@@ -25,7 +25,7 @@ const tag = computed(() => (props.as === 'Link' ? Link : props.as));
 const ehBotao = computed(() => props.as === 'button');
 
 const VARIANTES = {
-    primary: 'bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active',
+    primary: 'bg-primary text-primary-fg shadow-[0_8px_18px_-12px_var(--primary)] hover:bg-primary-hover active:bg-primary-active',
     secondary: 'bg-bg-1 text-fg-0 border border-line hover:bg-bg-2 hover:border-line-2',
     ghost: 'bg-transparent text-fg-1 hover:bg-bg-2 hover:text-fg-0',
     danger: 'bg-danger text-primary-fg hover:bg-danger-hover',
@@ -33,7 +33,7 @@ const VARIANTES = {
 
 const TAMANHOS = {
     sm: 'h-8 px-3 text-sm',
-    md: 'h-9 px-3.5 text-md',
+    md: 'h-10 px-4 text-md',
 };
 
 const classes = computed(() => [

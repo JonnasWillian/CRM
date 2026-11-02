@@ -7,6 +7,7 @@ import AppCard from '@/Components/ui/AppCard.vue';
 import AppDateInput from '@/Components/ui/AppDateInput.vue';
 import AppInput from '@/Components/ui/AppInput.vue';
 import AppMoneyInput from '@/Components/ui/AppMoneyInput.vue';
+import AppSelect from '@/Components/ui/AppSelect.vue';
 import AppTextarea from '@/Components/ui/AppTextarea.vue';
 import FormField from '@/Components/ui/FormField.vue';
 import SectionHeader from '@/Components/ui/SectionHeader.vue';
@@ -26,12 +27,21 @@ const emit = defineEmits(['atualizado']);
 
 const toast = useToast();
 const limites = usePage().props.limites ?? {};
+// O questionário de primeiro acesso decide o rótulo do nome e as opções de origem.
+const rotuloNome = computed(() => usePage().props.empresa?.rotulo_nome_lead ?? 'Nome');
+const opcoesOrigem = computed(() => {
+    const origens = usePage().props.empresa?.origens ?? [];
+    // Origem vinda de importação, fora da lista, continua visível e selecionada.
+    const lista = form.origem && !origens.includes(form.origem) ? [...origens, form.origem] : origens;
+    return lista.map((o) => ({ valor: o, rotulo: o }));
+});
 
 const montar = (l) => ({
     nome: l.nome ?? '',
     email: l.email ?? '',
     telefone: formatarTelefone(l.telefone),
     descricao: l.descricao ?? '',
+    origem: l.origem ?? null,
     valor_estimado: l.valor_estimado !== null && l.valor_estimado !== undefined ? Number(l.valor_estimado) : null,
     probabilidade: l.probabilidade ?? null,
     previsao_fechamento: l.previsao_fechamento ?? null,
@@ -83,7 +93,7 @@ function descartar() {
         <AppCard>
             <SectionHeader titulo="Contato" />
             <div class="grid gap-4 md:grid-cols-2">
-                <FormField rotulo="Nome" obrigatorio :erro="erros.nome">
+                <FormField :rotulo="rotuloNome" obrigatorio :erro="erros.nome">
                     <AppInput v-model="form.nome" limite="nome" autocomplete="off" />
                 </FormField>
                 <FormField rotulo="E-mail" obrigatorio :erro="erros.email">
@@ -91,6 +101,9 @@ function descartar() {
                 </FormField>
                 <FormField rotulo="Telefone" :erro="erros.telefone" dica="Número internacional: comece com +.">
                     <AppInput v-model="form.telefone" :mascara="ehTelefoneBrasileiro(form.telefone) ? MASCARA_TELEFONE : null" inputmode="tel" placeholder="(00) 00000-0000" />
+                </FormField>
+                <FormField v-if="opcoesOrigem.length" rotulo="Origem" :erro="erros.origem">
+                    <AppSelect v-model="form.origem" :opcoes="opcoesOrigem" placeholder="Selecione" />
                 </FormField>
                 <FormField rotulo="Descrição" :erro="erros.descricao" class="md:col-span-2">
                     <AppTextarea v-model="form.descricao" :rows="3" limite="descricao" mostrar-contador placeholder="Observações gerais" />

@@ -42,28 +42,28 @@ onBeforeUnmount(() => clearTimeout(temporizador));
         <div class="flex items-center gap-2">
             <label class="relative flex-1 sm:max-w-sm">
                 <span class="sr-only">{{ placeholderBusca }}</span>
-                <Search :size="16" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-2" aria-hidden="true" />
+                <Search :size="16" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-2" aria-hidden="true" />
                 <input
                     type="search"
                     :value="texto"
                     :placeholder="placeholderBusca"
-                    class="form-input h-9 w-full rounded border-line bg-bg-1 pl-9 pr-9 text-md text-fg-0 placeholder:text-fg-disabled focus:border-focus focus:ring-2 focus:ring-focus/25"
+                    class="form-input h-10 w-full rounded-full border-transparent bg-bg-2 pl-10 pr-9 text-md text-fg-0 placeholder:text-fg-2 focus:border-focus focus:bg-bg-1 focus:ring-4 focus:ring-focus/15"
                     @input="aoDigitar"
                 />
-                <button v-if="texto" type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-fg-2 hover:bg-bg-2 hover:text-fg-0" @click="limparBusca">
+                <button v-if="texto" type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-fg-2 hover:bg-bg-2 hover:text-fg-0" @click="limparBusca">
                     <X :size="14" aria-hidden="true" />
                 </button>
             </label>
             <button
                 v-if="$slots.default"
                 type="button"
-                class="inline-flex h-9 items-center gap-2 rounded border border-line bg-bg-1 px-3 text-sm font-medium text-fg-1 md:hidden"
+                class="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-bg-1 px-4 text-sm font-medium text-fg-1 md:hidden"
                 :aria-expanded="expandido ? 'true' : 'false'"
                 @click="expandido = !expandido"
             >
                 <SlidersHorizontal :size="16" aria-hidden="true" /> Filtros<span v-if="ativos" class="num">({{ ativos }})</span>
             </button>
-            <button v-if="ativos > 0" type="button" class="inline-flex h-9 items-center gap-1 whitespace-nowrap rounded px-2.5 text-sm font-medium text-primary hover:bg-primary-subtle" @click="emit('limpar')">
+            <button v-if="ativos > 0" type="button" class="inline-flex h-10 items-center gap-1 whitespace-nowrap rounded-full px-3.5 text-sm font-medium text-primary hover:bg-primary-subtle" @click="emit('limpar')">
                 <X :size="14" aria-hidden="true" /> Limpar (<span class="num">{{ ativos }}</span>)
             </button>
             <div v-if="$slots.direita" class="ml-auto flex items-center gap-2"><slot name="direita" /></div>

@@ -69,11 +69,11 @@ class LeadController extends Controller
             $linhas = 0;
             $saida = fopen('php://output', 'w');
             fwrite($saida, "\xEF\xBB\xBF");
-            fputcsv($saida, ['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'responsavel', 'criado_em', 'ultimo_contato'], ';', '"', '');
+            fputcsv($saida, ['nome', 'email', 'telefone', 'descricao', 'funil', 'estagio', 'valor_estimado', 'probabilidade', 'previsao_fechamento', 'origem', 'responsavel', 'criado_em', 'ultimo_contato'], ';', '"', '');
             foreach ($q->lazyById(500, 'usuarios.id', 'id') as $l) {
                 fputcsv($saida, CelulaSegura::linha([
                     $l->nome, $l->email, $l->telefone, $l->descricao, $l->funil?->nome, $l->estagio?->descricao,
-                    $decimal($l->valor_estimado), $l->probabilidade, $l->previsao_fechamento?->toDateString(), $l->responsavel?->name,
+                    $decimal($l->valor_estimado), $l->probabilidade, $l->previsao_fechamento?->toDateString(), $l->origem, $l->responsavel?->name,
                     $l->created_at?->format('Y-m-d H:i'), $l->ultimo_contato_em?->format('Y-m-d H:i'),
                 ]), ';', '"', '');
                 $linhas++;

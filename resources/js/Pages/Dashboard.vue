@@ -58,6 +58,7 @@ function aplicar(parcial) {
     if (f.periodo && f.periodo !== '30d') query.periodo = f.periodo;
     if (f.periodo === 'custom') { query.de = f.de; query.ate = f.ate; }
     if (f.user_id) query.user_id = f.user_id;
+    else if (f.visao) query.visao = f.visao; // "Toda a equipe" escolhida: o servidor lembra
     if (f.funil_id) query.funil_id = f.funil_id;
     router.get(route('dashboard'), query, {
         only: ['metricas', 'tarefas', 'periodo'],
@@ -120,7 +121,7 @@ async function concluir(tarefa) {
                 <template #abaixo>
                     <div class="mt-3 flex flex-wrap items-center gap-2">
                         <PeriodoSelector v-model="periodoModel" />
-                        <AppSelect v-if="agentes.length" :model-value="filtros.user_id" :opcoes="opcoesAgente" placeholder="Toda a equipe" tamanho="sm" aria-label="Vendedor" class="w-44" @update:model-value="aplicar({ user_id: $event })" />
+                        <AppSelect v-if="agentes.length" :model-value="filtros.user_id" :opcoes="opcoesAgente" placeholder="Toda a equipe" tamanho="sm" aria-label="Vendedor" class="w-44" @update:model-value="aplicar({ user_id: $event, visao: $event ? null : 'equipe' })" />
                         <AppSelect v-if="funis.length > 1" :model-value="filtros.funil_id" :opcoes="opcoesFunil" placeholder="Todos os funis" tamanho="sm" aria-label="Funil" class="w-44" @update:model-value="aplicar({ funil_id: $event })" />
                     </div>
                 </template>
@@ -141,7 +142,7 @@ async function concluir(tarefa) {
                 </AppCard>
 
                 <template v-else-if="m">
-                    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" :class="carregando ? 'opacity-60' : ''" :aria-busy="carregando ? 'true' : undefined">
+                    <div data-tour="kpis" class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" :class="carregando ? 'opacity-60' : ''" :aria-busy="carregando ? 'true' : undefined">
                         <KpiCard rotulo="Leads ativos" :valor="m.estado.leads_ativos" :sub="`+ ${m.estado.leads_fechados} ganho${m.estado.leads_fechados === 1 ? '' : 's'}/perdido${m.estado.leads_fechados === 1 ? '' : 's'}`" :icone="Users" tom="primary" contar :href="route('leads.index', { situacao: 'ativos' })" />
                         <KpiCard rotulo="Novos" :valor="m.fluxo.leads_criados" :sub="m.periodo.rotulo" :icone="UserPlus" contar :href="route('leads.index', periodoQuery)" />
                         <KpiCard rotulo="Ganhos" :valor="m.fluxo.ganhos.total" :sub="`${formatBRL(m.fluxo.ganhos.valor)} no período`" :icone="CircleCheck" tom="ok" contar :href="route('leads.index', { situacao: 'ganhos', ...periodoQuery })" />

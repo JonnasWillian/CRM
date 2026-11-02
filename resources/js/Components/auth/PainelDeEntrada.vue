@@ -1,16 +1,25 @@
 <script setup>
+import { computed } from "vue";
+
 /**
  * Metade comercial das telas de entrada (login e cadastro): a promessa do
  * produto e uma miniatura do dashboard desenhada em HTML — os mesmos números
  * fictícios do site, sempre rotulados como exemplo. Nada de depoimentos ou
- * estatísticas inventadas. Fundo azul profundo nos dois temas (tokens painel-*).
+ * estatísticas inventadas. Fica sobre o fundo da tela de entrada, nos dois temas.
+ * O trecho depois da última vírgula do título ganha destaque na cor da marca.
  *
  * `passos` só entra quando o conteúdo é mesmo uma sequência (cadastro).
  */
-defineProps({
+const props = defineProps({
     titulo: { type: String, required: true },
     descricao: { type: String, default: null },
     passos: { type: Array, default: () => [] },
+});
+
+const partes = computed(() => {
+    const i = props.titulo.lastIndexOf(",");
+    if (i < 0 || i === props.titulo.length - 1) return { antes: props.titulo, destaque: null };
+    return { antes: props.titulo.slice(0, i + 1), destaque: props.titulo.slice(i + 1).trim() };
 });
 
 const COLUNAS = [
@@ -40,17 +49,27 @@ const COLUNAS = [
 
 <template>
     <div
-        class="mx-auto flex w-full max-w-[560px] flex-col justify-center gap-9 2xl:max-w-[720px] 2xl:gap-12"
+        class="mx-auto flex w-full max-w-[560px] flex-col justify-center gap-9 2xl:max-w-[640px] 2xl:gap-11"
     >
         <div>
             <h2
-                class="font-display text-[28px] font-bold leading-[1.15] tracking-tight text-painel-fg xl:text-[32px] 2xl:text-[40px]"
+                class="font-display text-[32px] font-light leading-[1.15] tracking-tight text-fg-0 xl:text-[40px] 2xl:text-[46px]"
             >
-                {{ titulo }}
+                {{ partes.antes
+                }}<template v-if="partes.destaque"
+                    >{{ " "
+                    }}<span data-destaque class="whitespace-nowrap font-bold text-primary">{{
+                        partes.destaque
+                    }}</span></template
+                >
             </h2>
+            <span
+                class="mt-5 block h-1.5 w-11 rounded-full bg-primary"
+                aria-hidden="true"
+            ></span>
             <p
                 v-if="descricao"
-                class="mt-4 max-w-[60ch] text-[15px] leading-relaxed text-painel-fg-2 2xl:text-[17px]"
+                class="mt-5 max-w-[58ch] text-[15px] leading-relaxed text-fg-1"
             >
                 {{ descricao }}
             </p>
@@ -59,10 +78,10 @@ const COLUNAS = [
                 <li
                     v-for="(passo, i) in passos"
                     :key="passo"
-                    class="flex items-start gap-3 text-[15px] text-painel-fg"
+                    class="flex items-start gap-3 text-[15px] text-fg-0"
                 >
                     <span
-                        class="num mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-painel-line text-xs font-semibold text-painel-fg-2"
+                        class="num mt-px flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-xs font-semibold text-primary"
                         aria-hidden="true"
                         >{{ i + 1 }}</span
                     >
@@ -73,38 +92,33 @@ const COLUNAS = [
 
         <!-- Miniatura do produto: dados fictícios, rotulados como exemplo. -->
         <figure data-miniatura class="w-full">
-            <div
-                class="rounded-xl bg-bg-1 p-3 shadow-3 ring-1 ring-painel-line"
-                aria-hidden="true"
-            >
-                <div class="mb-3 flex items-center justify-between px-1">
-                    <div
-                        class="flex items-center gap-2 text-sm font-semibold text-fg-0"
+            <div class="rounded-xl bg-bg-1 p-4 shadow-2" aria-hidden="true">
+                <div class="mb-3 flex items-center gap-2 px-1 text-md font-semibold text-fg-0">
+                    Pipeline
+                    <span
+                        class="rounded-full bg-bg-2 px-2.5 py-0.5 text-xs font-medium text-fg-1"
+                        >48 leads · R$ 210 mil</span
                     >
-                        Pipeline
-                        <span
-                            class="rounded-full bg-bg-2 px-2 py-0.5 text-xs font-medium text-fg-2"
-                            >48 leads · R$ 210 mil</span
-                        >
-                    </div>
-                    <div class="h-7 w-20 rounded bg-primary/90"></div>
                 </div>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-3 gap-2.5">
                     <div
                         v-for="col in COLUNAS"
                         :key="col.nome"
-                        class="rounded-lg border border-line bg-bg-2/60 p-2"
-                        :style="{ borderTop: `3px solid ${col.cor}` }"
+                        class="rounded-2xl bg-bg-2 p-2.5"
                     >
                         <p
-                            class="mb-2 truncate px-1 text-xs font-semibold text-fg-0"
+                            class="mb-2.5 flex items-center gap-1.5 truncate px-1 text-xs font-semibold text-fg-0"
                         >
+                            <span
+                                class="h-2 w-2 shrink-0 rounded-full"
+                                :style="{ background: col.cor }"
+                            ></span>
                             {{ col.nome }}
                         </p>
                         <div
                             v-for="[nome, valor] in col.cards"
                             :key="nome"
-                            class="mb-2 rounded border border-line bg-bg-1 p-2 text-xs shadow-1"
+                            class="mb-2 rounded bg-bg-1 px-3 py-2 text-xs shadow-1"
                         >
                             <p class="truncate font-medium text-fg-0">
                                 {{ nome }}
@@ -113,26 +127,24 @@ const COLUNAS = [
                         </div>
                     </div>
                 </div>
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                    <div class="rounded-lg border border-ok-line bg-bg-1 p-3">
+                <div class="mt-2.5 grid grid-cols-2 gap-2.5">
+                    <div class="rounded-2xl bg-bg-2 px-3.5 py-3">
                         <p class="text-xs text-fg-2">Faturando este mês</p>
-                        <p
-                            class="num font-display text-lg font-semibold text-ok"
-                        >
+                        <p class="num font-display text-lg font-semibold text-ok">
                             R$ 18.400
                         </p>
                     </div>
-                    <div class="rounded-lg border border-info-line bg-bg-1 p-3">
+                    <div class="rounded-2xl bg-bg-2 px-3.5 py-3">
                         <p class="text-xs text-fg-2">Em projeção</p>
                         <p
-                            class="num font-display text-lg font-semibold text-info"
+                            class="num font-display text-lg font-semibold text-primary"
                         >
                             R$ 96.500
                         </p>
                     </div>
                 </div>
             </div>
-            <figcaption class="mt-3 text-xs text-painel-fg-2">
+            <figcaption class="mt-3 text-xs text-fg-2">
                 Dashboard com dados de exemplo. O seu mostra o que a sua equipe
                 fatura e o que ainda vai entrar.
             </figcaption>

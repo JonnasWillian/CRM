@@ -19,7 +19,7 @@
 
         <title inertia>{{ config('app.name', 'UserFlow') }}</title>
 
-        {{-- Fontes: self-host via @fontsource-variable, importadas em resources/css/app.css. --}}
+        {{-- Fonte: Poppins, self-host via @fontsource, importada em resources/css/app.css. --}}
 
         <!-- Scripts -->
         @routes

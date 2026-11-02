@@ -23,6 +23,8 @@ class MetricasRequest extends FormRequest
             'de' => ['nullable', 'required_if:periodo,custom', 'date'],
             'ate' => ['nullable', 'required_if:periodo,custom', 'date', 'after_or_equal:de'],
             'user_id' => ['nullable', 'integer'],
+            // Dashboard: "Toda a equipe" escolhida no filtro (VisaoDoDashboard).
+            'visao' => ['nullable', 'in:equipe'],
             'funil_id' => ['nullable', 'integer', Rule::exists('funis', 'id')->where('tenant_id', app(CurrentTenant::class)->id())],
         ];
     }

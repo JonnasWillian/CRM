@@ -28,7 +28,8 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        // Primeiro acesso: o cadastro leva ao questionário (spec 2026-11-01-onboarding-personalizado).
+        $response->assertRedirect(route('boas-vindas.show', absolute: false));
     }
 
     public function test_new_registration_seeds_default_estagios_and_status_for_the_tenant(): void
@@ -93,7 +94,7 @@ class RegistrationTest extends TestCase
     {
         // O formulário tem um campo de senha com mostrar/ocultar; a confirmação saiu.
         $this->post('/register', ['name' => 'Ana Souza', 'empresa' => 'Acme Vendas', 'email' => 'ana@ex.test', 'password' => 'password'])
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('boas-vindas.show', absolute: false));
         $this->assertAuthenticated();
     }
 }

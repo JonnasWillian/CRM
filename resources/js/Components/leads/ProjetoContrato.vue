@@ -124,7 +124,7 @@ async function remover(linha) {
 
         <div class="max-w-full overflow-x-auto rounded border border-line bg-bg-1">
             <table class="w-full text-sm">
-                <thead class="bg-bg-0 text-xs uppercase tracking-wider text-fg-2">
+                <thead class="bg-bg-2 text-sm text-fg-2">
                     <tr><th class="px-3 py-2 text-left font-medium">Período</th><th class="hidden px-3 py-2 text-left font-medium sm:table-cell">Vigência</th><th class="px-3 py-2 text-right font-medium">Meses</th><th class="px-3 py-2 text-right font-medium">Valor/mês</th><th class="hidden px-3 py-2 text-right font-medium sm:table-cell">Subtotal</th><th class="w-px px-2"><span class="sr-only">Ações</span></th></tr>
                 </thead>
                 <tbody class="divide-y divide-line">

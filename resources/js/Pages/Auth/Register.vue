@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
+import { ArrowRight } from "lucide-vue-next";
 import AuthLayout from "@/Layouts/AuthLayout.vue";
 import PainelDeEntrada from "@/Components/auth/PainelDeEntrada.vue";
 import CampoDeSenha from "@/Components/auth/CampoDeSenha.vue";
@@ -62,7 +63,7 @@ const PASSOS = [
         </p>
 
         <form class="space-y-5" @submit.prevent="enviar">
-            <FormField
+            <FormField flutuante
                 rotulo="Nome da empresa"
                 obrigatorio
                 :erro="form.errors.empresa"
@@ -74,10 +75,10 @@ const PASSOS = [
                     autofocus
                 />
             </FormField>
-            <FormField rotulo="Seu nome" obrigatorio :erro="form.errors.name">
-                <AppInput v-model="form.name" autocomplete="name" />
+            <FormField flutuante rotulo="Seu nome" obrigatorio :erro="form.errors.name">
+                <AppInput placeholder=" " v-model="form.name" autocomplete="name" />
             </FormField>
-            <FormField
+            <FormField flutuante
                 rotulo="E-mail de trabalho"
                 obrigatorio
                 :erro="form.errors.email"
@@ -89,13 +90,13 @@ const PASSOS = [
                     placeholder="voce@suaempresa.com.br"
                 />
             </FormField>
-            <FormField
+            <FormField flutuante
                 rotulo="Senha"
                 obrigatorio
                 :erro="form.errors.password"
                 dica="Mínimo de 8 caracteres."
             >
-                <CampoDeSenha
+                <CampoDeSenha placeholder=" "
                     v-model="form.password"
                     autocomplete="new-password"
                 />
@@ -104,9 +105,9 @@ const PASSOS = [
                 type="submit"
                 bloco
                 :carregando="form.processing"
-                class="h-11 text-[15px]"
-                >Criar conta e começar o teste</AppButton
-            >
+                class="h-12 text-[15px]"
+                >Criar conta e começar o teste<template #iconeDireita><ArrowRight /></template
+            ></AppButton>
             <p class="text-xs leading-relaxed text-fg-2">
                 Ao criar a conta você concorda com os
                 <a href="/termos" class="underline hover:text-fg-0"

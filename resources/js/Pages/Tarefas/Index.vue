@@ -123,14 +123,14 @@ async function excluirEmMassa() {
         <PageContainer>
             <PageHeader titulo="Tarefas" :subtitulo="`${Number(tarefas.meta.total).toLocaleString('pt-BR')} ${tarefas.meta.total === 1 ? 'tarefa' : 'tarefas'}`" />
 
-            <div role="radiogroup" aria-label="Escopo" class="mb-4 inline-flex min-w-0 max-w-full overflow-x-auto rounded border border-line bg-bg-1 p-0.5">
+            <div role="radiogroup" aria-label="Escopo" class="mb-4 inline-flex min-w-0 max-w-full overflow-x-auto rounded-full border border-line bg-bg-2 p-1">
                 <button
                     v-for="e in ESCOPOS"
                     :key="e.chave"
                     type="button"
                     :aria-pressed="escopoAtual === e.chave ? 'true' : 'false'"
-                    class="h-8 whitespace-nowrap rounded-sm px-2.5 text-sm font-medium transition-colors duration-1 ease-ui"
-                    :class="escopoAtual === e.chave ? 'bg-primary-subtle text-primary' : 'text-fg-1 hover:text-fg-0'"
+                    class="h-8 whitespace-nowrap rounded-full px-3.5 text-sm font-medium transition-colors duration-1 ease-ui"
+                    :class="escopoAtual === e.chave ? 'bg-bg-1 text-primary shadow-1' : 'text-fg-1 hover:text-fg-0'"
                     @click="lista.aplicar({ escopo: e.chave })"
                 >
                     {{ e.rotulo }}

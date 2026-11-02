@@ -39,7 +39,7 @@ const VARIANTES = {
 };
 
 const classes = computed(() => [
-    'inline-flex shrink-0 items-center justify-center rounded transition-colors duration-1 ease-ui',
+    'inline-flex shrink-0 items-center justify-center rounded-full transition-colors duration-1 ease-ui',
     'disabled:opacity-60 disabled:cursor-not-allowed',
     TAMANHOS[props.tamanho] ?? TAMANHOS.md,
     VARIANTES[props.variante] ?? VARIANTES.ghost,

@@ -118,6 +118,7 @@ class ImportarLeads implements ShouldQueue
                 'valor_estimado' => self::numero($valor('valor_estimado')),
                 'probabilidade' => $valor('probabilidade') === '' ? null : (int) preg_replace('/\D/', '', $valor('probabilidade')),
                 'previsao_fechamento' => self::data($valor('previsao_fechamento')),
+                'origem' => $valor('origem') ?: null,
             ];
 
             $v = Validator::make($dados, [
@@ -126,9 +127,11 @@ class ImportarLeads implements ShouldQueue
                 'descricao' => ['nullable', 'string', 'max:'.LimitesDeTexto::DESCRICAO],
                 'valor_estimado' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
                 'probabilidade' => ['nullable', 'integer', 'between:0,100'],
+                'origem' => ['nullable', 'string', 'max:60'],
             ], [
                 'nome.required' => 'Nome é obrigatório.', 'email.required' => 'E-mail é obrigatório.', 'email.email' => 'E-mail inválido.',
                 'probabilidade.between' => 'Probabilidade deve ir de 0 a 100.', 'valor_estimado.numeric' => 'Valor estimado inválido.',
+                'origem.max' => 'Origem deve ter até 60 caracteres.',
             ]);
             if ($v->fails()) {
                 $this->erro($n, $v->errors()->first(), $linha);

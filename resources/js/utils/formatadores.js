@@ -48,6 +48,12 @@ export function formatarDataHora(valor) {
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+/** Hora com segundos (21:03:15), para "conferido às". */
+export function formatarHora(valor) {
+    const d = paraDate(valor);
+    return d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+}
+
 /** Dias inteiros entre `valor` e `agora` (ms); null para vazio. */
 export function diasDesde(valor, agora = Date.now()) {
     const d = paraDate(valor);

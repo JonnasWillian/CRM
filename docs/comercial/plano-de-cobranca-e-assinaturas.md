@@ -1,8 +1,8 @@
 # Plano de cobrança e assinaturas
 
-Data: 24/10/2026. Atualizado em 26/10/2026 com os itens faltantes, o enquadramento fiscal e as opções de cobrança recorrente. Complementa a [análise comercial](analise-comercial-e-seo.md), bloqueador B1 (cobrança).
+Data: 24/10/2026. Atualizado em 26/10/2026 com os itens faltantes, o enquadramento fiscal e as opções de cobrança recorrente, e em 31/10/2026 com a integração ao Asaas. Complementa a [análise comercial](analise-comercial-e-seo.md), bloqueador B1 (cobrança).
 
-**Situação:** a Fase 1 está implementada e testada. Falta a Fase 2, que depende do gateway de pagamento. Antes dela, falta resolver o enquadramento da empresa: a atividade de software não é permitida ao MEI.
+**Situação:** a Fase 1 está implementada e testada. A Fase 2 está implementada para cobrança avulsa por fatura no Asaas (Pix, boleto e cartão, com confirmação automática) e falta ligar em produção: ver [Como ligar o Asaas](#como-ligar-o-asaas). Débito automático (cartão salvo e Pix Automático) fica para depois. Continua pendente o enquadramento da empresa: a conta do Asaas está como MEI, e a atividade de software não é permitida ao MEI.
 
 ## O que falta
 
@@ -11,8 +11,9 @@ Os códigos B3 a B10 são os da seção 9 da [análise comercial](analise-comerc
 ### Antes de cobrar o primeiro cliente
 
 - [ ] **CNPJ que pode vender software.** Desenvolvimento e licenciamento de programas não estão entre as ocupações permitidas ao MEI. Ver [Enquadramento fiscal](#enquadramento-fiscal-mei-não-pode-vender-saas).
-- [ ] **Contratar o gateway** e fazer a [Fase 2](#fase-2-gateway-de-pagamento). A recomendação é o Asaas, com Pix Automático.
-- [ ] **Nota fiscal de serviço** para cada pagamento, emitida pelo gateway ou pelo emissor do município.
+- [x] **Contratar o gateway.** Conta de produção no Asaas aberta e aprovada em 31/10/2026, como MEI.
+- [ ] **Ligar o Asaas** seguindo [Como ligar o Asaas](#como-ligar-o-asaas): chave Pix, chave de API, token do webhook e IP autorizado.
+- [ ] **Nota fiscal de serviço** para cada pagamento. No Asaas, em Notas Fiscais > Configurações, faltam as configurações fiscais da empresa e o cadastro do serviço.
 - [ ] **Nome da marca** antes de comprar o domínio (B10).
 - [ ] **Domínio, HTTPS e `APP_URL`** (B3). Os links dos e-mails de cobrança usam o `APP_URL`.
 - [ ] **E-mail transacional real** (B4). Hoje `MAIL_MAILER=log`: nenhum aviso de cobrança chega ao cliente.
@@ -155,8 +156,14 @@ Tudo o que não depende de escolher o gateway.
 | Bloqueio e suspensão por requisição | `app/Http/Middleware/ExigirAssinatura.php` |
 | Rotina diária | `app/Console/Commands/RotinaDeAssinaturas.php` |
 | Comandos da equipe comercial | `fatura:pagar`, `faturas:pendentes`, `assinatura:ativar` |
+| Asaas: chamadas à API e erros | `app/Services/Pagamentos/Asaas/ApiDoAsaas.php`, `FalhaNoAsaas.php` |
+| Asaas: cobrança, conferência e conciliação | `app/Services/Pagamentos/Asaas/CobrancasDoAsaas.php` |
+| Asaas: webhook | `app/Http/Controllers/Webhooks/AsaasController.php`, tabela `eventos_de_gateway` |
+| Asaas: remover cobrança de fatura cancelada | `app/Observers/FaturaObserver.php`, `app/Jobs/RemoverCobrancaNoAsaas.php` |
+| Asaas: comandos | `asaas:verificar`, `asaas:webhook`, `asaas:conciliar` (agendado de hora em hora) |
+| Asaas: tela do Pix | `resources/js/Components/assinatura/PagarFatura.vue` |
 | Telas | `Configuracoes/Assinatura.vue`, `Assinatura/Suspensa.vue`, faixa em `utils/faixaDaAssinatura.js` |
-| Testes | `tests/Feature/Assinaturas/*`, `tests/js/pages/configuracoes/Assinatura.test.js`, `tests/js/utils/faixaDaAssinatura.test.js` |
+| Testes | `tests/Feature/Assinaturas/*`, `tests/Feature/Pagamentos/*`, `tests/js/pages/configuracoes/Assinatura.test.js`, `tests/js/pages/configuracoes/PagarFatura.test.js`, `tests/js/utils/faixaDaAssinatura.test.js` |
 
 ## Enquadramento fiscal: MEI não pode vender SaaS
 
@@ -226,19 +233,63 @@ A tarifa fixa do Asaas fica mais barata que o percentual da Efí a partir de R$ 
 
 Para faturas pequenas, como o Inicial mensal de 1 usuário, o Pix percentual da Efí ou do Pagar.me sai mais barato. Não compensa ter dois intermediadores por essa diferença enquanto a base for pequena.
 
-### O que muda no código quando o gateway entrar
+### Taxas da conta, conferidas em 31/10/2026
 
-- [ ] Ao gerar a fatura, criar a cobrança no gateway e guardar a referência na fatura.
-- [ ] Mostrar o QR Code do Pix, o boleto ou o link do cartão na tela e no e-mail da fatura.
-- [ ] Rota de webhook sem sessão, que valida a assinatura do gateway e chama a mesma confirmação de pagamento usada hoje pelo comando `fatura:pagar`.
-- [ ] Tratar estorno e contestação: cancelar a fatura e devolver a assinatura ao estado anterior.
-- [ ] Cartão recorrente: o gateway cobra sozinho na renovação, e a rotina diária deixa de gerar a fatura manual para essas empresas.
-- [ ] Cobrança proporcional de usuários adicionados no meio do ciclo, se o gateway suportar.
-- [ ] Desligar os comandos manuais ou restringi-los a casos de exceção.
-- [ ] No Asaas: cadastrar cada empresa como cliente, criar a cobrança de cada fatura ou a autorização de Pix Automático, e tratar os avisos de pagamento confirmado, recebido, estornado e contestado. Conferir os nomes dos eventos na documentação da API.
-- [ ] Emitir a nota fiscal de serviço quando o pagamento for confirmado.
+Lidas no painel da conta de produção, em Taxas e prazos. São melhores que as publicadas no site:
 
-## Operação enquanto não há gateway
+| Meio | Taxa | Recebimento |
+|---|---|---|
+| Pix | Gratuito, sem limite | Na hora |
+| Boleto | R$ 0,99 por boleto pago, promocional até 31/01/2027 (depois R$ 1,99) | 1 dia útil |
+| Cartão à vista | 1,99% + R$ 0,49, promocional até 31/01/2027 (depois 2,99% + R$ 0,49) | 32 dias |
+| Cartão de débito | 1,89% + R$ 0,35 | 3 dias |
+| Pix Automático | Não aparece na tela de taxas | — |
+| Avisos do Asaas ao cliente | E-mail e SMS R$ 0,99 por cobrança paga, WhatsApp R$ 0,55, robô de voz R$ 0,55, Correios R$ 2,91 | — |
+| Transferência para o banco | R$ 5,00 cada | Mesmo dia até 15h |
+
+Com o Pix gratuito, a recomendação muda: **Pix como meio padrão**, inclusive no plano mensal. Os avisos do Asaas ficam desligados por cliente (`notificationDisabled`), porque o sistema já manda os seus e cada aviso do Asaas seria cobrado.
+
+### O que foi feito em 31/10/2026
+
+- [x] Cada empresa é cadastrada uma vez como cliente no Asaas, com o CPF ou CNPJ que o admin informa na primeira cobrança (o CNPJ alfanumérico, emitido desde julho de 2026, é aceito). Os avisos do Asaas ficam desligados.
+- [x] Cada fatura vira uma cobrança avulsa no Asaas na primeira vez que o admin clica em pagar. Quem paga escolhe Pix, boleto ou cartão.
+- [x] A tela de assinatura mostra o QR Code e o copia e cola do Pix, e o link para boleto ou cartão. Enquanto o Pix está aberto, a tela percebe sozinha quando o pagamento cai.
+- [x] Webhook sem sessão em `/api/webhooks/asaas`. O aviso só ativa o plano depois de três conferências: o token do header `asaas-access-token`, a situação da cobrança consultada na API (o corpo do aviso não é confiável) e a cobrança ser desta fatura (`externalReference`) com valor que cobre a fatura. O mesmo aviso repetido é processado uma vez (tabela `eventos_de_gateway`). A confirmação usa o mesmo `pagar()` do comando `fatura:pagar`.
+- [x] `asaas:conciliar`, de hora em hora: confere no Asaas as faturas pendentes e as canceladas há até 10 dias, e confirma as pagas cujo aviso não chegou. O erro de uma fatura não para as outras.
+- [x] Fatura cancelada aqui (troca de plano, renovação cancelada) ou confirmada à mão tem a cobrança removida no Asaas, para o cliente não pagar duas vezes.
+- [x] Alertas para `COMERCIAL_EMAIL`, um por caso: estorno, estorno parcial, contestação no cartão, fatura cancelada que foi paga, fatura paga duas vezes e pagamento que não confere.
+- [x] Servidor com `APP_ENV=production` recusa `ASAAS_AMBIENTE` diferente de `producao`: no sandbox, cartão de teste ativaria plano sem dinheiro.
+- [x] Os comandos manuais continuam para pagamentos por fora do Asaas.
+
+### O que falta no código
+
+- [ ] **Estorno e contestação** só geram alerta. Cancelar a fatura e devolver a assinatura ao estado anterior ficou para depois: é raro e pede decisão de gente.
+- [ ] **Cartão salvo para renovação automática.** Em produção, a tokenização de cartão "depende de habilitação e está sujeita à análise da operação" do Asaas. Pedir ao gerente da conta antes de implementar.
+- [ ] **Pix Automático** para a renovação sair sozinha. Aparece no menu da conta, mas sem taxa publicada nem requisitos na tela.
+- [ ] Cobrança proporcional de usuários adicionados no meio do ciclo.
+- [ ] Emitir a nota fiscal de serviço quando o pagamento for confirmado, depois de configurar a nota no Asaas.
+- [ ] Trocar o CPF ou CNPJ de quem paga depois da primeira cobrança. Hoje só pelo banco e pelo painel do Asaas.
+- [ ] Valor mínimo de cobrança do Asaas: não está na documentação. Uma troca de plano no começo do ciclo pode gerar fatura de poucos reais; se o Asaas recusar, a tela mostra o motivo e o contato da equipe.
+
+### Como ligar o Asaas
+
+No servidor de produção, nesta ordem:
+
+1. **Cadastrar uma chave Pix** na conta, em Pix > Minhas chaves. A aleatória serve. Sem chave, o QR Code vale só até o fim do dia, e o Asaas avisa que vai deixar de gerá-lo.
+2. **Gerar a chave de API** em Integrações > Chaves de API e colocar no `.env`, entre aspas simples porque ela começa com `$`:
+   ```
+   ASAAS_AMBIENTE=producao
+   ASAAS_API_KEY='$aact_...'
+   ```
+3. **Criar o token do webhook** com `php -r "echo bin2hex(random_bytes(32));"` e colocar em `ASAAS_WEBHOOK_TOKEN`.
+4. `php artisan config:cache` e `php artisan asaas:verificar`. Deve responder "Conexão com o Asaas funcionando. Ambiente: produção."
+5. **Cadastrar o webhook:** `php artisan asaas:webhook`. Ele usa `APP_URL` + `/api/webhooks/asaas` e exige https. Conferir em Integrações > Webhooks.
+6. **Autorizar só o IP do servidor** em Integrações > Segurança > Endereços IP autorizados. Hoje a API aceita qualquer IP com a chave, e a chave dá acesso total à conta, inclusive transferências.
+7. Fazer uma fatura real de valor baixo, pagar por Pix e conferir que o plano ativa sozinho.
+
+Em desenvolvimento, sem endereço público, o webhook não chega. A tela de pagamento e o `asaas:conciliar` confirmam mesmo assim, consultando a API. Os testes automáticos nunca chamam o Asaas: `phpunit.xml` zera a chave e `Http::preventStrayRequests()` barra qualquer chamada não simulada.
+
+## Operação sem o Asaas, ou para pagamento por fora
 
 1. O agendador precisa rodar todo minuto no servidor: `* * * * * php artisan schedule:run`. A rotina `assinaturas:rotina` roda às 08:00 de Brasília.
 2. Os e-mails saem pela fila: `php artisan queue:work` precisa estar no ar, e `MAIL_MAILER` configurado.
@@ -261,6 +312,15 @@ Achados menores da revisão, deixados para depois de propósito:
 - Cupons, descontos e programa de indicação.
 - Mudança de preço para clientes antigos.
 - Exclusão definitiva dos dados de empresas suspensas há muito tempo, que exige política de retenção e LGPD.
+
+## Documentação do Asaas consultada em 31/10/2026
+
+- [Sobre os webhooks: token, idempotência e fila pausada](https://docs.asaas.com/docs/sobre-os-webhooks)
+- [Eventos de cobrança](https://docs.asaas.com/docs/webhook-para-cobrancas)
+- [Criar webhook pela API](https://docs.asaas.com/docs/criar-novo-webhook-pela-api)
+- [Criar cliente](https://docs.asaas.com/reference/criar-novo-cliente), [criar cobrança](https://docs.asaas.com/reference/criar-nova-cobranca), [QR Code do Pix](https://docs.asaas.com/reference/obter-qr-code-para-pagamentos-via-pix) e [excluir cobrança](https://docs.asaas.com/reference/excluir-cobranca)
+- [Tokenização de cartão](https://docs.asaas.com/docs/tokenizacao-de-cartao-de-credito)
+- [Autenticação e User-Agent](https://docs.asaas.com/docs/autenticacao)
 
 ## Fontes consultadas em 26/10/2026
 

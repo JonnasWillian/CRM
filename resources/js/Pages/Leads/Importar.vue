@@ -37,7 +37,7 @@ const { confirmar } = useConfirm();
 
 const ROTULOS = {
     nome: 'Nome', email: 'E-mail', telefone: 'Telefone', descricao: 'Descrição', funil: 'Funil', estagio: 'Estágio',
-    valor_estimado: 'Valor estimado', probabilidade: 'Probabilidade (%)', previsao_fechamento: 'Previsão de fechamento', responsavel: 'Responsável (e-mail ou nome)',
+    valor_estimado: 'Valor estimado', probabilidade: 'Probabilidade (%)', previsao_fechamento: 'Previsão de fechamento', origem: 'Origem', responsavel: 'Responsável (e-mail ou nome)',
 };
 const PASSOS = [{ chave: 'arquivo', rotulo: 'Arquivo' }, { chave: 'mapeamento', rotulo: 'Mapeamento' }, { chave: 'processando', rotulo: 'Processando' }, { chave: 'resultado', rotulo: 'Resultado' }];
 
@@ -77,7 +77,7 @@ async function enviar(arquivo) {
 }
 const aoSoltar = (e) => { arrastando.value = false; enviar(e.dataTransfer.files?.[0]); };
 function baixarModelo() {
-    const linhas = ['nome;email;telefone;descricao;funil;estagio;valor_estimado;probabilidade;previsao_fechamento;responsavel', 'Ana Souza;ana@empresa.com.br;(11) 98888-7777;Indicação;;;1500,00;40;30/11/2026;'];
+    const linhas = ['nome;email;telefone;descricao;funil;estagio;valor_estimado;probabilidade;previsao_fechamento;origem;responsavel', 'Ana Souza;ana@empresa.com.br;(11) 98888-7777;Cliente antigo;;;1500,00;40;30/11/2026;Indicação;'];
     const blob = new Blob(['﻿' + linhas.join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'modelo-importacao-leads.csv' });
     a.click();

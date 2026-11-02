@@ -17,7 +17,10 @@ return [
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
         '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        // `:*` aceita qualquer porta local: `php artisan serve` sobe na 8001,
+        // 8002… quando a 8000 está ocupada, e sem isto a API responde 401
+        // para as telas abertas e logadas (ver SessaoDoFrontNaApiTest).
+        'localhost,localhost:*,127.0.0.1,127.0.0.1:*,::1',
         Sanctum::currentApplicationUrlWithPort()
     ))),
 

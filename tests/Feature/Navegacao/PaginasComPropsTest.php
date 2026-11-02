@@ -148,7 +148,7 @@ class PaginasComPropsTest extends TestCase
         $this->actingAs($gestor)->get('/leads/importar')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('Leads/Importar')
             ->has('importacoes', 0)
-            ->has('campos', 10)
+            ->has('campos', 11) // + origem (questionário de primeiro acesso)
             ->has('agentes', 1));
 
         $this->actingAs($this->agente($tenant))->get('/leads/importar')->assertForbidden();

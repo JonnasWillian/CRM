@@ -78,24 +78,27 @@
     --cat-4: #b83280;
     --cat-neutral: #4a5568;
 
-    /* ── Raio ────────────────────────────────────────────────── */
-    --r-1: 4px;
-    --r-2: 6px;
-    --r-3: 10px;
+    /* ── Raio: cantos generosos ─────────────────────────────────
+       Campos e botões 12, cartões e modais 20, folhas e o cartão de
+       entrada 28. Pílula para filtro, paginação e botão de ícone. */
+    --r-1: 6px;
+    --r-2: 12px;
+    --r-3: 20px;
+    --r-4: 28px;
     --r-full: 999px;
 
     /* ── Espaço: grade de 4px ────────────────────────────────── */
     --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
     --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
 
-    /* ── Sombra: discreta, só para o que flutua ──────────────── */
-    --sh-1: 0 1px 2px rgb(16 24 40 / .06);
-    --sh-2: 0 4px 12px rgb(16 24 40 / .08);
-    --sh-3: 0 12px 32px rgb(16 24 40 / .14);
+    /* ── Sombra: macia e longa, levemente azulada ─────────────── */
+    --sh-1: 0 1px 2px rgb(16 24 40 / .05);
+    --sh-2: 0 1px 2px rgb(16 24 40 / .04), 0 16px 36px -18px rgb(27 79 114 / .24);
+    --sh-3: 0 2px 6px rgb(16 24 40 / .04), 0 28px 64px -24px rgb(27 79 114 / .32);
 
     /* ── Tipografia ──────────────────────────────────────────── */
-    --font-body:    'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --font-display: 'Manrope Variable', Manrope, var(--font-body);
+    --font-body:    Poppins, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-display: var(--font-body);
     --font-mono:    ui-monospace, 'SF Mono', Menlo, monospace;
 
     --fs-xs: 11px;  /* badge, legenda */
@@ -103,7 +106,7 @@
     --fs-md: 13px;  /* corpo e células — base do app */
     --fs-lg: 15px;  /* H3, título de card */
     --fs-xl: 18px;  /* H2, título de modal */
-    --fs-2xl: 22px; /* H1 de página */
+    --fs-2xl: 24px; /* H1 de página */
     --fs-3xl: 28px; /* número de KPI */
 
     --lh-tight: 1.2;
@@ -126,6 +129,12 @@
     --painel-fg:   #ffffff;
     --painel-fg-2: rgb(255 255 255 / .74);
     --painel-line: rgb(255 255 255 / .16);
+
+    /* ── Fundo das telas de entrada: degradê suave da primária ── */
+    --fundo-entrada:
+        radial-gradient(1100px 680px at 88% 12%, #d7e7f6 0%, transparent 62%),
+        radial-gradient(900px 620px at -5% 105%, #e4eef8 0%, transparent 58%),
+        #f8fafc;
 
     /* ── Layout ──────────────────────────────────────────────── */
     --page-x: 12px;
@@ -179,8 +188,13 @@
     --cat-neutral: #9ea9b8;
 
     --sh-1: 0 1px 2px rgb(0 0 0 / .35);
-    --sh-2: 0 4px 12px rgb(0 0 0 / .45);
-    --sh-3: 0 12px 32px rgb(0 0 0 / .55);
+    --sh-2: 0 1px 2px rgb(0 0 0 / .3), 0 16px 36px -18px rgb(0 0 0 / .7);
+    --sh-3: 0 2px 6px rgb(0 0 0 / .3), 0 28px 64px -24px rgb(0 0 0 / .8);
+
+    --fundo-entrada:
+        radial-gradient(1100px 680px at 88% 12%, #15314b 0%, transparent 62%),
+        radial-gradient(900px 620px at -5% 105%, #132538 0%, transparent 58%),
+        #0f141b;
 }
 
 @media (min-width: 768px)  { :root { --page-x: 16px; } }

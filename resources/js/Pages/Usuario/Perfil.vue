@@ -166,7 +166,7 @@ async function excluir() {
                     <AppButton @click="restaurarDaLixeira"><template #icone><ArchiveRestore /></template>Restaurar</AppButton>
                 </template>
                 <template v-else #acoes>
-                    <AppButton variante="secondary" @click="novaTarefa"><template #icone><Plus /></template>Nova tarefa</AppButton>
+                    <AppButton variante="secondary" data-tour="nova-tarefa" @click="novaTarefa"><template #icone><Plus /></template>Nova tarefa</AppButton>
                     <AppDropdown rotulo="Mais ações" alinhar="end">
                         <AppDropdownItem v-if="agentes.length" rotulo="Transferir…" :icone="ArrowRightLeft" @click="transferencia = { aberto: true, salvando: false, erro: '' }" />
                         <AppDropdownItem rotulo="Mover para a lixeira" :icone="Trash2" tom="danger" @click="excluir" />

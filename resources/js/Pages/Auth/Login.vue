@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
+import { ArrowRight } from "lucide-vue-next";
 import AuthLayout from "@/Layouts/AuthLayout.vue";
 import PainelDeEntrada from "@/Components/auth/PainelDeEntrada.vue";
 import CampoDeSenha from "@/Components/auth/CampoDeSenha.vue";
@@ -26,7 +27,7 @@ const enviar = () =>
     >
         <AppAlert v-if="status" tom="ok" class="mb-5">{{ status }}</AppAlert>
         <form class="space-y-5" @submit.prevent="enviar">
-            <FormField rotulo="E-mail" :erro="form.errors.email">
+            <FormField flutuante rotulo="E-mail" :erro="form.errors.email">
                 <AppInput
                     v-model="form.email"
                     type="email"
@@ -35,8 +36,8 @@ const enviar = () =>
                     autofocus
                 />
             </FormField>
-            <FormField rotulo="Senha" :erro="form.errors.password">
-                <CampoDeSenha
+            <FormField flutuante rotulo="Senha" :erro="form.errors.password">
+                <CampoDeSenha placeholder=" "
                     v-model="form.password"
                     autocomplete="current-password"
                 />
@@ -57,9 +58,9 @@ const enviar = () =>
                 type="submit"
                 bloco
                 :carregando="form.processing"
-                class="h-11 text-[15px]"
-                >Entrar</AppButton
-            >
+                class="h-12 text-[15px]"
+                >Entrar<template #iconeDireita><ArrowRight /></template
+            ></AppButton>
         </form>
 
         <template #rodape>
