@@ -19,7 +19,10 @@ class TenantFactory extends Factory
     {
         return [
             'nome' => fake()->company(),
-            'slug' => Str::slug($this->faker->unique()->company()),
+            // Como o cadastro (RegisteredUserController): slug do nome mais sufixo
+            // aleatório. Sortear um segundo nome de empresa colidia no índice único
+            // de vez em quando (o unique() do Faker é zerado a cada factory).
+            'slug' => fn (array $atributos) => Str::slug($atributos['nome']).'-'.Str::random(6),
             'plano' => null,
         ];
     }
