@@ -354,7 +354,8 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
 <template>
     <Head title="Pipeline" />
     <AuthenticatedLayout>
-        <PageContainer>
+        <!-- Largura total: as colunas dividem o espaço em vez de rolar com sobra nas laterais. -->
+        <PageContainer largura="full">
             <PageHeader titulo="Pipeline" :subtitulo="totais ? `${totais.leads} ${totais.leads === 1 ? 'lead' : 'leads'} · ${formatBRL(totais.valor_estimado_aberto)} em aberto · ${formatBRL(totais.valor_ponderado_aberto)} ponderado` : null">
                 <template #acoes>
                     <AppDropdown rotulo="Mais ações" alinhar="end">
@@ -384,7 +385,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
 
             <!-- Esqueleto -->
             <div v-else-if="!quadro" class="flex gap-3 overflow-hidden" aria-busy="true">
-                <div v-for="i in 4" :key="i" class="w-[272px] shrink-0 space-y-2 rounded-lg border border-line bg-bg-2/60 p-2">
+                <div v-for="i in 4" :key="i" class="w-[272px] shrink-0 space-y-2 rounded-lg border border-line bg-bg-2/60 p-2 md:w-auto md:min-w-[220px] md:flex-1 md:basis-0">
                     <AppSkeleton largura="50%" />
                     <AppSkeleton v-for="j in 3" :key="j" variante="rect" altura="76px" />
                 </div>
@@ -403,7 +404,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', atalho); clearTime
                 <section
                     v-for="coluna in colunas"
                     :key="coluna.id"
-                    class="flex w-[min(272px,calc(100vw-2*var(--page-x)))] shrink-0 snap-start flex-col rounded-lg border border-line bg-bg-2/60 md:w-[272px]"
+                    class="flex w-[min(272px,calc(100vw-2*var(--page-x)))] shrink-0 snap-start flex-col rounded-lg border border-line bg-bg-2/60 md:w-auto md:min-w-[220px] md:flex-1 md:basis-0"
                     :aria-label="coluna.descricao"
                 >
                     <header class="border-b border-line px-3 py-2" :style="{ borderTop: `3px solid ${corDaColuna(coluna)}`, borderTopLeftRadius: 'var(--r-3)', borderTopRightRadius: 'var(--r-3)' }">
