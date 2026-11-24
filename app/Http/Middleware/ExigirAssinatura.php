@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ExigirAssinatura
 {
-    private const ROTAS_LIVRES = ['configuracoes.assinatura', 'logout', 'profile.', 'password.', 'verification.'];
+    private const ROTAS_LIVRES = ['configuracoes.assinatura', 'logout', 'profile.', 'password.', 'verification.', 'api.suporte.'];
 
     private const LIVRES_NA_SUSPENSAO = ['assinatura.suspensa', 'api.leads.exportar'];
 

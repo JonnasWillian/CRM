@@ -36,6 +36,9 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Passo a passo do primeiro acesso: estado do próprio usuário ──
     Route::patch('/tour', [\App\Http\Controllers\Api\TourController::class, 'update'])->name('tour.update');
 
+    // ── Assistente de ajuda e feedback (livre mesmo com a assinatura bloqueada: ExigirAssinatura) ──
+    Route::post('/suporte', [\App\Http\Controllers\Api\SuporteController::class, 'store'])->middleware('throttle:6,1')->name('suporte.store');
+
     // ── Catálogos ──
     Route::get('/estagios', [EstagioController::class, 'index'])->name('estagios.index');
     Route::get('/status', [StatusProjetoController::class, 'index'])->name('status.index');

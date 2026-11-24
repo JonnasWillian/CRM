@@ -10,7 +10,7 @@ const CORES = { sucesso: 'text-ok', erro: 'text-danger', aviso: 'text-warn', inf
 </script>
 
 <template>
-    <div aria-live="polite" aria-relevant="additions" class="pointer-events-none fixed inset-x-3 bottom-3 z-[80] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-[380px]">
+    <div aria-live="polite" aria-relevant="additions" class="pointer-events-none fixed inset-x-3 bottom-20 z-[80] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-4 sm:w-[380px]">
         <TransitionGroup name="toast">
             <div
                 v-for="t in toasts"

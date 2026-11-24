@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { ChevronsUpDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, RotateCcw, UserCircle, X } from 'lucide-vue-next';
+import { ChevronsUpDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, LifeBuoy, RotateCcw, UserCircle, X } from 'lucide-vue-next';
 import AppAvatar from '@/Components/ui/AppAvatar.vue';
 import AppDropdown from '@/Components/ui/AppDropdown.vue';
 import AppDropdownItem from '@/Components/ui/AppDropdownItem.vue';
@@ -13,6 +13,8 @@ import SeletorDeTema from '@/Components/ui/SeletorDeTema.vue';
 import ToastHost from '@/Components/ui/ToastHost.vue';
 import BoasVindasModal from '@/Components/tour/BoasVindasModal.vue';
 import TourHost from '@/Components/tour/TourHost.vue';
+import AssistenteDeAjuda from '@/Components/suporte/AssistenteDeAjuda.vue';
+import { useSuporte } from '@/Composables/useSuporte';
 import { useTour } from '@/Composables/useTour';
 import { usePrefsLocais } from '@/Composables/usePrefsLocais';
 import { useToast } from '@/Composables/useToast';
@@ -40,6 +42,8 @@ const colapsada = usePrefsLocais('sidebar.colapsada', false);
 
 // Passo a passo do primeiro acesso: boas-vindas, balões e "Refazer" no menu da conta.
 const tour = useTour();
+// Assistente de ajuda e feedback: botão flutuante e entrada no menu da conta.
+const suporte = useSuporte();
 
 // ── Gaveta mobile ──
 const gavetaAberta = ref(false);
@@ -132,6 +136,7 @@ watch(
                     </div>
                     <AppDropdownSeparador />
                     <AppDropdownItem rotulo="Perfil e conta" :icone="UserCircle" as="Link" :href="route('profile.edit')" />
+                    <AppDropdownItem rotulo="Ajuda e feedback" :icone="LifeBuoy" @click="suporte.abrir()" />
                     <AppDropdownItem rotulo="Refazer o passo a passo" :icone="RotateCcw" @click="tour.refazer()" />
                     <AppDropdownSeparador />
                     <AppDropdownItem rotulo="Sair" :icone="LogOut" as="Link" :href="route('logout')" method="post" />
@@ -165,6 +170,9 @@ watch(
                     <Link :href="route('profile.edit')" class="flex items-center gap-3 rounded px-3 py-2.5 text-md text-fg-1 hover:bg-bg-1/70 hover:text-fg-0" @click="fecharGaveta">
                         <UserCircle :size="18" aria-hidden="true" /> Perfil e conta
                     </Link>
+                    <button type="button" class="flex w-full items-center gap-3 rounded px-3 py-2.5 text-left text-md text-fg-1 hover:bg-bg-1/70 hover:text-fg-0" @click="fecharGaveta(); suporte.abrir()">
+                        <LifeBuoy :size="18" aria-hidden="true" /> Ajuda e feedback
+                    </button>
                     <button type="button" class="flex w-full items-center gap-3 rounded px-3 py-2.5 text-left text-md text-fg-1 hover:bg-bg-1/70 hover:text-fg-0" @click="fecharGaveta(); tour.refazer()">
                         <RotateCcw :size="18" aria-hidden="true" /> Refazer o passo a passo
                     </button>
@@ -193,7 +201,8 @@ watch(
                     <Link v-if="pode('configuracoes.manage')" :href="route('configuracoes.assinatura')" class="ml-2 font-semibold underline underline-offset-2">{{ faixaAssinatura.acao }}</Link>
                     <span v-else class="ml-2 text-fg-1">Peça ao administrador da empresa.</span>
                 </div>
-                <div class="min-w-0 flex-1"><slot /></div>
+                <!-- pb: o botão flutuante de ajuda não cobre o fim da página (paginação) -->
+                <div class="min-w-0 flex-1 pb-14"><slot /></div>
             </div>
         </main>
 
@@ -202,5 +211,6 @@ watch(
         <PerdaHost />
         <BoasVindasModal />
         <TourHost />
+        <AssistenteDeAjuda />
     </div>
 </template>
