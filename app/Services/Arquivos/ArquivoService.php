@@ -107,7 +107,8 @@ class ArquivoService
         // Sem extensão o sistema operacional de quem baixa não sabe abrir o
         // arquivo; a do caminho interno vem do conteúdo (guessExtension).
         $extensao = pathinfo($caminho, PATHINFO_EXTENSION);
-        if (pathinfo($limpo, PATHINFO_EXTENSION) === '' && $extensao !== '') {
+        // A extensão que vale é a do conteúdo: "proposta.html" num arquivo de texto baixa como "proposta.html.txt".
+        if ($extensao !== '' && strtolower(pathinfo($limpo, PATHINFO_EXTENSION)) !== strtolower($extensao)) {
             $limpo .= '.'.$extensao;
         }
 

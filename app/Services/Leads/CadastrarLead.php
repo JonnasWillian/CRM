@@ -6,6 +6,7 @@ use App\Models\Estagio;
 use App\Models\Funil;
 use App\Models\User;
 use App\Models\Usuario;
+use App\Services\Assinaturas\Assinaturas;
 use App\Services\Perdas\AplicarTransicao;
 
 /**
@@ -35,7 +36,7 @@ class CadastrarLead
             $dados['estagio_id'] = Estagio::where('funil_id', $dados['funil_id'])->aberto()->orderBy('ordem')->orderBy('id')->value('id');
         }
 
-        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($autor->tenant_id, 'leads');
+        app(Assinaturas::class)->verificarLimite($autor->tenant_id, 'leads');
 
         $lead = new Usuario;
         ($this->transicao)($lead, $dados, $perda);

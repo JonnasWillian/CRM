@@ -26,7 +26,8 @@ class AsaasController extends Controller
     public function __invoke(Request $request, CobrancasDoAsaas $cobrancas): JsonResponse
     {
         $esperado = (string) config('services.asaas.token_webhook');
-        abort_if($esperado === '', 404);
+        // Token curto é adivinhável: o comando asaas:webhook já exige 32+, o aviso também.
+        abort_if(strlen($esperado) < 32, 404);
         if (! hash_equals($esperado, (string) $request->header('asaas-access-token'))) {
             return response()->json(['message' => 'Token inválido.'], 401);
         }
@@ -39,7 +40,7 @@ class AsaasController extends Controller
 
         $evento = EventoDeGateway::firstOrCreate(
             ['gateway' => 'asaas', 'evento_id' => Str::limit($id, 100, '')],
-            ['tipo' => Str::limit($tipo, 60, ''), 'cobranca_id' => Str::limit((string) $request->input('payment.id'), 40, '') ?: null, 'payload' => $request->all()],
+            ['tipo' => Str::limit($tipo, 60, ''), 'cobranca_id' => Str::limit((string) $request->input('payment.id'), 40, '') ?: null, 'payload' => self::essencial($request)],
         );
         if ($evento->processado_em !== null) {
             return response()->json(['resultado' => 'duplicado']);
@@ -62,5 +63,24 @@ class AsaasController extends Controller
         $evento->forceFill(['processado_em' => Carbon::now(), 'resultado' => Str::limit($resultado, 250)])->save();
 
         return response()->json(['resultado' => $resultado]);
+    }
+
+    /**
+     * Só o que o processamento usa. O aviso completo traz dados do cliente,
+     * links da cobrança e, em cartão, final e token do cartão: nada disso
+     * precisa ficar guardado aqui.
+     */
+    private static function essencial(Request $request): array
+    {
+        return [
+            'id' => $request->input('id'),
+            'event' => $request->input('event'),
+            'payment' => array_filter([
+                'id' => $request->input('payment.id'),
+                'externalReference' => $request->input('payment.externalReference'),
+                'status' => $request->input('payment.status'),
+                'value' => $request->input('payment.value'),
+            ], fn ($v) => is_scalar($v)),
+        ];
     }
 }

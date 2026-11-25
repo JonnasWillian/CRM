@@ -17,6 +17,9 @@ class Tenant extends Model
         'plano',
     ];
 
+    // Nunca saem em JSON: CPF/CNPJ de quem paga e o id do cliente no Asaas.
+    protected $hidden = ['documento', 'asaas_cliente_id'];
+
     /** Respostas do questionário de primeiro acesso (só empresas cadastradas depois dele). */
     public function perfil(): HasOne
     {

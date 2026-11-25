@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ListagemDaLixeiraRequest;
 use App\Http\Requests\RestaurarDaLixeiraRequest;
 use App\Queries\Lixeira\ListagemDaLixeira;
+use App\Services\Assinaturas\Assinaturas;
 use App\Support\Listagem\Paginacao;
 use Illuminate\Http\JsonResponse;
 
@@ -38,7 +39,7 @@ class LixeiraController extends Controller
             : ListagemDaLixeira::projetosVisiveis($request->user())->whereIn('projetos.id', $ids)->whereHas('usuario')->get();
 
         if ($dados['tipo'] === 'leads' && $itens->isNotEmpty()) {
-            app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($request->user()->tenant_id, 'leads', $itens->count());
+            app(Assinaturas::class)->verificarLimite($request->user()->tenant_id, 'leads', $itens->count());
         }
         $itens->each->restore();
         $afetados = $itens->count();

@@ -40,7 +40,7 @@ class ChamadoDeSuporteRequest extends FormRequest
             'impacto' => ['nullable', 'required_if:tipo,problema', 'string', $em('impactos')],
             'mensagem' => ['required', 'string', 'min:10', 'max:3000'],
             'nota' => ['nullable', 'integer', 'between:0,10'],
-            'email_contato' => ['nullable', 'string', 'email:rfc', 'max:255'],
+            'email_contato' => ['nullable', 'string', 'email:rfc', 'not_regex:/[\r\n]/', 'max:255'],
             'acionar_suporte' => ['boolean'],
             // Só o caminho da página dentro do app, para o suporte reproduzir.
             'pagina' => ['nullable', 'string', 'max:255', 'regex:/^\/[^\s<>"\']*$/'],

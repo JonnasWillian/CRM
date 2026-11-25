@@ -78,7 +78,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Leads ──
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
-    Route::get('/leads/exportar', [LeadController::class, 'exportar'])->name('leads.exportar');
+    Route::get('/leads/exportar', [LeadController::class, 'exportar'])->middleware('throttle:10,1')->name('leads.exportar');
     // Ações em massa: ids[] (até 200) ou todos=true + filtros da grade.
     Route::post('/leads/mover-estagio', [LeadController::class, 'moverEstagio'])->name('leads.mover-estagio');
     Route::post('/leads/lixeira', [LeadController::class, 'lixeira'])->name('leads.lixeira');
@@ -144,7 +144,7 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     // ── Importação de leads (quem vê a empresa inteira) ──
     Route::middleware('can:leads.view-all')->group(function () {
         Route::get('/importacoes', [ImportacaoController::class, 'index'])->name('importacoes.index');
-        Route::post('/importacoes', [ImportacaoController::class, 'store'])->name('importacoes.store');
+        Route::post('/importacoes', [ImportacaoController::class, 'store'])->middleware('throttle:10,1')->name('importacoes.store');
         Route::get('/importacoes/{importacao}', [ImportacaoController::class, 'show'])->name('importacoes.show');
         Route::post('/importacoes/{importacao}/iniciar', [ImportacaoController::class, 'iniciar'])->name('importacoes.iniciar');
         Route::get('/importacoes/{importacao}/erros', [ImportacaoController::class, 'erros'])->name('importacoes.erros');
@@ -158,8 +158,8 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
     Route::get('/equipe/opcoes', [EquipeController::class, 'opcoes'])->middleware('can:leads.view-all')->name('equipe.opcoes');
     Route::middleware('can:agentes.manage')->group(function () {
         Route::get('/equipe', [EquipeController::class, 'index'])->name('equipe.index');
-        Route::post('/equipe/convites', [EquipeController::class, 'convidar'])->name('equipe.convites.store');
-        Route::post('/equipe/convites/{convite}/reenviar', [EquipeController::class, 'reenviar'])->name('equipe.convites.reenviar');
+        Route::post('/equipe/convites', [EquipeController::class, 'convidar'])->middleware('throttle:20,60')->name('equipe.convites.store');
+        Route::post('/equipe/convites/{convite}/reenviar', [EquipeController::class, 'reenviar'])->middleware('throttle:20,60')->name('equipe.convites.reenviar');
         Route::delete('/equipe/convites/{convite}', [EquipeController::class, 'cancelar'])->name('equipe.convites.destroy');
         Route::patch('/equipe/{agente}/papel', [EquipeController::class, 'papel'])->name('equipe.papel');
         Route::patch('/equipe/{agente}/desativar', [EquipeController::class, 'desativar'])->name('equipe.desativar');
@@ -174,4 +174,4 @@ Route::name('api.')->middleware(['auth', 'tenant'])->group(function () {
 });
 
 // Avisos de pagamento do Asaas: sem sessão, autenticados pelo token do header.
-Route::post('/webhooks/asaas', \App\Http\Controllers\Webhooks\AsaasController::class)->name('api.webhooks.asaas');
+Route::post('/webhooks/asaas', \App\Http\Controllers\Webhooks\AsaasController::class)->middleware('throttle:240,1')->name('api.webhooks.asaas');

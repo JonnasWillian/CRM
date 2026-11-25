@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Assinatura;
 use App\Models\Tenant;
 use App\Services\Assinaturas\Faturamento;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 
 /**
  * Ativa ou renova à mão, sem fatura prévia (acordo comercial, cortesia).
@@ -26,9 +28,9 @@ class AtivarAssinatura extends Command
             return self::FAILURE;
         }
 
-        $fatura = $faturamento->gerar($tenant, $this->argument('plano'), $this->option('ciclo'), 'manual', \Illuminate\Support\Carbon::today());
+        $fatura = $faturamento->gerar($tenant, $this->argument('plano'), $this->option('ciclo'), 'manual', Carbon::today());
         $faturamento->pagar($fatura, 'assinatura:ativar');
-        $a = \App\Models\Assinatura::where('tenant_id', $tenant->id)->first();
+        $a = Assinatura::where('tenant_id', $tenant->id)->first();
         $this->info("{$tenant->nome}: plano {$a->plano} ({$a->ciclo}) vigente até {$a->vigente_ate->format('d/m/Y')}.");
 
         return self::SUCCESS;

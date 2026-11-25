@@ -178,6 +178,11 @@ class Faturamento
             if ($f->status === 'cancelada') {
                 throw new DomainException("A fatura #{$f->id} foi cancelada e não pode ser paga. Gere uma nova ou use assinatura:ativar.");
             }
+            // O crédito da troca foi calculado no dia da fatura: paga meses depois,
+            // daria o plano novo quase de graça depois de usar o antigo inteiro.
+            if ($f->motivo === 'troca' && $f->atrasada()) {
+                throw new DomainException("A fatura #{$f->id} de troca de plano venceu e não pode mais ser paga. Gere uma nova na tela de assinatura.");
+            }
 
             // Troca começa no pagamento (o crédito pagou o que sobrava); o resto segue as regras de ativar().
             $inicio = $f->motivo === 'troca' ? Carbon::now() : null;

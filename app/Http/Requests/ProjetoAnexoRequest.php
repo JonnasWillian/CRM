@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Support\Arquivos\PoliticaDeUpload;
 use Illuminate\Foundation\Http\FormRequest;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Anexo de PROJETO: `POST /api/projetos/{projeto}/anexos`. Fim do campo
@@ -32,7 +33,7 @@ class ProjetoAnexoRequest extends FormRequest
             return;
         }
 
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+        throw new NotFoundHttpException;
     }
 
     public function rules(): array

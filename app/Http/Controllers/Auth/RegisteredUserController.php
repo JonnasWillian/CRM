@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\PerfilDeEmpresa;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Assinaturas\Assinaturas;
 use App\Services\TenantBootstrapper;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +15,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,15 +34,15 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'empresa' => 'required|string|min:2|max:255',
-            'plano' => ['nullable', \Illuminate\Validation\Rule::in(array_column(config('comercial.planos', []), 'chave'))],
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'plano' => ['nullable', Rule::in(array_column(config('comercial.planos', []), 'chave'))],
+            'email' => ['required', 'string', 'lowercase', 'email:rfc', 'not_regex:/[\r\n]/', 'max:255', 'unique:'.User::class],
             // Sem `confirmed`: o formulário tem um campo só, com mostrar/ocultar.
             'password' => ['required', Rules\Password::defaults()],
         ], ['empresa.required' => 'Informe o nome da empresa.']);
@@ -55,7 +59,7 @@ class RegisteredUserController extends Controller
             TenantBootstrapper::bootstrap($tenant);
 
             // Linha pendente: leva quem criou a empresa ao questionário de primeiro acesso.
-            \App\Models\PerfilDeEmpresa::create(['tenant_id' => $tenant->id]);
+            PerfilDeEmpresa::create(['tenant_id' => $tenant->id]);
 
             $user = User::create([
                 'name' => $request->name,
@@ -75,7 +79,7 @@ class RegisteredUserController extends Controller
             $user->assignRole('admin');
 
             // Toda empresa nasce em teste; o plano escolhido no site fica como pretendido.
-            app(\App\Services\Assinaturas\Assinaturas::class)->iniciarTeste($tenant, $request->input('plano'));
+            app(Assinaturas::class)->iniciarTeste($tenant, $request->input('plano'));
 
             return $user;
         });

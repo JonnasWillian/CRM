@@ -2,9 +2,12 @@
 
 namespace App\Services\Equipe;
 
+use App\Exceptions\LimiteDoPlanoException;
 use App\Mail\ConviteDeEquipeMail;
 use App\Models\Convite;
 use App\Models\User;
+use App\Services\Assinaturas\Assinaturas;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -30,7 +33,7 @@ class Convites
     public function reenviar(Convite $convite, User $autor): Convite
     {
         if ($convite->aceito_em || $convite->cancelado_em) {
-            throw new \Illuminate\Http\Exceptions\HttpResponseException(response()->json(['message' => 'Este convite já foi usado ou cancelado; envie um novo.'], 422));
+            throw new HttpResponseException(response()->json(['message' => 'Este convite já foi usado ou cancelado; envie um novo.'], 422));
         }
 
         return $this->enviar($convite, $autor);
@@ -68,13 +71,13 @@ class Convites
 
         // O convite foi enviado quando havia vaga e a assinatura permitia;
         // até o aceite, as duas coisas podem ter mudado.
-        $assinaturas = app(\App\Services\Assinaturas\Assinaturas::class);
+        $assinaturas = app(Assinaturas::class);
         if (config('comercial.exigir_assinatura') && $assinaturas->da($convite->tenant_id)->bloqueada()) {
             throw ValidationException::withMessages(['email' => 'A assinatura desta empresa não permite novos acessos agora. Peça ao administrador para regularizar o plano.']);
         }
         try {
             $assinaturas->verificarLimite($convite->tenant_id, 'usuarios', 0);
-        } catch (\App\Exceptions\LimiteDoPlanoException) {
+        } catch (LimiteDoPlanoException) {
             throw ValidationException::withMessages(['email' => 'A empresa atingiu o limite de usuários do plano. Peça ao administrador para liberar uma vaga.']);
         }
 

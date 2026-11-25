@@ -11,6 +11,7 @@ use App\Support\Leads\BuscaDeLeads;
 use App\Support\Listagem\Ordenacao;
 use App\Support\Listagem\Paginacao;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -127,7 +128,7 @@ class QuadroDoKanban
             ->orderByDesc('usuarios.created_at')->orderByDesc('usuarios.id');
     }
 
-    private static function limiteEstagnado(): \Illuminate\Support\Carbon
+    private static function limiteEstagnado(): Carbon
     {
         return now()->subDays((int) config('leads.dias_estagnado', 14));
     }

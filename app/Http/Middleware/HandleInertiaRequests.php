@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Assinaturas\Assinaturas;
+use App\Services\Onboarding\PreferenciasDaEmpresa;
 use App\Support\LimitesDeTexto;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -41,9 +43,11 @@ class HandleInertiaRequests extends Middleware
                 'planos' => array_map(fn (array $p) => ['chave' => $p['chave'], 'nome' => $p['nome'], 'preco_mensal' => $p['preco_mensal'], 'preco_anual' => $p['preco_anual'], 'limite' => $p['limite'] ?? null, 'destaque' => (bool) ($p['destaque'] ?? false)], config('comercial.planos', [])),
             ],
             // Situação da assinatura (teste, plano, limites, uso) para a faixa do layout e a página de planos.
-            'assinatura' => fn () => $request->user()?->tenant_id ? app(\App\Services\Assinaturas\Assinaturas::class)->resumo($request->user()->tenant_id) : null,
+            'assinatura' => fn () => $this->assinaturaDe($request),
             'auth' => [
-                'user' => $request->user(),
+                // Lista fechada: o model inteiro levaria junto a empresa (CPF/CNPJ,
+                // id do cliente no Asaas), papéis e o que mais for carregado depois.
+                'user' => $request->user()?->only(['id', 'name', 'email', 'email_verified_at', 'kanban_default_estagio_id', 'tour_estado', 'tour_versao', 'tour_passo']),
                 // Closures, não arrays prontos: Inertia::share() é chamado por
                 // este middleware ANTES de $next($request), e o middleware de
                 // rota `tenant` — que define o team do spatie via
@@ -71,9 +75,9 @@ class HandleInertiaRequests extends Middleware
             // O que o questionário de primeiro acesso mudou no uso: rótulo do
             // nome do lead, opções de origem e se o passo a passo fala em equipe.
             'empresa' => fn () => ($tenantId = $request->user()?->tenant_id) === null ? null : [
-                'rotulo_nome_lead' => \App\Services\Onboarding\PreferenciasDaEmpresa::rotuloDoNome($tenantId),
-                'origens' => \App\Services\Onboarding\PreferenciasDaEmpresa::origens($tenantId),
-                'equipe_maior_que_um' => \App\Services\Onboarding\PreferenciasDaEmpresa::equipeComMaisDeUm($tenantId),
+                'rotulo_nome_lead' => PreferenciasDaEmpresa::rotuloDoNome($tenantId),
+                'origens' => PreferenciasDaEmpresa::origens($tenantId),
+                'equipe_maior_que_um' => PreferenciasDaEmpresa::equipeComMaisDeUm($tenantId),
             ],
         ];
     }
@@ -88,5 +92,20 @@ class HandleInertiaRequests extends Middleware
             ->pluck('name')
             ->mapWithKeys(fn (string $nome) => [$nome => $user !== null && $user->can($nome)])
             ->all();
+    }
+
+    /** Resumo da assinatura; o link de pagamento da fatura só vai para quem gerencia a assinatura. */
+    private function assinaturaDe(Request $request): ?array
+    {
+        $user = $request->user();
+        if (! $user?->tenant_id) {
+            return null;
+        }
+        $resumo = app(Assinaturas::class)->resumo($user->tenant_id);
+        if (is_array($resumo['fatura_pendente'] ?? null) && ! $user->can('configuracoes.manage')) {
+            $resumo['fatura_pendente']['link_pagamento'] = null;
+        }
+
+        return $resumo;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services\Assinaturas;
 
 use App\Exceptions\LimiteDoPlanoException;
 use App\Models\Assinatura;
+use App\Models\Fatura;
 use App\Models\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -98,7 +99,7 @@ class Assinaturas
         DB::transaction(function () use ($a) {
             $a->forceFill(['renovacao_cancelada_em' => Carbon::now()])->save();
             // Uma a uma (há no máximo uma): o FaturaObserver remove a cobrança no Asaas.
-            \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->get()
+            Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->get()
                 ->each(fn ($f) => $f->forceFill(['status' => 'cancelada', 'cancelada_em' => Carbon::now()])->save());
         });
 
@@ -213,7 +214,7 @@ class Assinaturas
             }
         }
 
-        $pendente = \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first();
+        $pendente = Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first();
         if ($pendente !== null) {
             $config = collect(config('comercial.planos', []))->firstWhere('chave', $pendente->plano) ?? [];
             foreach ($config['limites'] ?? [] as $r => $v) {
@@ -281,7 +282,7 @@ class Assinaturas
             'assentos' => in_array($a->situacao(), ['ativa', 'carencia'], true) ? $a->assentos : null,
             'uso' => $this->uso($tenant),
             'convites_pendentes' => $this->convitesPendentes($tenant),
-            'fatura_pendente' => \App\Models\Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),
+            'fatura_pendente' => Fatura::where('tenant_id', $a->tenant_id)->where('status', 'pendente')->latest('id')->first()?->paraOFront(),
         ];
     }
 

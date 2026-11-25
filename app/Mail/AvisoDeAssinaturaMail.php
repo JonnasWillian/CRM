@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Support\TextoSeguro;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -41,7 +42,8 @@ class AvisoDeAssinaturaMail extends Mailable implements ShouldQueue
     public function conteudo(): array
     {
         $d = $this->dados;
-        $empresa = $d['empresa'] ?? '';
+        // Nome da empresa é texto do cliente: no corpo, Markdown literal; no assunto, uma linha sem link.
+        $empresa = TextoSeguro::semMarkdown($d['empresa'] ?? '');
         $plano = $d['plano'] ?? '';
         $f = $d['fatura'] ?? [];
         $dias = (int) ($d['dias'] ?? 0);
@@ -137,6 +139,8 @@ class AvisoDeAssinaturaMail extends Mailable implements ShouldQueue
             ],
         };
 
-        return ['assunto' => $c[0], 'titulo' => $c[1], 'paragrafos' => $c[2], 'botao' => $c[3]];
+        $assunto = str_replace($empresa, TextoSeguro::paraAssunto($d['empresa'] ?? ''), $c[0]);
+
+        return ['assunto' => $assunto, 'titulo' => $c[1], 'paragrafos' => $c[2], 'botao' => $c[3]];
     }
 }

@@ -4,7 +4,11 @@ namespace App\Http\Requests;
 
 use App\Support\LimitesDeTexto;
 use App\Support\Perdas\RegrasDePerda;
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProjetoRequest extends FormRequest
 {
@@ -65,7 +69,7 @@ class ProjetoRequest extends FormRequest
             return;
         }
 
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+        throw new NotFoundHttpException;
     }
 
     public function rules(): array
@@ -140,10 +144,10 @@ class ProjetoRequest extends FormRequest
      * deleted_at aqui impediria de salvar um projeto que já aponta para um
      * status arquivado.
      */
-    private function statusDoTenant(): \Illuminate\Validation\Rules\Exists
+    private function statusDoTenant(): Exists
     {
-        return \Illuminate\Validation\Rule::exists('status', 'id')
-            ->where('tenant_id', app(\App\Support\Tenancy\CurrentTenant::class)->id());
+        return Rule::exists('status', 'id')
+            ->where('tenant_id', app(CurrentTenant::class)->id());
     }
 
     public function messages(): array

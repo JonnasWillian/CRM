@@ -1,7 +1,8 @@
 <x-mail::message>
 # Você foi convidado
 
-{{ $convidadoPor }} convidou você para entrar no CRM da **{{ $empresa }}** como **{{ $papel }}**.
+{{-- Nomes escritos pelo cliente: já vêm com o Markdown neutralizado (TextoSeguro). --}}
+{{ $convidadoPorSeguro }} convidou você para entrar no CRM da **{{ $empresaSegura }}** como **{{ $papel }}**.
 
 <x-mail::button :url="$url">
 Criar meu acesso

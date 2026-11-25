@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Support\Arquivos\PoliticaDeUpload;
 use Illuminate\Foundation\Http\FormRequest;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Anexo de LEAD: `POST /api/leads/{usuario}/arquivos`. O lead vem da rota,
@@ -34,7 +35,7 @@ class ArquivoRequest extends FormRequest
             return;
         }
 
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+        throw new NotFoundHttpException;
     }
 
     public function rules(): array

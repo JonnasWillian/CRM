@@ -7,8 +7,10 @@ use App\Http\Requests\EstagioRequest;
 use App\Http\Requests\FunilRequest;
 use App\Models\Estagio;
 use App\Models\Funil;
+use App\Services\Assinaturas\Assinaturas;
 use App\Services\Funis\EstagioService;
 use App\Services\Funis\FunilService;
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -60,7 +62,7 @@ class FunilController extends Controller
 
     public function store(FunilRequest $request): JsonResponse
     {
-        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite(app(\App\Support\Tenancy\CurrentTenant::class)->id(), 'funis');
+        app(Assinaturas::class)->verificarLimite(app(CurrentTenant::class)->id(), 'funis');
         $funil = $this->funis->criar($request->validated());
 
         return response()->json(self::serializar($funil->load('estagios')), 201);
@@ -83,7 +85,7 @@ class FunilController extends Controller
     public function restaurar(Funil $funil): JsonResponse
     {
         if ($funil->trashed()) {
-            app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($funil->tenant_id, 'funis');
+            app(Assinaturas::class)->verificarLimite($funil->tenant_id, 'funis');
         }
         $this->funis->restaurar($funil);
 

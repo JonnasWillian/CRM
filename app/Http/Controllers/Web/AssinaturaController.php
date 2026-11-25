@@ -7,6 +7,7 @@ use App\Models\Fatura;
 use App\Rules\CpfOuCnpj;
 use App\Services\Assinaturas\Assinaturas;
 use App\Services\Assinaturas\Faturamento;
+use App\Services\Onboarding\PreferenciasDaEmpresa;
 use App\Services\Pagamentos\Asaas\CobrancasDoAsaas;
 use App\Services\Pagamentos\Asaas\FalhaNoAsaas;
 use App\Support\Tenancy\CurrentTenant;
@@ -43,7 +44,7 @@ class AssinaturaController extends Controller
             // Mínimo de assentos que a empresa pode escolher: ativos + convites pendentes.
             'ocupados' => $faturamento->ocupados($empresa),
             // Do questionário de primeiro acesso: quantas pessoas vão usar (null sem resposta).
-            'usuariosSugeridos' => \App\Services\Onboarding\PreferenciasDaEmpresa::usuariosSugeridos($empresa->id),
+            'usuariosSugeridos' => PreferenciasDaEmpresa::usuariosSugeridos($empresa->id),
             'faturaPendente' => $faturamento->pendente($empresa)?->paraOFront(),
             'faturas' => Fatura::where('tenant_id', $empresa->id)->latest('id')->limit(12)->get()->map->paraOFront()->values(),
             'pagamento' => [

@@ -2,10 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Funil;
+use App\Support\Equipe\RegrasDeAdmin;
 use App\Support\Leads\RegrasDeLead;
 use App\Support\Perdas\RegrasDePerda;
 use App\Support\Telefone;
+use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Foundation\Http\FormRequest;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class UsuarioRequest extends FormRequest
 {
@@ -60,7 +64,7 @@ class UsuarioRequest extends FormRequest
             return;
         }
 
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+        throw new NotFoundHttpException;
     }
 
     /**
@@ -96,11 +100,12 @@ class UsuarioRequest extends FormRequest
     private function storeRules()
     {
         return [
-            ...RegrasDeLead::campos(null, $this->filled('funil_id') ? $this->integer('funil_id') : null),
+            // Sem funil no corpo, o lead nasce no funil padrão: o estágio tem de ser dele.
+            ...RegrasDeLead::campos(null, $this->filled('funil_id') ? $this->integer('funil_id') : Funil::padrao()?->id),
             // Responsável escolhido no cadastro: só vale para quem tem
             // leads.view-all (CadastrarLead ignora para os demais). Trocar o
             // responsável de um lead existente é a transferência, não a edição.
-            'user_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('users', 'id')->where('tenant_id', app(\App\Support\Tenancy\CurrentTenant::class)->id())],
+            'user_id' => ['nullable', 'integer', RegrasDeAdmin::regraDeMembroAtivo(app(CurrentTenant::class)->id())],
             ...RegrasDePerda::campos(),
         ];
     }
@@ -111,7 +116,8 @@ class UsuarioRequest extends FormRequest
             // O model vem do route model binding, não do corpo: é o mesmo lead
             // que o controller autoriza via policy, e não depende do cliente
             // reenviar 'id' no payload.
-            ...RegrasDeLead::campos($this->route('usuario')?->id, $this->filled('funil_id') ? $this->integer('funil_id') : null),
+            // Sem funil no corpo, vale o funil em que o lead já está.
+            ...RegrasDeLead::campos($this->route('usuario')?->id, $this->filled('funil_id') ? $this->integer('funil_id') : $this->route('usuario')?->funil_id),
             ...RegrasDePerda::campos(),
         ];
     }

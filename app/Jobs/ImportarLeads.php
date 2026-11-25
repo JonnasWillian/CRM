@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\LimiteDoPlanoException;
 use App\Models\Estagio;
 use App\Models\Funil;
 use App\Models\Importacao;
@@ -56,6 +57,8 @@ class ImportarLeads implements ShouldQueue
     {
         $this->imp = Importacao::withoutGlobalScopes()->findOrFail($this->importacaoId);
         $autor = User::findOrFail($this->imp->user_id);
+        $atual = app(CurrentTenant::class);
+        [$tenantAntes, $timeAntes, $usuarioAntes] = [$atual->check() ? $atual->get() : null, getPermissionsTeamId(), Auth::user()];
         app(CurrentTenant::class)->set(Tenant::findOrFail($this->imp->tenant_id));
         setPermissionsTeamId($this->imp->tenant_id);
         Auth::setUser($autor);
@@ -63,7 +66,7 @@ class ImportarLeads implements ShouldQueue
         $this->imp->forceFill(['status' => Importacao::PROCESSANDO, 'iniciada_em' => now(), 'processadas' => 0, 'criadas' => 0, 'atualizadas' => 0, 'ignoradas' => 0, 'com_erro' => 0])->save();
 
         try {
-            $this->processar($autor);
+            $this->processarELimpar($autor, $tenantAntes, $timeAntes, $usuarioAntes);
             $this->imp->forceFill(['status' => Importacao::CONCLUIDA, 'concluida_em' => now(), 'erros' => $this->erros])->save();
         } catch (Throwable $e) {
             report($e);
@@ -181,7 +184,7 @@ class ImportarLeads implements ShouldQueue
                 $this->avancar();
             } catch (ValidationException $e) {
                 $this->erro($n, $e->validator->errors()->has('motivo_perda_id') ? 'O estágio escolhido é de perda e exige motivo; importe em outro estágio.' : $e->getMessage(), $linha);
-            } catch (\App\Exceptions\LimiteDoPlanoException $e) {
+            } catch (LimiteDoPlanoException $e) {
                 // O plano encheu no meio: para aqui, com o que já entrou.
                 $this->erro($n, $e->getMessage(), $linha);
                 $this->imp->mensagem_falha = $e->getMessage();
@@ -248,5 +251,21 @@ class ImportarLeads implements ShouldQueue
         }
 
         return null;
+    }
+
+    /**
+     * O worker da fila vive muito: a empresa e o usuário desta importação não
+     * podem ficar ativos para o próximo job do mesmo processo. Ao terminar,
+     * volta o contexto que havia antes (no worker, nenhum).
+     */
+    private function processarELimpar(User $autor, ?Tenant $tenantAntes, mixed $timeAntes, ?User $usuarioAntes): void
+    {
+        try {
+            $this->processar($autor);
+        } finally {
+            $tenantAntes ? app(CurrentTenant::class)->set($tenantAntes) : app(CurrentTenant::class)->clear();
+            setPermissionsTeamId($timeAntes);
+            $usuarioAntes ? Auth::setUser($usuarioAntes) : Auth::forgetUser();
+        }
     }
 }

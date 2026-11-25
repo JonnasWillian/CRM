@@ -8,6 +8,7 @@ use App\Models\Fatura;
 use App\Models\PerfilDeEmpresa;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Pagamentos\Asaas\ApiDoAsaas;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -160,7 +161,7 @@ class AvisosDeAssinatura
             'somente_leitura_desde' => $data($a->somenteLeituraDesde()),
             'suspende_em' => $data($a->suspendeEm()),
             'instrucoes' => config('comercial.pagamento.instrucoes'),
-            'pagamento_online' => app(\App\Services\Pagamentos\Asaas\ApiDoAsaas::class)->ativo(),
+            'pagamento_online' => app(ApiDoAsaas::class)->ativo(),
             'url' => route('configuracoes.assinatura'),
         ];
     }

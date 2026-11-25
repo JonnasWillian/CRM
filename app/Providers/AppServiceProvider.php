@@ -10,6 +10,7 @@ use App\Models\ProjetoAnexo;
 use App\Models\ProjetoAnotacao;
 use App\Models\Tarefa;
 use App\Models\TarefaPadrao;
+use App\Models\User;
 use App\Models\Usuario;
 use App\Observers\AnotacaoObserver;
 use App\Observers\ArquivoObserver;
@@ -19,8 +20,10 @@ use App\Observers\ProjetoAnotacaoObserver;
 use App\Observers\ProjetoObserver;
 use App\Observers\TarefaObserver;
 use App\Observers\UsuarioObserver;
+use App\Policies\AgentePolicy;
 use App\Policies\AnotacaoPolicy;
 use App\Policies\ArquivoPolicy;
+use App\Policies\FaturaPolicy;
 use App\Policies\ProjetoAnexoPolicy;
 use App\Policies\ProjetoAnotacaoPolicy;
 use App\Policies\ProjetoPolicy;
@@ -66,7 +69,7 @@ class AppServiceProvider extends ServiceProvider
             'projeto_anexo' => ProjetoAnexo::class,
             'tarefa' => Tarefa::class,
             'tarefa_padrao' => TarefaPadrao::class,
-            'user' => \App\Models\User::class,
+            'user' => User::class,
         ]);
 
         // Alimentam o activity log de lead. Observers só disparam em operações
@@ -87,7 +90,7 @@ class AppServiceProvider extends ServiceProvider
         // Laravel deriva o nome da classe, e o model `arquivo` é minúsculo —
         // ela procuraria `arquivoPolicy`. Explícito evita depender disso.
         Gate::policy(Usuario::class, UsuarioPolicy::class);
-        Gate::policy(\App\Models\User::class, \App\Policies\AgentePolicy::class);
+        Gate::policy(User::class, AgentePolicy::class);
         Gate::policy(Projeto::class, ProjetoPolicy::class);
         Gate::policy(ProjetoAnotacao::class, ProjetoAnotacaoPolicy::class);
         Gate::policy(ProjetoAnexo::class, ProjetoAnexoPolicy::class);
@@ -95,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Anotacao::class, AnotacaoPolicy::class);
         Gate::policy(Arquivo::class, ArquivoPolicy::class);
         Gate::policy(TarefaPadrao::class, TarefaPadraoPolicy::class);
-        Gate::policy(Fatura::class, \App\Policies\FaturaPolicy::class);
+        Gate::policy(Fatura::class, FaturaPolicy::class);
 
         // Três limites, cada um contra um abuso diferente:
         //   api      — cliente em loop ou raspagem da carteira (por agente);

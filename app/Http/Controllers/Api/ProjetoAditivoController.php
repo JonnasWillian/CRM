@@ -9,6 +9,7 @@ use App\Support\ActivityLog\LeadActivity;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -46,7 +47,7 @@ class ProjetoAditivoController extends Controller
         $rotulo = $aditivo->tipo === 'renovacao' ? 'Contrato renovado' : 'Aditivo no contrato';
         $resumo = "+{$aditivo->meses} ".($aditivo->meses === 1 ? 'mês' : 'meses')
             .($aditivo->valor_mensal !== null ? ' · R$ '.number_format((float) $aditivo->valor_mensal, 2, ',', '.').'/mês' : '')
-            .($fim ? ' · até '.\Illuminate\Support\Carbon::parse($fim)->format('d/m/Y') : '');
+            .($fim ? ' · até '.Carbon::parse($fim)->format('d/m/Y') : '');
 
         LeadActivity::registrar($projeto, $projeto->usuario_id, 'projeto_aditivo', $rotulo, [
             'projeto_nome' => $projeto->nome,

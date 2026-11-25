@@ -2,9 +2,11 @@
 
 namespace App\Services\Equipe;
 
+use App\Models\Convite;
 use App\Models\User;
 use App\Services\Leads\TransferirLeads;
 use App\Support\Equipe\RegrasDeAdmin;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +32,7 @@ class Membros
 
         setPermissionsTeamId($membro->tenant_id);
         $membro->syncRoles([$papel]);
+        $this->cancelarConvitesDe($membro);
     }
 
     public function desativar(User $autor, User $membro, ?User $destino): void
@@ -54,6 +57,7 @@ class Membros
                 $this->transferir->carteira($membro, $destino);
             }
             $membro->forceFill(['ativo' => false, 'desativado_em' => now()])->save();
+            $this->cancelarConvitesDe($membro);
             // Derruba as sessões abertas: o IdentifyTenant já barraria a
             // próxima requisição, mas sessão morta é sessão que não vaza.
             DB::table('sessions')->where('user_id', $membro->id)->delete();
@@ -69,8 +73,18 @@ class Membros
      * Regra de negócio, não erro de campo: `{message}` sem `errors`, para o
      * interceptor do front mostrar como toast.
      */
-    private static function recusar(string $mensagem): \Illuminate\Http\Exceptions\HttpResponseException
+    private static function recusar(string $mensagem): HttpResponseException
     {
-        return new \Illuminate\Http\Exceptions\HttpResponseException(response()->json(['message' => $mensagem], 422));
+        return new HttpResponseException(response()->json(['message' => $mensagem], 422));
+    }
+
+    /**
+     * Convite pendente não sobrevive a quem o enviou: quem vai ser desativado
+     * ou rebaixado não deixa um convite de admin válido por 7 dias.
+     */
+    private function cancelarConvitesDe(User $membro): void
+    {
+        Convite::withoutGlobalScopes()->where('tenant_id', $membro->tenant_id)
+            ->where('convidado_por', $membro->id)->pendentes()->update(['cancelado_em' => now()]);
     }
 }

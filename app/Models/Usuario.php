@@ -7,6 +7,7 @@ use App\Support\Perdas\Perdivel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -62,22 +63,22 @@ class Usuario extends Model implements Perdivel
         return $this->morphMany(Perda::class, 'perdivel');
     }
 
-    public function projetos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function projetos(): HasMany
     {
         return $this->hasMany(Projeto::class, 'usuario_id');
     }
 
-    public function anotacoes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function anotacoes(): HasMany
     {
         return $this->hasMany(Anotacao::class, 'usuario_id');
     }
 
-    public function arquivos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function arquivos(): HasMany
     {
         return $this->hasMany(Arquivo::class, 'usuario_id');
     }
 
-    public function tarefas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function tarefas(): HasMany
     {
         return $this->hasMany(Tarefa::class, 'usuario_id');
     }

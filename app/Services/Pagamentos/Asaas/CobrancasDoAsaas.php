@@ -61,6 +61,9 @@ class CobrancasDoAsaas
         if ($fatura->status !== 'pendente') {
             throw new DomainException("A fatura #{$fatura->id} não está aberta para pagamento.");
         }
+        if ($fatura->motivo === 'troca' && $fatura->atrasada()) {
+            throw new DomainException("A fatura #{$fatura->id} de troca de plano venceu. Gere uma nova na tela de assinatura.");
+        }
         if ($fatura->cobranca_id !== null) {
             return $fatura;
         }
@@ -219,6 +222,12 @@ class CobrancasDoAsaas
             $this->avisos->alertaAoComercial($f, 'Fatura paga duas vezes', "A fatura já estava paga ({$f->gateway}: {$f->referencia_gateway}) e a cobrança {$cobrancaId} também foi paga no Asaas. Estorne uma delas pelo painel do Asaas.", unicoPor: "{$cobrancaId}:dobro");
 
             return 'alerta: fatura paga duas vezes';
+        }
+
+        if ($f->motivo === 'troca' && $f->atrasada()) {
+            $this->avisos->alertaAoComercial($f, 'Troca de plano vencida foi paga', "A cobrança {$cobrancaId} foi paga depois do vencimento da fatura de troca, cujo crédito já não vale. O plano não mudou. Estorne pelo Asaas ou ative o plano com php artisan assinatura:ativar.", unicoPor: "{$cobrancaId}:troca");
+
+            return 'alerta: troca vencida foi paga';
         }
 
         $this->faturamento->pagar($f, $cobrancaId, 'asaas');

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ImportarLeads;
+use App\Models\Funil;
 use App\Models\Importacao;
+use App\Services\Assinaturas\Assinaturas;
 use App\Services\Importacao\CamposDeImportacao;
 use App\Services\Importacao\PreviaDeImportacao;
 use App\Support\Csv\CelulaSegura;
@@ -53,7 +55,7 @@ class ImportacaoController extends Controller
             // O estágio de entrada tem de ser do funil escolhido (ou do padrão): lead com
             // funil de um lado e estágio de outro não aparece em quadro nenhum.
             'opcoes.estagio_id' => ['nullable', 'integer', Rule::exists('estagios', 'id')->where('tenant_id', $tenant)->whereNull('deleted_at')
-                ->where('funil_id', $request->integer('opcoes.funil_id') ?: \App\Models\Funil::padrao()?->id)],
+                ->where('funil_id', $request->integer('opcoes.funil_id') ?: Funil::padrao()?->id)],
             'opcoes.user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('tenant_id', $tenant)->where('ativo', true)],
         ], [
             'mapeamento.nome.required' => 'Escolha a coluna do nome.',
@@ -62,7 +64,7 @@ class ImportacaoController extends Controller
         ]);
 
         // Capacidade do plano antes de enfileirar: melhor recusar agora do que parar na linha 1.500.
-        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($tenant, 'leads', (int) $importacao->total_linhas);
+        app(Assinaturas::class)->verificarLimite($tenant, 'leads', (int) $importacao->total_linhas);
 
         $mapa = array_intersect_key(array_filter($dados['mapeamento'], fn ($v) => $v !== null), CamposDeImportacao::CAMPOS);
         $importacao->forceFill(['mapeamento' => array_map('intval', $mapa), 'opcoes' => $dados['opcoes'] ?? [], 'status' => Importacao::NA_FILA])->save();

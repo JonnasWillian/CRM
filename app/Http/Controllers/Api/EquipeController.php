@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\LeadController as LeadWeb;
 use App\Models\Convite;
 use App\Models\User;
+use App\Services\Assinaturas\Assinaturas;
 use App\Services\Equipe\Convites;
 use App\Services\Equipe\Membros;
 use App\Support\Equipe\RegrasDeAdmin;
@@ -52,7 +53,7 @@ class EquipeController extends Controller
     public function reativar(Membros $membros, User $agente): JsonResponse
     {
         $this->authorize('gerenciar', $agente);
-        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($agente->tenant_id, 'usuarios');
+        app(Assinaturas::class)->verificarLimite($agente->tenant_id, 'usuarios');
         $membros->reativar($agente);
 
         return response()->json(['message' => "“{$agente->name}” reativado."]);
@@ -61,11 +62,11 @@ class EquipeController extends Controller
     public function convidar(Request $request, Convites $convites): JsonResponse
     {
         $dados = $request->validate([
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => ['required', 'email:rfc', 'not_regex:/[\r\n]/', 'max:255', Rule::unique('users', 'email')],
             'papel' => ['required', Rule::in(Convite::PAPEIS)],
         ], ['email.unique' => 'Este e-mail já tem uma conta no sistema.']);
 
-        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite(app(CurrentTenant::class)->id(), 'usuarios');
+        app(Assinaturas::class)->verificarLimite(app(CurrentTenant::class)->id(), 'usuarios');
         $convite = $convites->convidar($request->user(), $dados['email'], $dados['papel']);
 
         return response()->json(['message' => "Convite enviado para {$convite->email}. Vale por ".Convites::VALIDADE_DIAS.' dias.', 'data' => self::convite($convite)], 201);
@@ -75,7 +76,7 @@ class EquipeController extends Controller
     {
         // Pendente já ocupa vaga; expirado volta a ocupar ao ser reenviado.
         if (Convites::estado($convite) === 'expirado') {
-            app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($convite->tenant_id, 'usuarios');
+            app(Assinaturas::class)->verificarLimite($convite->tenant_id, 'usuarios');
         }
         $convites->reenviar($convite, $request->user());
 

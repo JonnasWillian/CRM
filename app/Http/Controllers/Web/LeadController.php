@@ -2,21 +2,25 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Api\ImportacaoController;
 use App\Http\Controllers\Api\LeadController as LeadApi;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ListagemDeLeadsRequest;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Estagio;
 use App\Models\Funil;
+use App\Models\Importacao;
 use App\Models\StatusProjeto;
 use App\Models\User;
 use App\Models\Usuario;
 use App\Queries\Leads\ListagemDeLeads;
+use App\Services\Importacao\CamposDeImportacao;
 use App\Services\Leads\CadastrarLead;
 use App\Support\Listagem\Paginacao;
 use App\Support\Perdas\RegrasDePerda;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -42,14 +46,14 @@ class LeadController extends Controller
     }
 
     /** Importar planilha (wizard): catálogos, membros e as importações recentes. */
-    public function importar(\Illuminate\Http\Request $request): Response
+    public function importar(Request $request): Response
     {
         return Inertia::render('Leads/Importar', [
-            'importacoes' => \App\Models\Importacao::query()->latest()->limit(10)->get()->map(fn ($i) => \App\Http\Controllers\Api\ImportacaoController::serializar($i)),
+            'importacoes' => Importacao::query()->latest()->limit(10)->get()->map(fn ($i) => ImportacaoController::serializar($i)),
             'funis' => Funil::ordenados()->get(['id', 'nome', 'is_default']),
             'estagios' => Estagio::query()->orderBy('funil_id')->orderBy('ordem')->orderBy('id')->get(['id', 'funil_id', 'descricao', 'tipo']),
             'agentes' => self::agentes($request->user()),
-            'campos' => array_keys(\App\Services\Importacao\CamposDeImportacao::CAMPOS),
+            'campos' => array_keys(CamposDeImportacao::CAMPOS),
         ]);
     }
 
@@ -69,7 +73,7 @@ class LeadController extends Controller
      * Perfil do lead. A autorização está no middleware da rota
      * (`->can('view', 'usuario')`), que roda depois do binding.
      */
-    public function show(\Illuminate\Http\Request $request, Usuario $usuario): Response
+    public function show(Request $request, Usuario $usuario): Response
     {
         return Inertia::render('Usuario/Perfil', [
             'lead' => LeadApi::comResumo($usuario),

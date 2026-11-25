@@ -13,6 +13,7 @@ use App\Models\Funil;
 use App\Models\User;
 use App\Models\Usuario;
 use App\Queries\Leads\ListagemDeLeads;
+use App\Services\Assinaturas\Assinaturas;
 use App\Services\Funis\MoverLeadDeFunil;
 use App\Services\Leads\AcoesEmMassa;
 use App\Services\Leads\CadastrarLead;
@@ -26,6 +27,7 @@ use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Leads (tabela `usuarios`): grade, cadastro, perfil, edição, lixeira e as
@@ -53,7 +55,7 @@ class LeadController extends Controller
      * BOM + `;` + vírgula decimal: abre direto no Excel em português; os
      * cabeçalhos são os mesmos que a importação reconhece (ida e volta).
      */
-    public function exportar(ListagemDeLeadsRequest $request, ListagemDeLeads $listagem): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function exportar(ListagemDeLeadsRequest $request, ListagemDeLeads $listagem): StreamedResponse
     {
         $ids = array_filter(array_map('intval', (array) $request->input('ids', [])));
         $q = $ids !== []
@@ -202,7 +204,7 @@ class LeadController extends Controller
             return response()->json(['message' => 'Este lead não está na lixeira.'], 409);
         }
 
-        app(\App\Services\Assinaturas\Assinaturas::class)->verificarLimite($usuario->tenant_id, 'leads');
+        app(Assinaturas::class)->verificarLimite($usuario->tenant_id, 'leads');
         $usuario->restore();
 
         // O estágio pode ter sido arquivado enquanto o lead estava na lixeira:

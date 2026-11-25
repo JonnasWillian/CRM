@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Tenancy\CurrentTenant;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,7 +42,7 @@ class IdentifyTenant
             abort(403, 'Usuário sem tenant associado.');
         }
 
-        app(\App\Support\Tenancy\CurrentTenant::class)->set($tenant);
+        app(CurrentTenant::class)->set($tenant);
 
         // O spatie/laravel-permission está em modo teams, com `tenant_id` como
         // chave do team. Sem definir o team ativo, toda verificação de

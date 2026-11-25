@@ -25,7 +25,7 @@ class PasswordResetLinkController extends Controller
     /**
      * Handle an incoming password reset link request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
@@ -40,12 +40,12 @@ class PasswordResetLinkController extends Controller
             $request->only('email')
         );
 
-        if ($status == Password::RESET_LINK_SENT) {
-            return back()->with('status', __($status));
+        // Mesma resposta exista ou não a conta: a tela não serve para descobrir quem é cliente.
+        // Só o limite de tentativas continua aparecendo como erro.
+        if ($status === Password::RESET_THROTTLED) {
+            throw ValidationException::withMessages(['email' => [trans($status)]]);
         }
 
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
-        ]);
+        return back()->with('status', 'Se este e-mail tiver uma conta, enviamos o link para redefinir a senha.');
     }
 }

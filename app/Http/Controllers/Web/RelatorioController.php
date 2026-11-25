@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Api\PerdaRelatorioController as PerdasApi;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MetricasRequest;
+use App\Models\Funil;
 use App\Services\Perdas\RelatorioDePerdas;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,7 +15,7 @@ use Inertia\Response;
 class RelatorioController extends Controller
 {
     /** Visão geral: tiles do período, por vendedor e ganhos por mês. */
-    public function index(\App\Http\Requests\MetricasRequest $request): Response
+    public function index(MetricasRequest $request): Response
     {
         $periodo = $request->periodo();
 
@@ -27,7 +29,7 @@ class RelatorioController extends Controller
                 'funil_id' => $request->funilId(),
             ],
             'agentes' => LeadController::agentes($request->user()),
-            'funis' => \App\Models\Funil::ordenados()->get(['id', 'nome', 'is_default']),
+            'funis' => Funil::ordenados()->get(['id', 'nome', 'is_default']),
         ]);
     }
 

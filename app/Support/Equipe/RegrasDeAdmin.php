@@ -3,6 +3,8 @@
 namespace App\Support\Equipe;
 
 use App\Models\User;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 
 /** A empresa nunca fica sem admin ativo. Usado por exclusão de conta, troca de papel e desativação. */
 final class RegrasDeAdmin
@@ -21,8 +23,8 @@ final class RegrasDeAdmin
     }
 
     /** Membros ativos da empresa (destino de transferência, selects de responsável). */
-    public static function regraDeMembroAtivo(int $tenantId): \Illuminate\Validation\Rules\Exists
+    public static function regraDeMembroAtivo(int $tenantId): Exists
     {
-        return \Illuminate\Validation\Rule::exists('users', 'id')->where('tenant_id', $tenantId)->where('ativo', true);
+        return Rule::exists('users', 'id')->where('tenant_id', $tenantId)->where('ativo', true);
     }
 }

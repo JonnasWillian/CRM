@@ -29,8 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\ExigirPerfilDaEmpresa::class,
         ]);
         $middleware->api(append: [\App\Http\Middleware\ExigirAssinatura::class]);
+        // Em toda resposta, web e API.
+        $middleware->append(\App\Http\Middleware\CabecalhosDeSeguranca::class);
 
         $middleware->statefulApi();
+        // Trocar ou redefinir a senha derruba as outras sessões abertas, também nas páginas (não só na API).
+        $middleware->authenticateSessions();
 
         // Usa o limiter 'api' definido no AppServiceProvider.
         $middleware->throttleApi();
